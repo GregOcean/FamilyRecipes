@@ -71,32 +71,6 @@ class FridgeFragment : Fragment() {
             // TODO: 添加食材对话框
             Toast.makeText(context, "添加食材功能开发中", Toast.LENGTH_SHORT).show()
         }
-        
-        // 搜索功能
-        binding.searchEditText.setOnEditorActionListener { v, actionId, event ->
-            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH) {
-                val keyword = v.text.toString()
-                if (keyword.isNotEmpty()) {
-                    searchIngredients(keyword)
-                }
-                true
-            } else {
-                false
-            }
-        }
-    }
-    
-    private fun searchIngredients(keyword: String) {
-        val filteredItems = items.filter { 
-            it.ingredient?.name?.contains(keyword, ignoreCase = true) == true
-        }
-        
-        if (filteredItems.isEmpty()) {
-            Toast.makeText(context, "未找到包含 \"$keyword\" 的食材", Toast.LENGTH_SHORT).show()
-        } else {
-            // 更新显示的列表
-            Toast.makeText(context, "找到 ${filteredItems.size} 个食材", Toast.LENGTH_SHORT).show()
-        }
     }
     
     private fun navigateToRecipesByIngredient(item: FridgeItem) {

@@ -1,5 +1,6 @@
 package com.familyrecipes.android.ui
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -58,10 +59,9 @@ class MainActivity : AppCompatActivity() {
                         return@OnItemSelectedListener true
                     }
                     R.id.nav_add -> {
-                        // 添加菜谱
-                        Toast.makeText(this, "添加菜谱功能开发中", Toast.LENGTH_SHORT).show()
-                        // TODO: 跳转到添加菜谱页面
-                        // startActivity(Intent(this, EditRecipeActivity::class.java))
+                        // 添加菜谱 - 跳转到添加页面
+                        val intent = Intent(this, com.familyrecipes.android.ui.recipe.EditRecipeActivity::class.java)
+                        startActivity(intent)
                         return@OnItemSelectedListener false // 不切换Fragment
                     }
                     R.id.nav_fridge -> {
