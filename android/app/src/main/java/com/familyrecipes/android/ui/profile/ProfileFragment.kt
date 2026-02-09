@@ -18,6 +18,9 @@ class ProfileFragment : Fragment() {
 
     private var _binding: FragmentProfileBinding? = null
     private val binding get() = _binding!!
+    
+    // 登录/注册模式标志
+    private var isLoginMode = true
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -59,8 +62,6 @@ class ProfileFragment : Fragment() {
     }
 
     private fun setupLoginListeners() {
-        var isLoginMode = true
-        
         // 登录按钮
         binding.btnLogin.setOnClickListener {
             if (isLoginMode) {
@@ -72,16 +73,23 @@ class ProfileFragment : Fragment() {
 
         // 切换登录/注册
         binding.tvSwitchMode.setOnClickListener {
-            isLoginMode = !isLoginMode
-            if (isLoginMode) {
-                binding.layoutUsername.visibility = View.GONE
-                binding.btnLogin.text = "登录"
-                binding.tvSwitchMode.text = "还没有账号？立即注册"
-            } else {
-                binding.layoutUsername.visibility = View.VISIBLE
-                binding.btnLogin.text = "注册"
-                binding.tvSwitchMode.text = "已有账号？立即登录"
-            }
+            switchMode()
+        }
+    }
+    
+    /**
+     * 切换登录/注册模式
+     */
+    private fun switchMode() {
+        isLoginMode = !isLoginMode
+        if (isLoginMode) {
+            binding.layoutUsername.visibility = View.GONE
+            binding.btnLogin.text = "登录"
+            binding.tvSwitchMode.text = "还没有账号？立即注册"
+        } else {
+            binding.layoutUsername.visibility = View.VISIBLE
+            binding.btnLogin.text = "注册"
+            binding.tvSwitchMode.text = "已有账号？立即登录"
         }
     }
 
@@ -144,17 +152,16 @@ class ProfileFragment : Fragment() {
                 val response = ApiClient.getService().register(request)
 
                 if (response.isSuccessful && response.body()?.code == 200) {
-                    android.widget.Toast.makeText(context, "注册成功，请登录", android.widget.Toast.LENGTH_SHORT).show()
-                    // 自动填充用户名，切换到登录模式
-                    binding.layoutUsername.visibility = View.GONE
-                    binding.btnLogin.text = "登录"
-                    binding.tvSwitchMode.text = "还没有账号？立即注册"
+                    android.widget.Toast.makeText(context, "注册成功，正在登录...", android.widget.Toast.LENGTH_SHORT).show()
+                    
+                    // 注册成功后自动登录
+                    performLogin()
                 } else {
                     android.widget.Toast.makeText(context, response.body()?.message ?: "注册失败", android.widget.Toast.LENGTH_SHORT).show()
+                    binding.btnLogin.isEnabled = true
                 }
             } catch (e: Exception) {
-                android.widget.Toast.makeText(context, "网络错误", android.widget.Toast.LENGTH_SHORT).show()
-            } finally {
+                android.widget.Toast.makeText(context, "网络错误: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
                 binding.btnLogin.isEnabled = true
             }
         }
@@ -197,16 +204,16 @@ class ProfileFragment : Fragment() {
             showLoginPage()
         }
         
-        // 点击喜欢的菜谱
+        // 点击收藏的菜谱
         binding.layoutFavorites.setOnClickListener {
-            // TODO: 跳转到我喜欢的菜谱列表
-            android.widget.Toast.makeText(context, "查看我喜欢的菜谱", android.widget.Toast.LENGTH_SHORT).show()
+            val intent = android.content.Intent(requireContext(), FavoriteRecipesActivity::class.java)
+            startActivity(intent)
         }
         
         // 点击我的作品
         binding.layoutCreated.setOnClickListener {
-            // TODO: 跳转到我上传的菜谱列表
-            android.widget.Toast.makeText(context, "查看我的作品", android.widget.Toast.LENGTH_SHORT).show()
+            val intent = android.content.Intent(requireContext(), MyCreatedRecipesActivity::class.java)
+            startActivity(intent)
         }
     }
 

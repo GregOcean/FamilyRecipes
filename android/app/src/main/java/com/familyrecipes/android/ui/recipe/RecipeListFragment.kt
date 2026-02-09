@@ -1,5 +1,6 @@
 package com.familyrecipes.android.ui.recipe
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -11,13 +12,14 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.familyrecipes.android.data.model.Recipe
 import com.familyrecipes.android.data.remote.ApiClient
 import com.familyrecipes.android.databinding.FragmentRecipeListBinding
+import com.familyrecipes.android.ui.SearchableFragment
 import com.familyrecipes.android.ui.adapter.RecipeAdapter
 import kotlinx.coroutines.launch
 
 /**
  * 菜谱列表Fragment
  */
-class RecipeListFragment : Fragment() {
+class RecipeListFragment : Fragment(), SearchableFragment {
 
     private var _binding: FragmentRecipeListBinding? = null
     private val binding get() = _binding!!
@@ -45,13 +47,26 @@ class RecipeListFragment : Fragment() {
     private fun setupRecyclerView() {
         recipeAdapter = RecipeAdapter(recipes) { recipe ->
             // 点击菜谱，跳转到详情页
-            // TODO: 跳转到详情
+            openRecipeDetail(recipe)
         }
         
         binding.recyclerView.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = recipeAdapter
         }
+    }
+    
+    private fun openRecipeDetail(recipe: Recipe) {
+        // 检查菜谱ID是否有效
+        if (recipe.id == null) {
+            android.widget.Toast.makeText(requireContext(), "菜谱ID无效", android.widget.Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        val intent = Intent(requireContext(), RecipeDetailActivity::class.java).apply {
+            putExtra(RecipeDetailActivity.EXTRA_RECIPE_ID, recipe.id!!)
+        }
+        startActivity(intent)
     }
 
     private fun setupListeners() {
@@ -61,25 +76,39 @@ class RecipeListFragment : Fragment() {
         }
     }
 
-    private fun loadRecipes() {
+    private fun loadRecipes(keyword: String? = null) {
         lifecycleScope.launch {
             try {
-                val response = ApiClient.getService().searchRecipes()
+                val response = if (keyword.isNullOrEmpty()) {
+                    ApiClient.getService().searchRecipes()
+                } else {
+                    ApiClient.getService().searchRecipes(keyword = keyword)
+                }
                 
                 if (response.isSuccessful && response.body()?.code == 200) {
                     val data = response.body()?.data
                     recipes.clear()
                     data?.list?.let { recipes.addAll(it) }
                     recipeAdapter.notifyDataSetChanged()
+                    
+                    if (recipes.isEmpty() && !keyword.isNullOrEmpty()) {
+                        Toast.makeText(context, "没有找到相关菜谱", Toast.LENGTH_SHORT).show()
+                    }
                 } else {
                     Toast.makeText(context, "加载失败", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                Toast.makeText(context, "网络错误", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "网络错误: ${e.message}", Toast.LENGTH_SHORT).show()
+                e.printStackTrace()
             } finally {
                 binding.swipeRefresh.isRefreshing = false
             }
         }
+    }
+    
+    override fun performSearch(keyword: String) {
+        binding.swipeRefresh.isRefreshing = true
+        loadRecipes(keyword)
     }
 
     override fun onDestroyView() {

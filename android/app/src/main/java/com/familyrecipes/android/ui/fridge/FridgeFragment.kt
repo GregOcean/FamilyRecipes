@@ -1,10 +1,13 @@
 package com.familyrecipes.android.ui.fridge
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -24,6 +27,15 @@ class FridgeFragment : Fragment() {
     
     private lateinit var fridgeAdapter: FridgeAdapter
     private val items = mutableListOf<FridgeItem>()
+    
+    // 添加食材结果监听
+    private val addIngredientLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            loadFridgeItems()
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -68,8 +80,8 @@ class FridgeFragment : Fragment() {
         }
         
         binding.fabAdd.setOnClickListener {
-            // TODO: 添加食材对话框
-            Toast.makeText(context, "添加食材功能开发中", Toast.LENGTH_SHORT).show()
+            val intent = Intent(requireContext(), AddIngredientActivity::class.java)
+            addIngredientLauncher.launch(intent)
         }
     }
     

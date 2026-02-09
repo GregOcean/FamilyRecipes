@@ -92,7 +92,8 @@ data class RecipeTag(
 data class Ingredient(
     val id: Long?,
     val name: String,
-    val category: String?
+    val category: String?,
+    val unit: String? = null
 )
 
 /**
