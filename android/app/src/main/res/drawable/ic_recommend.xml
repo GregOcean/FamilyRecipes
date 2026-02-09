@@ -1,0 +1,30 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    
+    <!-- 魔术棒主体 -->
+    <path
+        android:fillColor="#FFFFB84D"
+        android:pathData="M22,2 L20,4 L16,8 L14,6 L18,2 Z"/>
+    
+    <path
+        android:fillColor="#FFBDBDBD"
+        android:pathData="M2,20 L11,11 L13,13 L4,22 Z"/>
+    
+    <!-- 大星星 -->
+    <path
+        android:fillColor="#FFFFEB3B"
+        android:pathData="M7.5,5.5 L10,7 L8.5,4.5 L10,2 L7.5,3.5 L5,2 L6.5,4.5 L5,7 Z"/>
+    
+    <!-- 中星星 -->
+    <path
+        android:fillColor="#FFFFC107"
+        android:pathData="M19.5,15.5 L22,14 L19.5,12.5 L22,10 L19.5,11.5 L17,10 L18.5,12.5 L17,14 Z"/>
+    
+    <!-- 小星星 -->
+    <path
+        android:fillColor="#FFFFB84D"
+        android:pathData="M15.5,9 L17,7.5 L15.5,6 L17,4.5 L15.5,3 L14,4.5 L15.5,6 L14,7.5 Z"/>
+</vector>

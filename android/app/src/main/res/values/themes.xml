@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.FamilyRecipes" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="colorAccent">@color/accent</item>
+        <item name="android:statusBarColor">@color/primary</item>
+        <item name="android:navigationBarColor">@color/white</item>
+    </style>
+
+    <style name="Theme.FamilyRecipes" parent="Base.Theme.FamilyRecipes" />
+    
+    <!-- Splash Screen Theme -->
+    <style name="Theme.FamilyRecipes.Splash" parent="Theme.FamilyRecipes">
+        <item name="android:windowBackground">@drawable/splash_gradient_background</item>
+        <item name="android:statusBarColor">@color/primary</item>
+        <item name="android:navigationBarColor">@color/primary</item>
+        <item name="android:windowFullscreen">true</item>
+    </style>
+</resources>

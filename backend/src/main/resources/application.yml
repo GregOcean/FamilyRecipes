@@ -1,0 +1,45 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: family-recipes-backend
+  
+  # MySQL配置
+  datasource:
+    url: jdbc:mysql://localhost:3306/family_recipes?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: your_password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  
+  # 文件上传配置
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+# MyBatis配置
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.familyrecipes.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# JWT配置
+jwt:
+  secret: your-secret-key-change-this-in-production-at-least-256-bits
+  expiration: 604800000  # 7天，单位毫秒
+
+# 文件存储路径
+file:
+  upload-dir: ./uploads/
+  base-url: http://localhost:8080/files/
+
+# 日志配置
+logging:
+  level:
+    com.familyrecipes: DEBUG
+    org.springframework.web: INFO
+

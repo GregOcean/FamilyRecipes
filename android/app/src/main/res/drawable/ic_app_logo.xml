@@ -1,0 +1,48 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp"
+    android:height="100dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    
+    <!-- 圆形背景 -->
+    <path
+        android:pathData="M50,50m-45,0a45,45 0,1 1,90 0a45,45 0,1 1,-90 0"
+        android:fillColor="#FFFFFFFF"/>
+    
+    <!-- 内圈 -->
+    <path
+        android:pathData="M50,50m-40,0a40,40 0,1 1,80 0a40,40 0,1 1,-80 0"
+        android:fillColor="#FFFF6B35"/>
+    
+    <!-- 碗的轮廓 -->
+    <path
+        android:pathData="M30,45 Q30,60 50,65 Q70,60 70,45 L30,45"
+        android:fillColor="#FFFFFFFF"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2"/>
+    
+    <!-- 热气1 -->
+    <path
+        android:pathData="M40,35 Q38,30 40,25"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"/>
+    
+    <!-- 热气2 -->
+    <path
+        android:pathData="M50,32 Q48,27 50,22"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"/>
+    
+    <!-- 热气3 -->
+    <path
+        android:pathData="M60,35 Q62,30 60,25"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"/>
+</vector>
+

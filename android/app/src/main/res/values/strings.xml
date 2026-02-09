@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">家庭菜谱</string>
+    
+    <!-- 通用 -->
+    <string name="ok">确定</string>
+    <string name="cancel">取消</string>
+    <string name="delete">删除</string>
+    <string name="edit">编辑</string>
+    <string name="save">保存</string>
+    <string name="search">搜索</string>
+    <string name="loading">加载中…</string>
+    
+    <!-- 登录注册 -->
+    <string name="login">登录</string>
+    <string name="register">注册</string>
+    <string name="email">邮箱</string>
+    <string name="password">密码</string>
+    <string name="username">用户名</string>
+    
+    <!-- 底部导航 -->
+    <string name="nav_recipes">菜谱</string>
+    <string name="nav_recommend">推荐</string>
+    <string name="nav_fridge">冰箱</string>
+    <string name="nav_profile">我的</string>
+    
+    <!-- 菜谱 -->
+    <string name="recipe_name">菜名</string>
+    <string name="recipe_description">描述</string>
+    <string name="add_recipe">添加菜谱</string>
+    
+    <!-- 冰箱 -->
+    <string name="add_ingredient">添加食材</string>
+    <string name="expiry_date">过期日期</string>
+    <string name="mark_consumed">标记已消耗</string>
+    
+    <!-- 个人中心 -->
+    <string name="logout">退出登录</string>
+    <string name="my_recipes">我的菜谱</string>
+    <string name="my_favorites">我的收藏</string>
+</resources>
+

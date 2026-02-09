@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.familyrecipes.mapper.RecipeMapper">
+
+    <!-- 复杂搜索查询 -->
+    <select id="search" resultType="com.familyrecipes.entity.Recipe">
+        SELECT DISTINCT r.*
+        FROM recipe r
+        LEFT JOIN recipe_tag rt ON r.id = rt.recipe_id
+        LEFT JOIN recipe_ingredient ri ON r.id = ri.recipe_id
+        LEFT JOIN ingredient i ON ri.ingredient_id = i.id
+        LEFT JOIN user u ON r.creator_id = u.id
+        LEFT JOIN user_favorite uf ON r.id = uf.recipe_id
+        LEFT JOIN recipe_cook rc ON r.id = rc.recipe_id
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (r.name LIKE CONCAT('%', #{keyword}, '%')
+                OR r.description LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="tagType != null and tagValue != null">
+                AND EXISTS (
+                    SELECT 1 FROM recipe_tag
+                    WHERE recipe_id = r.id
+                    AND tag_type = #{tagType}
+                    AND tag_value = #{tagValue}
+                )
+            </if>
+            <if test="ingredientIds != null and ingredientIds.size() > 0">
+                AND EXISTS (
+                    SELECT 1 FROM recipe_ingredient
+                    WHERE recipe_id = r.id
+                    AND ingredient_id IN
+                    <foreach collection="ingredientIds" item="id" open="(" separator="," close=")">
+                        #{id}
+                    </foreach>
+                )
+            </if>
+            <if test="creatorId != null">
+                AND r.creator_id = #{creatorId}
+            </if>
+            <if test="favoritedByUserId != null">
+                AND EXISTS (
+                    SELECT 1 FROM user_favorite
+                    WHERE recipe_id = r.id
+                    AND user_id = #{favoritedByUserId}
+                )
+            </if>
+            <if test="cookedByUserId != null">
+                AND EXISTS (
+                    SELECT 1 FROM recipe_cook
+                    WHERE recipe_id = r.id
+                    AND user_id = #{cookedByUserId}
+                )
+            </if>
+            <if test="creatorUsername != null and creatorUsername != ''">
+                AND u.username LIKE CONCAT('%', #{creatorUsername}, '%')
+            </if>
+        </where>
+        <choose>
+            <when test="orderBy == 'view_count'">
+                ORDER BY r.view_count DESC
+            </when>
+            <when test="orderBy == 'favorite_count'">
+                ORDER BY r.favorite_count DESC
+            </when>
+            <when test="orderBy == 'recently_cooked'">
+                ORDER BY r.recently_cooked_count DESC, r.last_cooked_at DESC
+            </when>
+            <otherwise>
+                ORDER BY r.created_at DESC
+            </otherwise>
+        </choose>
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="countSearch" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT r.id)
+        FROM recipe r
+        LEFT JOIN recipe_tag rt ON r.id = rt.recipe_id
+        LEFT JOIN recipe_ingredient ri ON r.id = ri.recipe_id
+        LEFT JOIN ingredient i ON ri.ingredient_id = i.id
+        LEFT JOIN user u ON r.creator_id = u.id
+        LEFT JOIN user_favorite uf ON r.id = uf.recipe_id
+        LEFT JOIN recipe_cook rc ON r.id = rc.recipe_id
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (r.name LIKE CONCAT('%', #{keyword}, '%')
+                OR r.description LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="tagType != null and tagValue != null">
+                AND EXISTS (
+                    SELECT 1 FROM recipe_tag
+                    WHERE recipe_id = r.id
+                    AND tag_type = #{tagType}
+                    AND tag_value = #{tagValue}
+                )
+            </if>
+            <if test="ingredientIds != null and ingredientIds.size() > 0">
+                AND EXISTS (
+                    SELECT 1 FROM recipe_ingredient
+                    WHERE recipe_id = r.id
+                    AND ingredient_id IN
+                    <foreach collection="ingredientIds" item="id" open="(" separator="," close=")">
+                        #{id}
+                    </foreach>
+                )
+            </if>
+            <if test="creatorId != null">
+                AND r.creator_id = #{creatorId}
+            </if>
+            <if test="favoritedByUserId != null">
+                AND EXISTS (
+                    SELECT 1 FROM user_favorite
+                    WHERE recipe_id = r.id
+                    AND user_id = #{favoritedByUserId}
+                )
+            </if>
+            <if test="cookedByUserId != null">
+                AND EXISTS (
+                    SELECT 1 FROM recipe_cook
+                    WHERE recipe_id = r.id
+                    AND user_id = #{cookedByUserId}
+                )
+            </if>
+            <if test="creatorUsername != null and creatorUsername != ''">
+                AND u.username LIKE CONCAT('%', #{creatorUsername}, '%')
+            </if>
+        </where>
+    </select>
+
+</mapper>
+
