@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android"
+    android:opacity="opaque">
+    
+    <!-- 背景渐变色 -->
+    <item android:drawable="@drawable/splash_gradient_background"/>
+    
+    <!-- 内容居中 -->
+    <item>
+        <bitmap
+            android:gravity="center"
+            android:src="@drawable/splash_content" />
+    </item>
+    
+</layer-list>
+

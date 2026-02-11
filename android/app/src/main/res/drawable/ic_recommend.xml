@@ -4,27 +4,30 @@
     android:viewportWidth="24"
     android:viewportHeight="24">
     
-    <!-- 魔术棒主体 -->
-    <path
-        android:fillColor="#FFFFB84D"
-        android:pathData="M22,2 L20,4 L16,8 L14,6 L18,2 Z"/>
-    
-    <path
-        android:fillColor="#FFBDBDBD"
-        android:pathData="M2,20 L11,11 L13,13 L4,22 Z"/>
-    
-    <!-- 大星星 -->
+    <!-- 最大的星星 - 右上 -->
     <path
         android:fillColor="#FFFFEB3B"
-        android:pathData="M7.5,5.5 L10,7 L8.5,4.5 L10,2 L7.5,3.5 L5,2 L6.5,4.5 L5,7 Z"/>
+        android:pathData="M19,8l-1.5,4.5L22,14l-3.5,2.5L19,21l-4,-3l-4,3l0.5,-4.5L8,14l4.5,-1.5L11,8l4,3z"/>
     
-    <!-- 中星星 -->
+    <!-- 中等星星 - 左上 -->
     <path
         android:fillColor="#FFFFC107"
-        android:pathData="M19.5,15.5 L22,14 L19.5,12.5 L22,10 L19.5,11.5 L17,10 L18.5,12.5 L17,14 Z"/>
+        android:pathData="M7,5l-1,2.5L9,8L7.5,10.5L8,13l-2.5,-1.5L3,13l0.5,-2.5L2,8l3,-0.5z"/>
     
-    <!-- 小星星 -->
+    <!-- 小星星 - 中下 -->
     <path
         android:fillColor="#FFFFB84D"
-        android:pathData="M15.5,9 L17,7.5 L15.5,6 L17,4.5 L15.5,3 L14,4.5 L15.5,6 L14,7.5 Z"/>
+        android:pathData="M12,15l-0.5,1.5L13,17l-1,1l0,1.5l-1,-0.5l-1,0.5l0,-1.5l-1,-1l1.5,-0.5z"/>
+    
+    <!-- 最小星星 - 右下 -->
+    <path
+        android:fillColor="#FFFFA726"
+        android:pathData="M18,18l-0.3,1L19,19.2l-0.7,0.6l0.1,1l-0.7,-0.3l-0.7,0.3l0.1,-1l-0.7,-0.6l1.3,-0.2z"/>
+    
+    <!-- 闪光线条 -->
+    <path
+        android:strokeColor="#FFFFEB3B"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M4,3L6,5M20,3L18,5M12,1L12,3"/>
 </vector>

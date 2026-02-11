@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Splash Screen Theme for Android 12+ -->
+    <style name="Theme.FamilyRecipes.Splash" parent="Theme.FamilyRecipes">
+        <item name="android:windowBackground">@drawable/splash_gradient_background</item>
+        <item name="android:statusBarColor">@color/primary</item>
+        <item name="android:navigationBarColor">@color/primary</item>
+        
+        <!-- Android 12+ Splash Screen API 配置 - 让系统splash立即消失 -->
+        <item name="android:windowSplashScreenBackground">@color/primary</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_app_logo</item>
+        <item name="android:windowSplashScreenAnimationDuration">0</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_app_logo</item>
+        <item name="windowSplashScreenAnimationDuration">0</item>
+        <item name="windowSplashScreenBackground">@color/primary</item>
+    </style>
+</resources>
+

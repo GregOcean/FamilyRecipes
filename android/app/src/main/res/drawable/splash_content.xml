@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 启动画面内容：图标 + "家肴" 文字 -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <!-- App 图标 -->
+    <item
+        android:width="120dp"
+        android:height="120dp"
+        android:gravity="center|top"
+        android:top="200dp">
+        <bitmap
+            android:src="@drawable/ic_app_logo"
+            android:gravity="center" />
+    </item>
+    
+    <!-- "家肴" 文字 - 使用图片形式 -->
+    <item
+        android:width="200dp"
+        android:height="80dp"
+        android:gravity="center"
+        android:top="140dp">
+        
+        <shape android:shape="rectangle">
+            <solid android:color="@android:color/transparent"/>
+        </shape>
+    </item>
+    
+</layer-list>
+

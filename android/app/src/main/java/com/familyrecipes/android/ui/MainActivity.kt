@@ -3,6 +3,7 @@ package com.familyrecipes.android.ui
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.InputMethodManager
@@ -11,10 +12,14 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.familyrecipes.android.R
 import com.familyrecipes.android.databinding.ActivityMainBinding
+import com.familyrecipes.android.databinding.BottomSheetAddMenuBinding
+import com.familyrecipes.android.ui.fridge.AddIngredientActivity
 import com.familyrecipes.android.ui.fridge.FridgeFragment
 import com.familyrecipes.android.ui.profile.ProfileFragment
+import com.familyrecipes.android.ui.recipe.EditRecipeActivity
 import com.familyrecipes.android.ui.recipe.RecipeListFragment
 import com.familyrecipes.android.ui.recommend.RecommendFragment
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.navigation.NavigationBarView
 
 /**
@@ -146,9 +151,8 @@ class MainActivity : AppCompatActivity() {
                         return@OnItemSelectedListener true
                     }
                     R.id.nav_add -> {
-                        // 添加菜谱 - 跳转到添加页面
-                        val intent = Intent(this, com.familyrecipes.android.ui.recipe.EditRecipeActivity::class.java)
-                        startActivity(intent)
+                        // 显示底部添加菜单
+                        showAddMenu()
                         return@OnItemSelectedListener false // 不切换Fragment
                     }
                     R.id.nav_fridge -> {
@@ -182,6 +186,45 @@ class MainActivity : AppCompatActivity() {
         
         transaction.commit()
         currentFragment = fragment
+    }
+    
+    /**
+     * 显示底部添加菜单
+     */
+    private fun showAddMenu() {
+        val bottomSheetDialog = BottomSheetDialog(this)
+        val binding = BottomSheetAddMenuBinding.inflate(LayoutInflater.from(this))
+        bottomSheetDialog.setContentView(binding.root)
+        
+        // 菜谱按钮
+        binding.btnAddRecipe.setOnClickListener {
+            bottomSheetDialog.dismiss()
+            val intent = Intent(this, EditRecipeActivity::class.java)
+            startActivity(intent)
+        }
+        
+        // 作品按钮
+        binding.btnAddWork.setOnClickListener {
+            bottomSheetDialog.dismiss()
+            Toast.makeText(this, "作品功能开发中...", Toast.LENGTH_SHORT).show()
+            // TODO: 跳转到添加作品页面
+        }
+        
+        // 菜单按钮
+        binding.btnAddMenu.setOnClickListener {
+            bottomSheetDialog.dismiss()
+            Toast.makeText(this, "菜单功能开发中...", Toast.LENGTH_SHORT).show()
+            // TODO: 跳转到添加菜单页面
+        }
+        
+        // 食材按钮
+        binding.btnAddIngredient.setOnClickListener {
+            bottomSheetDialog.dismiss()
+            val intent = Intent(this, AddIngredientActivity::class.java)
+            startActivity(intent)
+        }
+        
+        bottomSheetDialog.show()
     }
 }
 

@@ -99,11 +99,6 @@ class FridgeFragment : Fragment() {
         binding.swipeRefresh.setOnRefreshListener {
             loadData()
         }
-        
-        binding.fabAdd.setOnClickListener {
-            val intent = Intent(requireContext(), AddIngredientActivity::class.java)
-            addIngredientLauncher.launch(intent)
-        }
     }
     
     private fun navigateToRecipesByIngredient(item: FridgeItem) {

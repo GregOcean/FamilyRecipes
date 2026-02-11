@@ -6,39 +6,39 @@
     
     <!-- 冰箱外框和背景 -->
     <path
-        android:fillColor="#FFB0BEC5"
+        android:fillColor="#FF2196F3"
         android:pathData="M6,2 L18,2 C19.1,2 20,2.9 20,4 L20,20 C20,21.1 19.1,22 18,22 L6,22 C4.9,22 4,21.1 4,20 L4,4 C4,2.9 4.9,2 6,2 Z"/>
     
     <!-- 冷冻室（上层）- 较深 -->
     <path
-        android:fillColor="#FF90A4AE"
+        android:fillColor="#FF42A5F5"
         android:pathData="M6,4 L18,4 L18,9.5 L6,9.5 Z"/>
     
     <!-- 冷藏室（下层）- 较浅 -->
     <path
-        android:fillColor="#FFCFD8DC"
+        android:fillColor="#FF64B5F6"
         android:pathData="M6,9.5 L18,9.5 L18,20 L6,20 Z"/>
     
     <!-- 中间分隔线 - 加粗 -->
     <path
-        android:strokeColor="#FF455A64"
+        android:strokeColor="#FF0D47A1"
         android:strokeWidth="2"
         android:pathData="M4,9.5 L20,9.5"/>
     
     <!-- 外框边框 -->
     <path
-        android:strokeColor="#FF546E7A"
+        android:strokeColor="#FF1565C0"
         android:strokeWidth="1"
         android:fillColor="@android:color/transparent"
         android:pathData="M6,2 L18,2 C19.1,2 20,2.9 20,4 L20,20 C20,21.1 19.1,22 18,22 L6,22 C4.9,22 4,21.1 4,20 L4,4 C4,2.9 4.9,2 6,2 Z"/>
     
     <!-- 上层门把手 -->
     <path
-        android:fillColor="#FF455A64"
-        android:pathData="M7,6 L9,6 L9,7.5 L7,7.5 Z"/>
+        android:fillColor="#FF0D47A1"
+        android:pathData="M7,5.5 L10,5.5 L10,7.5 L7,7.5 Z"/>
     
     <!-- 下层门把手 -->
     <path
-        android:fillColor="#FF455A64"
-        android:pathData="M7,13 L9,13 L9,14.5 L7,14.5 Z"/>
+        android:fillColor="#FF0D47A1"
+        android:pathData="M7,12.5 L10,12.5 L10,14.5 L7,14.5 Z"/>
 </vector>

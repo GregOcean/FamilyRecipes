@@ -1,0 +1,31 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    
+    <!-- 简化的作品图标 - 画框形状 -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M19,3H5C3.9,3 3,3.9 3,5v14c0,1.1 0.9,2 2,2h14c1.1,0 2,-0.9 2,-2V5C21,3.9 20.1,3 19,3z"/>
+    
+    <!-- 内部图片框 -->
+    <path
+        android:strokeColor="#FFFF9800"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000"
+        android:pathData="M6,6h12v10H6z"/>
+    
+    <!-- 装饰性图案 -->
+    <path
+        android:fillColor="#FFFF9800"
+        android:pathData="M8,10l2,3l2,-2l3,4H8z"/>
+    
+    <!-- 小圆点装饰 -->
+    <circle
+        android:fillColor="#FFFF9800"
+        cx="15"
+        cy="9"
+        r="1" />
+</vector>
+
