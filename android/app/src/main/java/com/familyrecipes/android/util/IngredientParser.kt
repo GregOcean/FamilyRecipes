@@ -1,5 +1,6 @@
 package com.familyrecipes.android.util
 
+import com.familyrecipes.android.data.local.ConfigManager
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -16,6 +17,7 @@ object IngredientParser {
         val ingredientName: String?,      // 食材名称
         val amount: String?,              // 数量
         val expiryDays: Int,              // 过期天数
+        val storageLocation: String = com.familyrecipes.android.data.local.ConfigManager.getDefaultStorageLocation(), // 存储位置，从配置获取默认值
         val notes: String                 // 完整备注
     )
 
@@ -74,7 +76,7 @@ object IngredientParser {
         val text = input.trim()
         
         if (text.isEmpty()) {
-            return ParseResult(null, null, 7, text)
+            return ParseResult(null, null, 7, "冰箱", text)
         }
 
         // 1. 提取过期时间信息
@@ -100,6 +102,7 @@ object IngredientParser {
             ingredientName = finalName,
             amount = amount,
             expiryDays = finalExpiryDays,
+            storageLocation = ConfigManager.getDefaultStorageLocation(),  // 从配置获取默认存储位置
             notes = text
         )
     }

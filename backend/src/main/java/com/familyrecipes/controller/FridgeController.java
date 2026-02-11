@@ -90,6 +90,16 @@ public class FridgeController {
         List<FridgeItem> items = fridgeService.getUserFridgeItems(userId);
         return Result.success(items);
     }
+    
+    /**
+     * 获取已消耗的食材列表
+     */
+    @GetMapping("/items/consumed")
+    public Result<List<FridgeItem>> getConsumedItems(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        List<FridgeItem> items = fridgeService.getConsumedItems(userId);
+        return Result.success(items);
+    }
 
     /**
      * 获取即将过期的食材

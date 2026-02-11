@@ -53,7 +53,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="• 食材名称是必填项，识别失败将无法录入\n• 支持自动识别数量和保质期信息\n• 支持语音输入，方便快速记录\n• 可添加照片方便家人查找"
+                        android:text="• 食材名称是必填项，识别失败将无法录入\n• 支持自动识别数量和保质期信息\n• 可使用输入法语音录入，方便快速记录\n• 可添加照片方便查找"
                         android:textColor="@color/white"
                         android:textSize="13sp"
                         android:lineSpacingExtra="2dp" />

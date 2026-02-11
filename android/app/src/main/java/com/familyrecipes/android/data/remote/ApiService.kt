@@ -19,6 +19,22 @@ interface ApiService {
 
     @GET("/api/auth/me")
     suspend fun getCurrentUser(): Response<ApiResponse<User>>
+    
+    // ========== 配置相关 ==========
+    @GET("/api/config/all")
+    suspend fun getAllConfigs(): Response<ApiResponse<AppConfig>>
+    
+    @GET("/api/config/ingredients")
+    suspend fun getConfigIngredients(): Response<ApiResponse<List<ConfigIngredient>>>
+    
+    @GET("/api/config/storage-locations")
+    suspend fun getConfigStorageLocations(): Response<ApiResponse<List<ConfigStorageLocation>>>
+    
+    @GET("/api/config/categories")
+    suspend fun getConfigCategories(): Response<ApiResponse<List<ConfigCategory>>>
+    
+    @GET("/api/config/texts")
+    suspend fun getConfigTexts(): Response<ApiResponse<Map<String, String>>>
 
     // ========== 菜谱相关 ==========
     @POST("/api/recipes")
@@ -97,6 +113,9 @@ interface ApiService {
 
     @GET("/api/fridge/items")
     suspend fun getFridgeItems(): Response<ApiResponse<List<FridgeItem>>>
+    
+    @GET("/api/fridge/items/consumed")
+    suspend fun getConsumedItems(): Response<ApiResponse<List<FridgeItem>>>
 
     @GET("/api/fridge/items/expiring")
     suspend fun getExpiringItems(): Response<ApiResponse<List<FridgeItem>>>

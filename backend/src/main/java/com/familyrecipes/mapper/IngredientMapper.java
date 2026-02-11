@@ -16,7 +16,7 @@ public interface IngredientMapper {
     @Select("SELECT * FROM ingredient WHERE name = #{name}")
     Ingredient findByName(String name);
 
-    @Insert("INSERT INTO ingredient(name, category) VALUES(#{name}, #{category})")
+    @Insert("INSERT INTO ingredient(name, category, unit) VALUES(#{name}, #{category}, #{unit})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(Ingredient ingredient);
 

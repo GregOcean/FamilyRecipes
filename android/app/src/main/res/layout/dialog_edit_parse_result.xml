@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="✅ 识别结果"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="请确认或修改识别结果："
+        android:textSize="14sp"
+        android:textColor="@color/text_secondary"
+        android:layout_marginBottom="16dp" />
+
+    <!-- 食材名称 -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:hint="食材名称 *"
+        app:boxBackgroundMode="outline"
+        app:startIconDrawable="@drawable/ic_food"
+        app:startIconTint="@color/primary">
+
+        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+            android:id="@+id/et_ingredient_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text"
+            android:maxLines="1"
+            android:maxLength="50"
+            android:completionThreshold="1"
+            android:dropDownHeight="250dp" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- 数量 -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:hint="数量（可选）"
+        app:boxBackgroundMode="outline"
+        app:startIconDrawable="@drawable/ic_numbers"
+        app:startIconTint="@color/primary">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/et_amount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text"
+            android:maxLines="1"
+            android:maxLength="20" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- 保质期 -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/til_expiry_days"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:hint="保质期（天）*"
+        app:boxBackgroundMode="outline"
+        app:startIconDrawable="@drawable/ic_calendar"
+        app:startIconTint="@color/primary"
+        app:endIconMode="custom"
+        app:endIconDrawable="@android:drawable/ic_menu_today"
+        app:endIconContentDescription="选择过期日期"
+        app:helperText="点击右侧📅选择过期日期，或直接输入天数">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/et_expiry_days"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:maxLines="1"
+            android:maxLength="5" />
+    </com.google.android.material.textfield.TextInputLayout>
+    
+    <!-- 存储位置 -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:hint="存储位置（可选）"
+        app:boxBackgroundMode="outline"
+        app:startIconDrawable="@drawable/ic_storage"
+        app:startIconTint="@color/primary"
+        app:helperText="选择或输入存储位置">
+
+        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+            android:id="@+id/et_storage_location"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text"
+            android:maxLines="1"
+            android:maxLength="20"
+            android:text="冰箱冷藏"
+            android:completionThreshold="1"
+            android:dropDownHeight="200dp" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- 提示信息 -->
+    <LinearLayout
+        android:id="@+id/warning_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="@drawable/warning_background"
+        android:padding="12dp"
+        android:layout_marginTop="4dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="⚠️"
+            android:textSize="16sp"
+            android:layout_marginEnd="8dp" />
+
+        <TextView
+            android:id="@+id/tv_warning"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="保质期较短，请尽快食用！"
+            android:textSize="13sp"
+            android:textColor="@color/warning" />
+    </LinearLayout>
+
+    <!-- 按钮区域 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="20dp"
+        android:gravity="end">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_cancel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="返回修改"
+            android:textSize="15sp"
+            android:layout_marginEnd="8dp"
+            style="@style/Widget.Material3.Button.TextButton" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_save"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="确认保存"
+            android:textSize="15sp"
+            android:minWidth="120dp" />
+    </LinearLayout>
+
+</LinearLayout>
+

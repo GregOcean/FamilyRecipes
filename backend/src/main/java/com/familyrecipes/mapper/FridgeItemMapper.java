@@ -17,6 +17,13 @@ public interface FridgeItemMapper {
             "WHERE fi.user_id = #{userId} AND fi.status != 'consumed' " +
             "ORDER BY fi.expiry_date")
     List<FridgeItem> findByUserId(Long userId);
+    
+    @Select("SELECT fi.*, i.name as 'ingredient.name', i.category as 'ingredient.category' " +
+            "FROM fridge_item fi " +
+            "LEFT JOIN ingredient i ON fi.ingredient_id = i.id " +
+            "WHERE fi.user_id = #{userId} AND fi.status = 'consumed' " +
+            "ORDER BY fi.consumed_at DESC")
+    List<FridgeItem> findConsumedByUserId(Long userId);
 
     @Select("SELECT * FROM fridge_item WHERE id = #{id}")
     FridgeItem findById(Long id);

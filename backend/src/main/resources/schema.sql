@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS `ingredient` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '食材ID',
     `name` VARCHAR(50) NOT NULL COMMENT '食材名称',
     `category` VARCHAR(20) COMMENT '分类（蔬菜/肉类/调料等）',
+    `unit` VARCHAR(20) COMMENT '常用单位（个、瓶、克、袋等）',
     INDEX idx_name (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='食材表';
 

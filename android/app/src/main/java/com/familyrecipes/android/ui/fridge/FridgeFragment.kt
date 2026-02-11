@@ -15,6 +15,7 @@ import com.familyrecipes.android.data.model.FridgeItem
 import com.familyrecipes.android.data.remote.ApiClient
 import com.familyrecipes.android.databinding.FragmentFridgeBinding
 import com.familyrecipes.android.ui.adapter.FridgeAdapter
+import com.google.android.material.tabs.TabLayout
 import kotlinx.coroutines.launch
 
 /**
@@ -28,12 +29,19 @@ class FridgeFragment : Fragment() {
     private lateinit var fridgeAdapter: FridgeAdapter
     private val items = mutableListOf<FridgeItem>()
     
+    private var currentTab = TAB_CURRENT  // 当前选中的Tab
+    
+    companion object {
+        private const val TAB_CURRENT = 0    // 当前库存
+        private const val TAB_CONSUMED = 1   // 消耗历史
+    }
+    
     // 添加食材结果监听
     private val addIngredientLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            loadFridgeItems()
+            loadData()
         }
     }
 
@@ -50,8 +58,9 @@ class FridgeFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         
         setupRecyclerView()
+        setupTabLayout()
         setupListeners()
-        loadFridgeItems()
+        loadData()
     }
 
     private fun setupRecyclerView() {
@@ -73,10 +82,22 @@ class FridgeFragment : Fragment() {
             adapter = fridgeAdapter
         }
     }
+    
+    private fun setupTabLayout() {
+        binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: TabLayout.Tab?) {
+                currentTab = tab?.position ?: TAB_CURRENT
+                loadData()
+            }
+            
+            override fun onTabUnselected(tab: TabLayout.Tab?) {}
+            override fun onTabReselected(tab: TabLayout.Tab?) {}
+        })
+    }
 
     private fun setupListeners() {
         binding.swipeRefresh.setOnRefreshListener {
-            loadFridgeItems()
+            loadData()
         }
         
         binding.fabAdd.setOnClickListener {
@@ -101,6 +122,13 @@ class FridgeFragment : Fragment() {
             // startActivity(intent)
         }
     }
+    
+    private fun loadData() {
+        when (currentTab) {
+            TAB_CURRENT -> loadFridgeItems()
+            TAB_CONSUMED -> loadConsumedItems()
+        }
+    }
 
     private fun loadFridgeItems() {
         lifecycleScope.launch {
@@ -118,7 +146,31 @@ class FridgeFragment : Fragment() {
                     Toast.makeText(context, "加载失败", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                Toast.makeText(context, "网络错误", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "网络错误: ${e.message}", Toast.LENGTH_SHORT).show()
+            } finally {
+                binding.swipeRefresh.isRefreshing = false
+            }
+        }
+    }
+    
+    private fun loadConsumedItems() {
+        lifecycleScope.launch {
+            try {
+                val response = ApiClient.getService().getConsumedItems()
+                
+                if (response.isSuccessful && response.body()?.code == 200) {
+                    items.clear()
+                    response.body()?.data?.let { items.addAll(it) }
+                    fridgeAdapter.notifyDataSetChanged()
+                    
+                    if (items.isEmpty()) {
+                        Toast.makeText(context, "暂无消耗记录", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    Toast.makeText(context, "加载失败", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(context, "网络错误: ${e.message}", Toast.LENGTH_SHORT).show()
             } finally {
                 binding.swipeRefresh.isRefreshing = false
             }
@@ -144,8 +196,8 @@ class FridgeFragment : Fragment() {
                 val response = ApiClient.getService().markAsConsumed(itemId)
                 
                 if (response.isSuccessful && response.body()?.code == 200) {
-                    Toast.makeText(context, "已标记为消耗", Toast.LENGTH_SHORT).show()
-                    loadFridgeItems()
+                    Toast.makeText(context, "已标记为用完", Toast.LENGTH_SHORT).show()
+                    loadData()
                 }
             } catch (e: Exception) {
                 Toast.makeText(context, "操作失败", Toast.LENGTH_SHORT).show()
@@ -160,7 +212,7 @@ class FridgeFragment : Fragment() {
                 
                 if (response.isSuccessful && response.body()?.code == 200) {
                     Toast.makeText(context, "已删除", Toast.LENGTH_SHORT).show()
-                    loadFridgeItems()
+                    loadData()
                 }
             } catch (e: Exception) {
                 Toast.makeText(context, "操作失败", Toast.LENGTH_SHORT).show()

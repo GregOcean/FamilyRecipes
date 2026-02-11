@@ -4,10 +4,16 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
+import android.util.Log
 import androidx.work.*
+import com.familyrecipes.android.data.local.ConfigManager
 import com.familyrecipes.android.data.local.PreferenceManager
 import com.familyrecipes.android.data.remote.ApiClient
 import com.familyrecipes.android.worker.ExpiryReminderWorker
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
 /**
@@ -22,6 +28,8 @@ class FamilyRecipesApp : Application() {
         lateinit var instance: FamilyRecipesApp
             private set
     }
+    
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     override fun onCreate() {
         super.onCreate()
@@ -33,11 +41,29 @@ class FamilyRecipesApp : Application() {
         // 初始化API客户端
         ApiClient.init(this)
         
+        // 初始化配置管理器（异步加载）
+        initializeConfig()
+        
         // 创建通知渠道
         createNotificationChannel()
         
         // 启动定时检查任务
         scheduleExpiryCheck()
+    }
+    
+    /**
+     * 初始化配置管理器
+     */
+    private fun initializeConfig() {
+        applicationScope.launch {
+            try {
+                Log.d("FamilyRecipesApp", "Initializing config...")
+                ConfigManager.initialize(this@FamilyRecipesApp)
+                Log.d("FamilyRecipesApp", "Config initialized successfully")
+            } catch (e: Exception) {
+                Log.e("FamilyRecipesApp", "Failed to initialize config", e)
+            }
+        }
     }
 
     /**
