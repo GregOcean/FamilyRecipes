@@ -47,7 +47,8 @@ class MainActivity : AppCompatActivity() {
         searchHistoryManager = SearchHistoryManager(this)
         
         setupBottomNavigation()
-        disableTintForAddButton()
+        disableTintForIcons()
+        setupFabButton()
         setupKeyboardBehavior()
         setupSearchHistory()
         
@@ -246,9 +247,15 @@ class MainActivity : AppCompatActivity() {
         return super.dispatchTouchEvent(ev)
     }
     
-    private fun disableTintForAddButton() {
-        // 禁用中间加号按钮的自动着色，保持原始颜色
+    private fun disableTintForIcons() {
+        // 禁用底部导航栏图标的自动着色，保持原始彩色图标
         binding.bottomNavigation.itemIconTintList = null
+    }
+
+    private fun setupFabButton() {
+        binding.fabAdd.setOnClickListener {
+            showAddMenu()
+        }
     }
 
     private fun setupBottomNavigation() {
@@ -262,11 +269,6 @@ class MainActivity : AppCompatActivity() {
                     R.id.nav_recipes -> {
                         showFragment(RecipeListFragment())
                         return@OnItemSelectedListener true
-                    }
-                    R.id.nav_add -> {
-                        // 显示底部添加菜单
-                        showAddMenu()
-                        return@OnItemSelectedListener false // 不切换Fragment
                     }
                     R.id.nav_fridge -> {
                         showFragment(FridgeFragment())
