@@ -13,11 +13,14 @@ public interface ExternalRecipeMapper {
     @Select("SELECT * FROM external_recipe WHERE recipe_id = #{recipeId}")
     List<ExternalRecipe> findByRecipeId(Long recipeId);
 
-    @Insert("INSERT INTO external_recipe(recipe_id, title, url, source, added_by) " +
-            "VALUES(#{recipeId}, #{title}, #{url}, #{source}, #{addedBy})")
+    @Insert("INSERT INTO external_recipe(recipe_id, title, url, source, thumbnail, added_by) " +
+            "VALUES(#{recipeId}, #{title}, #{url}, #{source}, #{thumbnail}, #{addedBy})")
     int insert(ExternalRecipe externalRecipe);
 
     @Delete("DELETE FROM external_recipe WHERE id = #{id}")
     int delete(Long id);
+    
+    @Delete("DELETE FROM external_recipe WHERE recipe_id = #{recipeId}")
+    int deleteByRecipeId(Long recipeId);
 }
 

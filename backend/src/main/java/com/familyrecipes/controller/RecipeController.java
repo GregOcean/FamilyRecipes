@@ -36,7 +36,8 @@ public class RecipeController {
                 request.getTags(),
                 request.getIngredients(),
                 request.getSteps(),
-                request.getCookUserIds()
+                request.getCookUserIds(),
+                request.getExternalRecipes()
             );
             return Result.success(recipe);
         } catch (Exception e) {
@@ -61,7 +62,8 @@ public class RecipeController {
                 request.getTags(),
                 request.getIngredients(),
                 request.getSteps(),
-                request.getCookUserIds()
+                request.getCookUserIds(),
+                request.getExternalRecipes()
             );
             return Result.success(recipe);
         } catch (Exception e) {
@@ -238,6 +240,7 @@ public class RecipeController {
         private List<RecipeIngredient> ingredients;
         private List<CookingStep> steps;
         private List<Long> cookUserIds;
+        private List<ExternalRecipe> externalRecipes;
     }
 }
 

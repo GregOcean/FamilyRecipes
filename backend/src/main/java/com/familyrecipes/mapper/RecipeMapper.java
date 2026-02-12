@@ -64,5 +64,11 @@ public interface RecipeMapper {
     @Select("SELECT * FROM recipe WHERE name LIKE CONCAT('%', #{keyword}, '%') " +
             "OR description LIKE CONCAT('%', #{keyword}, '%')")
     List<Recipe> searchByKeyword(String keyword);
+    
+    // 按tag精确搜索菜谱
+    @Select("SELECT DISTINCT r.* FROM recipe r " +
+            "INNER JOIN recipe_tag rt ON r.id = rt.recipe_id " +
+            "WHERE rt.tag_value = #{tagValue}")
+    List<Recipe> searchByTag(String tagValue);
 }
 

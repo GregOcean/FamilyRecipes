@@ -25,13 +25,17 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_publish"
                 android:layout_width="wrap_content"
-                android:layout_height="36dp"
+                android:layout_height="40dp"
                 android:layout_gravity="end"
                 android:layout_marginEnd="16dp"
+                android:minWidth="80dp"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
                 android:text="发布"
+                android:textSize="15sp"
                 android:textColor="@color/white"
                 app:backgroundTint="@color/primary"
-                app:cornerRadius="18dp" />
+                app:cornerRadius="20dp" />
 
         </androidx.appcompat.widget.Toolbar>
 
@@ -168,69 +172,25 @@
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
-                <!-- 时段标签 -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:text="时段"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
-
-                <com.google.android.material.chip.ChipGroup
-                    android:id="@+id/chip_group_time"
+                <!-- 标签输入框 -->
+                <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    app:singleLine="false" />
+                    android:hint="输入标签，用#开头，空格分隔（如：#午餐 #家常菜 #快手）"
+                    app:boxBackgroundMode="outline"
+                    app:boxStrokeColor="@color/primary"
+                    app:helperText="示例：#早餐 #健康 #素食"
+                    app:helperTextTextColor="@color/text_secondary">
 
-                <!-- 类型标签 -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:text="类型"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/et_tags"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text"
+                        android:maxLines="3" />
 
-                <com.google.android.material.chip.ChipGroup
-                    android:id="@+id/chip_group_type"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    app:singleLine="false" />
-
-                <!-- 主食材标签 -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:text="主食材"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
-
-                <com.google.android.material.chip.ChipGroup
-                    android:id="@+id/chip_group_ingredient"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    app:singleLine="false" />
-
-                <!-- 特殊需求标签 -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:text="特殊需求"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
-
-                <com.google.android.material.chip.ChipGroup
-                    android:id="@+id/chip_group_special"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    app:singleLine="false" />
+                </com.google.android.material.textfield.TextInputLayout>
 
             </LinearLayout>
 

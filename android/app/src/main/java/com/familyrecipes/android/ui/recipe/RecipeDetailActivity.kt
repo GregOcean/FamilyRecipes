@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.familyrecipes.android.R
+import com.familyrecipes.android.data.local.PreferenceManager
 import com.familyrecipes.android.data.model.Recipe
 import com.familyrecipes.android.data.remote.ApiClient
 import com.familyrecipes.android.databinding.ActivityRecipeDetailBinding
@@ -96,6 +97,32 @@ class RecipeDetailActivity : AppCompatActivity() {
         binding.toolbar.title = recipe.name
         binding.tvName.text = recipe.name
         
+        // 显示编辑按钮（如果是当前用户创建的菜谱）
+        val currentUserId = PreferenceManager.userId
+        val isLoggedIn = PreferenceManager.isLoggedIn()
+        val authToken = PreferenceManager.authToken
+        
+        android.util.Log.d("RecipeDetail", """
+            当前用户ID: $currentUserId
+            菜谱创建者ID: ${recipe.creatorId}
+            是否登录: $isLoggedIn
+            Token: ${authToken?.take(20)}...
+        """.trimIndent())
+        
+        // 暂时：如果是默认用户(id=1)创建的菜谱，也显示编辑按钮
+        if ((currentUserId > 0 && recipe.creatorId == currentUserId) || 
+            (recipe.creatorId == 1L && currentUserId == 0L)) {
+            binding.btnEdit.visibility = View.VISIBLE
+            binding.btnEdit.setOnClickListener {
+                // 跳转到编辑页面
+                val intent = android.content.Intent(this, EditRecipeActivity::class.java)
+                intent.putExtra("recipe_id", recipe.id)
+                startActivity(intent)
+            }
+        } else {
+            binding.btnEdit.visibility = View.GONE
+        }
+        
         // 设置封面图片
         if (!recipe.coverImage.isNullOrEmpty()) {
             Glide.with(this)
@@ -114,10 +141,22 @@ class RecipeDetailActivity : AppCompatActivity() {
         binding.chipGroup.removeAllViews()
         recipe.tags?.forEach { tag ->
             val chip = com.google.android.material.chip.Chip(this).apply {
-                text = tag.tagValue
-                isClickable = false
-                setChipBackgroundColorResource(R.color.light_gray)
-                setTextColor(getColor(R.color.text_primary))
+                // 如果tagValue已经包含#，就不再添加；否则添加#
+                val displayText = if (tag.tagValue.startsWith("#")) {
+                    tag.tagValue
+                } else {
+                    "#${tag.tagValue}"
+                }
+                text = displayText
+                isClickable = true
+                isCheckable = false
+                setChipBackgroundColorResource(R.color.primary)
+                setTextColor(getColor(R.color.white))
+                setOnClickListener {
+                    // 点击tag跳转到搜索页面，搜索该tag（移除#前缀）
+                    val searchTag = tag.tagValue.removePrefix("#")
+                    searchByTag(searchTag)
+                }
             }
             binding.chipGroup.addView(chip)
         }
@@ -162,6 +201,27 @@ class RecipeDetailActivity : AppCompatActivity() {
             binding.tvServings.visibility = View.VISIBLE
         } else {
             binding.tvServings.visibility = View.GONE
+        }
+        
+        // 设置外部链接
+        if (!recipe.externalRecipes.isNullOrEmpty()) {
+            binding.cardExternalLinks.visibility = View.VISIBLE
+            val adapter = ExternalLinkDetailAdapter(
+                recipe.externalRecipes!!,
+                onCopyClick = { url ->
+                    // 复制链接到剪贴板
+                    copyToClipboard(url)
+                },
+                onOpenClick = { url ->
+                    // 点击外部链接，在浏览器中打开
+                    android.util.Log.d("RecipeDetail", "准备打开外部链接: $url")
+                    openUrlInBrowser(url)
+                }
+            )
+            binding.recyclerExternalLinks.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+            binding.recyclerExternalLinks.adapter = adapter
+        } else {
+            binding.cardExternalLinks.visibility = View.GONE
         }
         
         // 设置收藏按钮
@@ -287,5 +347,132 @@ class RecipeDetailActivity : AppCompatActivity() {
             }
         }
     }
+    
+    /**
+     * 通过tag搜索
+     */
+    private fun searchByTag(tagValue: String) {
+        val intent = android.content.Intent(this, com.familyrecipes.android.ui.search.SearchResultActivity::class.java).apply {
+            putExtra(com.familyrecipes.android.ui.search.SearchResultActivity.EXTRA_KEYWORD, "#$tagValue")
+            putExtra(com.familyrecipes.android.ui.search.SearchResultActivity.EXTRA_PRIORITY_TYPE, "relevance")
+        }
+        startActivity(intent)
+    }
+    
+    /**
+     * 复制链接到剪贴板
+     */
+    private fun copyToClipboard(url: String) {
+        val clipboard = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+        val clip = android.content.ClipData.newPlainText("外部链接", url)
+        clipboard.setPrimaryClip(clip)
+        
+        android.util.Log.d("RecipeDetail", "已复制链接: $url")
+        android.widget.Toast.makeText(this, "链接已复制到剪贴板", android.widget.Toast.LENGTH_SHORT).show()
+    }
+    
+    /**
+     * 在浏览器中打开URL，避免被App拦截
+     */
+    private fun openUrlInBrowser(url: String) {
+        try {
+            android.util.Log.d("RecipeDetail", "尝试打开URL: $url")
+            
+            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
+            
+            // 添加标志，确保在新任务中打开
+            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            
+            // 获取所有能处理此Intent的应用
+            val packageManager = packageManager
+            val activities = packageManager.queryIntentActivities(intent, 0)
+            
+            android.util.Log.d("RecipeDetail", "找到 ${activities.size} 个可以打开链接的应用")
+            
+            // 尝试找到浏览器应用（排除小红书等App）
+            val browsers = activities.filter { resolveInfo ->
+                val packageName = resolveInfo.activityInfo.packageName
+                // 排除已知的非浏览器应用
+                !packageName.contains("xiaohongshu") && 
+                !packageName.contains("xhs") &&
+                (packageName.contains("chrome") || 
+                 packageName.contains("browser") || 
+                 packageName.contains("firefox") ||
+                 packageName.contains("opera") ||
+                 packageName.contains("edge") ||
+                 packageName.contains("webview"))
+            }
+            
+            android.util.Log.d("RecipeDetail", "找到 ${browsers.size} 个浏览器应用")
+            
+            if (browsers.isNotEmpty()) {
+                // 如果找到浏览器，使用第一个浏览器
+                intent.setPackage(browsers[0].activityInfo.packageName)
+                android.util.Log.d("RecipeDetail", "使用浏览器: ${browsers[0].activityInfo.packageName}")
+                startActivity(intent)
+            } else {
+                // 如果没有找到浏览器，显示选择器
+                android.util.Log.d("RecipeDetail", "未找到浏览器，显示选择器")
+                val chooser = android.content.Intent.createChooser(intent, "选择浏览器打开")
+                startActivity(chooser)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("RecipeDetail", "打开链接失败", e)
+            android.widget.Toast.makeText(this, "无法打开链接: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
+}
+
+/**
+ * 外部链接详情页适配器（只读）
+ */
+class ExternalLinkDetailAdapter(
+    private val links: List<com.familyrecipes.android.data.model.ExternalRecipe>,
+    private val onCopyClick: (String) -> Unit,
+    private val onOpenClick: (String) -> Unit
+) : androidx.recyclerview.widget.RecyclerView.Adapter<ExternalLinkDetailAdapter.LinkViewHolder>() {
+
+    class LinkViewHolder(view: android.view.View) : androidx.recyclerview.widget.RecyclerView.ViewHolder(view) {
+        val ivThumbnail: android.widget.ImageView = view.findViewById(com.familyrecipes.android.R.id.iv_thumbnail)
+        val tvTitle: android.widget.TextView = view.findViewById(com.familyrecipes.android.R.id.tv_title)
+        val tvSource: android.widget.TextView = view.findViewById(com.familyrecipes.android.R.id.tv_source)
+        val btnCopy: android.widget.ImageView = view.findViewById(com.familyrecipes.android.R.id.btn_copy)
+        val btnOpen: android.widget.ImageView = view.findViewById(com.familyrecipes.android.R.id.btn_open)
+    }
+
+    override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): LinkViewHolder {
+        val view = android.view.LayoutInflater.from(parent.context)
+            .inflate(com.familyrecipes.android.R.layout.item_external_link_detail, parent, false)
+        return LinkViewHolder(view)
+    }
+
+    override fun onBindViewHolder(holder: LinkViewHolder, position: Int) {
+        val link = links[position]
+        
+        holder.tvTitle.text = link.title
+        holder.tvSource.text = link.source ?: "网络"
+        
+        // 加载缩略图
+        if (!link.thumbnail.isNullOrEmpty()) {
+            com.bumptech.glide.Glide.with(holder.itemView.context)
+                .load(link.thumbnail)
+                .placeholder(com.familyrecipes.android.R.drawable.placeholder_recipe)
+                .into(holder.ivThumbnail)
+        } else {
+            holder.ivThumbnail.setImageResource(com.familyrecipes.android.R.drawable.placeholder_recipe)
+        }
+        
+        // 复制按钮
+        holder.btnCopy.setOnClickListener {
+            onCopyClick(link.url)
+        }
+        
+        // 打开按钮
+        holder.btnOpen.setOnClickListener {
+            onOpenClick(link.url)
+        }
+    }
+
+    override fun getItemCount(): Int = links.size
 }
 

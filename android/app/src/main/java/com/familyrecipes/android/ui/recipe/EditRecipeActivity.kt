@@ -8,6 +8,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.ProgressBar
+import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -19,6 +21,7 @@ import com.familyrecipes.android.R
 import com.familyrecipes.android.data.model.*
 import com.familyrecipes.android.data.remote.ApiClient
 import com.familyrecipes.android.databinding.ActivityEditRecipeBinding
+import com.familyrecipes.android.util.WebPageParser
 import com.google.android.material.chip.Chip
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -34,9 +37,22 @@ class EditRecipeActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityEditRecipeBinding
     private val selectedImages = mutableListOf<Uri>()
-    private val externalLinks = mutableListOf<String>()
+    private val externalLinks = mutableListOf<ParsedExternalLink>()  // 改为结构化数据
     private lateinit var imageAdapter: ImageGridAdapter
     private lateinit var linkAdapter: ExternalLinkAdapter
+    
+    private var recipeId: Long? = null  // 如果是编辑模式，这里保存菜谱ID
+    private var existingRecipe: Recipe? = null  // 保存现有菜谱数据
+    
+    /**
+     * 解析后的外部链接数据
+     */
+    data class ParsedExternalLink(
+        val title: String,
+        val url: String,
+        val source: String,
+        val thumbnail: String?
+    )
     
     // 选择图片的启动器
     private val pickImageLauncher = registerForActivityResult(
@@ -54,11 +70,20 @@ class EditRecipeActivity : AppCompatActivity() {
         binding = ActivityEditRecipeBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // 检查是否是编辑模式
+        recipeId = intent.getLongExtra("recipe_id", -1L).takeIf { it > 0 }
+        
         setupToolbar()
         setupImageGrid()
-        setupTags()
         setupExternalLinks()
         setupPublishButton()
+        
+        // 如果是编辑模式，加载现有数据
+        if (recipeId != null) {
+            binding.toolbar.title = "编辑菜谱"
+            binding.btnPublish.text = "保存"
+            loadExistingRecipe(recipeId!!)
+        }
     }
 
     private fun setupToolbar() {
@@ -76,56 +101,6 @@ class EditRecipeActivity : AppCompatActivity() {
         binding.recyclerImages.apply {
             layoutManager = GridLayoutManager(this@EditRecipeActivity, 3)
             adapter = imageAdapter
-        }
-    }
-
-    private fun setupTags() {
-        // 时段标签
-        val timeTags = listOf("早餐", "午餐", "晚餐", "夜宵", "下午茶", "点心")
-        timeTags.forEach { tag ->
-            val chip = Chip(this).apply {
-                text = tag
-                isCheckable = true
-                setChipBackgroundColorResource(R.color.light_gray)
-                setTextColor(getColor(R.color.text_primary))
-            }
-            binding.chipGroupTime.addView(chip)
-        }
-
-        // 类型标签
-        val typeTags = listOf("汤", "炒菜", "面食", "糕点", "凉菜", "主食")
-        typeTags.forEach { tag ->
-            val chip = Chip(this).apply {
-                text = tag
-                isCheckable = true
-                setChipBackgroundColorResource(R.color.light_gray)
-                setTextColor(getColor(R.color.text_primary))
-            }
-            binding.chipGroupType.addView(chip)
-        }
-
-        // 主食材标签
-        val ingredientTags = listOf("牛肉", "羊肉", "鸡肉", "猪肉", "鱼", "米", "面", "蔬菜")
-        ingredientTags.forEach { tag ->
-            val chip = Chip(this).apply {
-                text = tag
-                isCheckable = true
-                setChipBackgroundColorResource(R.color.light_gray)
-                setTextColor(getColor(R.color.text_primary))
-            }
-            binding.chipGroupIngredient.addView(chip)
-        }
-
-        // 特殊需求标签
-        val specialTags = listOf("无葱姜蒜", "宝宝餐", "低糖", "低盐", "素食")
-        specialTags.forEach { tag ->
-            val chip = Chip(this).apply {
-                text = tag
-                isCheckable = true
-                setChipBackgroundColorResource(R.color.light_gray)
-                setTextColor(getColor(R.color.text_primary))
-            }
-            binding.chipGroupSpecial.addView(chip)
         }
     }
 
@@ -150,22 +125,104 @@ class EditRecipeActivity : AppCompatActivity() {
     private fun showAddLinkDialog() {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_link, null)
         val etLinkUrl = dialogView.findViewById<EditText>(R.id.et_link_url)
-        val etLinkTitle = dialogView.findViewById<EditText>(R.id.et_link_title)
+        val progressParsing = dialogView.findViewById<ProgressBar>(R.id.progress_parsing)
+        val tvParsingStatus = dialogView.findViewById<TextView>(R.id.tv_parsing_status)
 
-        AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this)
             .setTitle("添加外部链接")
             .setView(dialogView)
-            .setPositiveButton("添加") { _, _ ->
-                val url = etLinkUrl.text.toString().trim()
-                val title = etLinkTitle.text.toString().trim()
-                if (url.isNotEmpty()) {
-                    val link = if (title.isNotEmpty()) "$title|$url" else url
+            .setPositiveButton("添加", null)  // 先设置为null，稍后手动处理
+            .setNegativeButton("取消", null)
+            .create()
+        
+        dialog.show()
+        
+        // 手动处理添加按钮点击
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            val url = etLinkUrl.text.toString().trim()
+            
+            if (url.isEmpty()) {
+                android.widget.Toast.makeText(this, "请输入链接地址", android.widget.Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            
+            if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                android.widget.Toast.makeText(this, "请输入有效的网址（以http://或https://开头）", android.widget.Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            
+            // 禁用按钮，显示解析进度
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = false
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).isEnabled = false
+            etLinkUrl.isEnabled = false
+            progressParsing.visibility = View.VISIBLE
+            tvParsingStatus.visibility = View.VISIBLE
+            tvParsingStatus.text = "正在解析网页..."
+            
+            // 异步解析网页
+            lifecycleScope.launch {
+                try {
+                    val parsed = WebPageParser.parseUrl(url)
+                    
+                    if (parsed != null) {
+                        // 解析成功
+                        val link = ParsedExternalLink(
+                            title = parsed.title,
+                            url = parsed.originalUrl,
+                            source = parsed.source,
+                            thumbnail = parsed.thumbnailUrl
+                        )
+                        externalLinks.add(link)
+                        linkAdapter.notifyItemInserted(externalLinks.size - 1)
+                        
+                        android.widget.Toast.makeText(
+                            this@EditRecipeActivity,
+                            "添加成功：${parsed.title}",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                        dialog.dismiss()
+                    } else {
+                        // 解析失败，使用默认值
+                        tvParsingStatus.text = "解析失败，使用默认信息"
+                        val link = ParsedExternalLink(
+                            title = "外部菜谱",
+                            url = url,
+                            source = "网络",
+                            thumbnail = null
+                        )
+                        externalLinks.add(link)
+                        linkAdapter.notifyItemInserted(externalLinks.size - 1)
+                        dialog.dismiss()
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("EditRecipe", "解析链接失败", e)
+                    tvParsingStatus.text = "解析失败：${e.message}"
+                    
+                    // 仍然可以添加，但使用默认值
+                    android.widget.Toast.makeText(
+                        this@EditRecipeActivity,
+                        "无法解析网页，已使用默认信息添加",
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                    
+                    val link = ParsedExternalLink(
+                        title = "外部菜谱",
+                        url = url,
+                        source = "网络",
+                        thumbnail = null
+                    )
                     externalLinks.add(link)
                     linkAdapter.notifyItemInserted(externalLinks.size - 1)
+                    dialog.dismiss()
+                } finally {
+                    // 恢复按钮状态
+                    dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = true
+                    dialog.getButton(AlertDialog.BUTTON_NEGATIVE).isEnabled = true
+                    etLinkUrl.isEnabled = true
+                    progressParsing.visibility = View.GONE
                 }
             }
-            .setNegativeButton("取消", null)
-            .show()
+        }
     }
 
     private fun setupPublishButton() {
@@ -177,7 +234,11 @@ class EditRecipeActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            publishRecipe()
+            if (recipeId != null) {
+                updateRecipe()
+            } else {
+                publishRecipe()
+            }
         }
     }
 
@@ -198,28 +259,12 @@ class EditRecipeActivity : AppCompatActivity() {
                 // 2. 准备菜谱数据
                 val title = binding.etRecipeTitle.text.toString().trim()
                 val content = binding.etRecipeContent.text.toString().trim()
-                val selectedTags = getSelectedTags()
-
-                // 3. 准备外部链接（作为额外的图片或步骤）
-                // 外部链接暂时存储在description中，后续可以优化
-                val fullDescription = if (externalLinks.isNotEmpty()) {
-                    val linksText = externalLinks.joinToString("\n") { link ->
-                        val parts = link.split("|")
-                        if (parts.size == 2) {
-                            "${parts[0]}: ${parts[1]}"
-                        } else {
-                            link
-                        }
-                    }
-                    "$content\n\n外部链接：\n$linksText"
-                } else {
-                    content
-                }
+                val tags = parseTags(binding.etTags.text.toString())
 
                 val recipe = Recipe(
                     id = null,
                     name = title,
-                    description = fullDescription,
+                    description = content,
                     coverImage = imageUrls.firstOrNull(), // 主图
                     cookingTime = null,
                     difficulty = null,
@@ -240,23 +285,39 @@ class EditRecipeActivity : AppCompatActivity() {
                     isDisliked = null
                 )
 
-                // 4. 准备标签数据
-                val tags = selectedTags.map { tagValue ->
+                // 3. 准备标签数据
+                val tagObjects = tags.map { tagValue ->
                     RecipeTag(
                         id = null,
                         recipeId = null,
-                        tagType = getTagType(tagValue),
+                        tagType = "custom", // 自定义标签都是custom类型
                         tagValue = tagValue
+                    )
+                }
+                
+                // 4. 准备外部链接数据
+                val currentUserId = com.familyrecipes.android.data.local.PreferenceManager.userId
+                val externalRecipeObjects = externalLinks.map { link ->
+                    ExternalRecipe(
+                        id = null,
+                        recipeId = null,
+                        title = link.title,
+                        url = link.url,
+                        source = link.source,
+                        thumbnail = link.thumbnail,
+                        addedBy = if (currentUserId > 0) currentUserId else null,
+                        createdAt = null
                     )
                 }
 
                 // 5. 创建请求对象
                 val request = CreateRecipeRequest(
                     recipe = recipe,
-                    tags = tags,
+                    tags = tagObjects,
                     ingredients = null, // 暂时不处理食材
                     steps = null, // 暂时不处理步骤
-                    cookUserIds = null // 暂时不处理会做的人
+                    cookUserIds = null, // 暂时不处理会做的人
+                    externalRecipes = externalRecipeObjects  // 添加外部链接
                 )
 
                 // 6. 调用API创建菜谱
@@ -283,6 +344,113 @@ class EditRecipeActivity : AppCompatActivity() {
             } finally {
                 binding.btnPublish.isEnabled = true
                 binding.btnPublish.text = "发布"
+            }
+        }
+    }
+    
+    private fun updateRecipe() {
+        // 禁用按钮，防止重复提交
+        binding.btnPublish.isEnabled = false
+        binding.btnPublish.text = "保存中..."
+
+        lifecycleScope.launch {
+            try {
+                // 1. 上传新图片（如果有）
+                val imageUrls = if (selectedImages.isNotEmpty()) {
+                    uploadImages()
+                } else {
+                    // 保留原有封面
+                    listOfNotNull(existingRecipe?.coverImage)
+                }
+
+                // 2. 准备菜谱数据
+                val title = binding.etRecipeTitle.text.toString().trim()
+                val content = binding.etRecipeContent.text.toString().trim()
+                val tags = parseTags(binding.etTags.text.toString())
+
+                val recipe = Recipe(
+                    id = recipeId,
+                    name = title,
+                    description = content,
+                    coverImage = imageUrls.firstOrNull(),
+                    cookingTime = existingRecipe?.cookingTime,
+                    difficulty = existingRecipe?.difficulty,
+                    servings = existingRecipe?.servings,
+                    creatorId = existingRecipe?.creatorId,
+                    viewCount = null,
+                    favoriteCount = null,
+                    dislikeCount = null,
+                    recentlyCookedCount = null,
+                    createdAt = null,
+                    creator = null,
+                    tags = null,
+                    ingredients = null,
+                    steps = null,
+                    externalRecipes = null,
+                    cooks = null,
+                    isFavorite = null,
+                    isDisliked = null
+                )
+
+                // 3. 准备标签数据
+                val tagObjects = tags.map { tagValue ->
+                    RecipeTag(
+                        id = null,
+                        recipeId = recipeId,
+                        tagType = "custom",
+                        tagValue = tagValue
+                    )
+                }
+                
+                // 4. 准备外部链接数据
+                val currentUserId = com.familyrecipes.android.data.local.PreferenceManager.userId
+                val externalRecipeObjects = externalLinks.map { link ->
+                    ExternalRecipe(
+                        id = null,
+                        recipeId = recipeId,
+                        title = link.title,
+                        url = link.url,
+                        source = link.source,
+                        thumbnail = link.thumbnail,
+                        addedBy = if (currentUserId > 0) currentUserId else null,
+                        createdAt = null
+                    )
+                }
+
+                // 5. 创建请求对象
+                val request = CreateRecipeRequest(
+                    recipe = recipe,
+                    tags = tagObjects,
+                    ingredients = null,
+                    steps = null,
+                    cookUserIds = null,
+                    externalRecipes = externalRecipeObjects  // 添加外部链接
+                )
+
+                // 6. 调用API更新菜谱
+                val response = ApiClient.getService().updateRecipe(recipeId!!, request)
+
+                if (response.isSuccessful && response.body()?.code == 200) {
+                    android.widget.Toast.makeText(this@EditRecipeActivity, "保存成功！", android.widget.Toast.LENGTH_SHORT).show()
+                    setResult(RESULT_OK)
+                    finish()
+                } else {
+                    android.widget.Toast.makeText(
+                        this@EditRecipeActivity,
+                        "保存失败：${response.body()?.message ?: "未知错误"}",
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                }
+            } catch (e: Exception) {
+                android.widget.Toast.makeText(
+                    this@EditRecipeActivity,
+                    "保存失败：${e.message}",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+                e.printStackTrace()
+            } finally {
+                binding.btnPublish.isEnabled = true
+                binding.btnPublish.text = "保存"
             }
         }
     }
@@ -327,50 +495,88 @@ class EditRecipeActivity : AppCompatActivity() {
         return tempFile
     }
 
-    private fun getTagType(tagValue: String): String {
-        // 根据标签值判断标签类型
-        return when (tagValue) {
-            in listOf("早餐", "午餐", "晚餐", "夜宵", "下午茶", "点心") -> "time"
-            in listOf("汤", "炒菜", "面食", "糕点", "凉菜", "主食") -> "type"
-            in listOf("牛肉", "羊肉", "鸡肉", "猪肉", "鱼", "米", "面", "蔬菜") -> "ingredient"
-            in listOf("无葱姜蒜", "宝宝餐", "低糖", "低盐", "素食") -> "special"
-            else -> "other"
+    /**
+     * 解析tag输入
+     * 支持#开头的tag，用空格分隔
+     * 例如：#午餐 #家常菜 #快手 -> ["午餐", "家常菜", "快手"]
+     */
+    private fun parseTags(input: String): List<String> {
+        if (input.isBlank()) return emptyList()
+        
+        // 按空格分割
+        return input.trim()
+            .split(Regex("\\s+"))
+            .mapNotNull { tag ->
+                // 移除#前缀，过滤空字符串
+                val cleaned = tag.trim().removePrefix("#")
+                if (cleaned.isNotEmpty()) cleaned else null
+            }
+            .distinct() // 去重
+    }
+    
+    /**
+     * 加载现有菜谱数据
+     */
+    private fun loadExistingRecipe(id: Long) {
+        lifecycleScope.launch {
+            try {
+                val response = ApiClient.getService().getRecipeDetail(id)
+                if (response.isSuccessful && response.body()?.code == 200) {
+                    existingRecipe = response.body()?.data
+                    displayExistingRecipe(existingRecipe!!)
+                } else {
+                    android.widget.Toast.makeText(
+                        this@EditRecipeActivity,
+                        "加载菜谱失败",
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                    finish()
+                }
+            } catch (e: Exception) {
+                android.widget.Toast.makeText(
+                    this@EditRecipeActivity,
+                    "加载菜谱失败：${e.message}",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+                e.printStackTrace()
+                finish()
+            }
         }
     }
-
-    private fun getSelectedTags(): List<String> {
-        val tags = mutableListOf<String>()
+    
+    /**
+     * 显示现有菜谱数据
+     */
+    private fun displayExistingRecipe(recipe: Recipe) {
+        // 填充菜名
+        binding.etRecipeTitle.setText(recipe.name)
         
-        // 收集所有选中的标签
-        for (i in 0 until binding.chipGroupTime.childCount) {
-            val chip = binding.chipGroupTime.getChildAt(i) as? Chip
-            if (chip?.isChecked == true) {
-                tags.add(chip.text.toString())
+        // 填充内容描述
+        binding.etRecipeContent.setText(recipe.description)
+        
+        // 填充tags（确保带#号显示）
+        val tagsText = recipe.tags?.joinToString(" ") { 
+            if (it.tagValue.startsWith("#")) {
+                it.tagValue
+            } else {
+                "#${it.tagValue}"
             }
-        }
+        } ?: ""
+        binding.etTags.setText(tagsText)
         
-        for (i in 0 until binding.chipGroupType.childCount) {
-            val chip = binding.chipGroupType.getChildAt(i) as? Chip
-            if (chip?.isChecked == true) {
-                tags.add(chip.text.toString())
-            }
+        // 加载外部链接
+        recipe.externalRecipes?.forEach { externalRecipe ->
+            val link = ParsedExternalLink(
+                title = externalRecipe.title,
+                url = externalRecipe.url,
+                source = externalRecipe.source ?: "网络",
+                thumbnail = externalRecipe.thumbnail
+            )
+            externalLinks.add(link)
         }
+        linkAdapter.notifyDataSetChanged()
         
-        for (i in 0 until binding.chipGroupIngredient.childCount) {
-            val chip = binding.chipGroupIngredient.getChildAt(i) as? Chip
-            if (chip?.isChecked == true) {
-                tags.add(chip.text.toString())
-            }
-        }
-        
-        for (i in 0 until binding.chipGroupSpecial.childCount) {
-            val chip = binding.chipGroupSpecial.getChildAt(i) as? Chip
-            if (chip?.isChecked == true) {
-                tags.add(chip.text.toString())
-            }
-        }
-        
-        return tags
+        // TODO: 加载图片（需要将URL转换为Uri）
     }
 }
 
@@ -435,7 +641,7 @@ class ImageGridAdapter(
  * 外部链接适配器
  */
 class ExternalLinkAdapter(
-    private val links: MutableList<String>,
+    private val links: MutableList<EditRecipeActivity.ParsedExternalLink>,
     private val onDeleteClick: (Int) -> Unit
 ) : RecyclerView.Adapter<ExternalLinkAdapter.LinkViewHolder>() {
 
@@ -446,15 +652,21 @@ class ExternalLinkAdapter(
     }
 
     override fun onBindViewHolder(holder: LinkViewHolder, position: Int) {
-        val linkData = links[position]
-        val parts = linkData.split("|")
+        val link = links[position]
         
-        if (parts.size == 2) {
-            holder.tvTitle.text = parts[0]
-            holder.tvUrl.text = parts[1]
+        holder.tvTitle.text = link.title
+        holder.tvSource.text = "来源：${link.source}"
+        holder.tvUrl.text = link.url
+        
+        // 加载缩略图
+        if (link.thumbnail != null) {
+            com.bumptech.glide.Glide.with(holder.itemView.context)
+                .load(link.thumbnail)
+                .placeholder(R.drawable.ic_food)
+                .error(R.drawable.ic_food)
+                .into(holder.ivThumbnail)
         } else {
-            holder.tvTitle.text = "外部链接 ${position + 1}"
-            holder.tvUrl.text = linkData
+            holder.ivThumbnail.setImageResource(R.drawable.ic_food)
         }
 
         holder.btnDelete.setOnClickListener {
@@ -465,7 +677,9 @@ class ExternalLinkAdapter(
     override fun getItemCount(): Int = links.size
 
     class LinkViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val ivThumbnail: ImageView = view.findViewById(R.id.iv_thumbnail)
         val tvTitle: android.widget.TextView = view.findViewById(R.id.tv_link_title)
+        val tvSource: android.widget.TextView = view.findViewById(R.id.tv_link_source)
         val tvUrl: android.widget.TextView = view.findViewById(R.id.tv_link_url)
         val btnDelete: View = view.findViewById(R.id.btn_delete_link)
     }

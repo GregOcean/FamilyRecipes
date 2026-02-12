@@ -131,6 +131,7 @@ data class ExternalRecipe(
     val title: String,
     val url: String,
     val source: String?,
+    val thumbnail: String?,  // 缩略图URL
     @SerializedName("added_by") val addedBy: Long?,
     @SerializedName("created_at") val createdAt: String?
 )
@@ -177,6 +178,7 @@ data class CreateRecipeRequest(
     val tags: List<RecipeTag>?,
     val ingredients: List<RecipeIngredient>?,
     val steps: List<CookingStep>?,
-    @SerializedName("cook_user_ids") val cookUserIds: List<Long>?
+    @SerializedName("cook_user_ids") val cookUserIds: List<Long>?,
+    @SerializedName("external_recipes") val externalRecipes: List<ExternalRecipe>?
 )
 

@@ -3,6 +3,8 @@ package com.familyrecipes.service;
 import com.familyrecipes.common.PageResult;
 import com.familyrecipes.entity.*;
 import com.familyrecipes.mapper.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +18,8 @@ import java.util.Map;
  */
 @Service
 public class RecipeService {
+    
+    private static final Logger log = LoggerFactory.getLogger(RecipeService.class);
 
     @Autowired
     private RecipeMapper recipeMapper;
@@ -51,16 +55,21 @@ public class RecipeService {
     public Recipe createRecipe(Recipe recipe, List<RecipeTag> tags, 
                                List<RecipeIngredient> ingredients,
                                List<CookingStep> steps,
-                               List<Long> cookUserIds) {
+                               List<Long> cookUserIds,
+                               List<ExternalRecipe> externalRecipes) {
         // 插入菜谱
         recipeMapper.insert(recipe);
         Long recipeId = recipe.getId();
+        
+        log.info("创建菜谱成功，ID: {}, 名称: {}", recipeId, recipe.getName());
 
         // 插入标签
         if (tags != null) {
+            log.info("开始插入标签，数量: {}", tags.size());
             for (RecipeTag tag : tags) {
                 tag.setRecipeId(recipeId);
                 recipeTagMapper.insert(tag);
+                log.info("插入标签: type={}, value={}", tag.getTagType(), tag.getTagValue());
             }
         }
 
@@ -86,6 +95,14 @@ public class RecipeService {
                 recipeCookMapper.insert(recipeId, userId, 3);
             }
         }
+        
+        // 插入外部链接
+        if (externalRecipes != null) {
+            for (ExternalRecipe externalRecipe : externalRecipes) {
+                externalRecipe.setRecipeId(recipeId);
+                externalRecipeMapper.insert(externalRecipe);
+            }
+        }
 
         return getRecipeDetail(recipeId, recipe.getCreatorId());
     }
@@ -97,7 +114,8 @@ public class RecipeService {
     public Recipe updateRecipe(Recipe recipe, List<RecipeTag> tags,
                                List<RecipeIngredient> ingredients,
                                List<CookingStep> steps,
-                               List<Long> cookUserIds) {
+                               List<Long> cookUserIds,
+                               List<ExternalRecipe> externalRecipes) {
         recipeMapper.update(recipe);
         Long recipeId = recipe.getId();
 
@@ -125,6 +143,15 @@ public class RecipeService {
             for (CookingStep step : steps) {
                 step.setRecipeId(recipeId);
                 cookingStepMapper.insert(step);
+            }
+        }
+        
+        // 删除并重新插入外部链接
+        externalRecipeMapper.deleteByRecipeId(recipeId);
+        if (externalRecipes != null) {
+            for (ExternalRecipe externalRecipe : externalRecipes) {
+                externalRecipe.setRecipeId(recipeId);
+                externalRecipeMapper.insert(externalRecipe);
             }
         }
 

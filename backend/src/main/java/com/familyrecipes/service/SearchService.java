@@ -4,6 +4,8 @@ import com.familyrecipes.entity.Ingredient;
 import com.familyrecipes.entity.Recipe;
 import com.familyrecipes.mapper.IngredientMapper;
 import com.familyrecipes.mapper.RecipeMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +17,8 @@ import java.util.stream.Collectors;
  */
 @Service
 public class SearchService {
+    
+    private static final Logger log = LoggerFactory.getLogger(SearchService.class);
 
     @Autowired
     private RecipeMapper recipeMapper;
@@ -32,11 +36,30 @@ public class SearchService {
     public Map<String, Object> globalSearch(String keyword, String priorityType, Integer pageNum, Integer pageSize) {
         Map<String, Object> result = new HashMap<>();
         
-        // 搜索食材
-        List<Ingredient> ingredients = ingredientMapper.searchIngredients(keyword);
+        log.info("开始搜索 - keyword: {}, priorityType: {}", keyword, priorityType);
         
-        // 搜索菜谱（从 RecipeMapper 获取）
-        List<Recipe> recipes = recipeMapper.searchByKeyword(keyword);
+        // 检查是否是tag搜索（如果关键词以#开头）
+        boolean isTagSearch = keyword != null && keyword.startsWith("#");
+        String searchTerm = isTagSearch ? keyword.substring(1) : keyword;
+        
+        log.info("isTagSearch: {}, searchTerm: {}", isTagSearch, searchTerm);
+        
+        // 搜索食材
+        List<Ingredient> ingredients = isTagSearch ? new ArrayList<>() : ingredientMapper.searchIngredients(searchTerm);
+        
+        // 搜索菜谱
+        List<Recipe> recipes;
+        if (isTagSearch) {
+            // 通过tag精确搜索
+            log.info("通过tag搜索: {}", searchTerm);
+            recipes = recipeMapper.searchByTag(searchTerm);
+            log.info("找到 {} 个菜谱", recipes.size());
+        } else {
+            // 通过关键词模糊搜索
+            log.info("通过关键词搜索: {}", searchTerm);
+            recipes = recipeMapper.searchByKeyword(searchTerm);
+            log.info("找到 {} 个菜谱", recipes.size());
+        }
         
         // 根据优先类型排序
         List<Map<String, Object>> items = new ArrayList<>();

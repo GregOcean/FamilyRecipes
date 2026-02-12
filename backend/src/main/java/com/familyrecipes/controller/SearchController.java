@@ -2,6 +2,8 @@ package com.familyrecipes.controller;
 
 import com.familyrecipes.common.Result;
 import com.familyrecipes.service.SearchService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,6 +15,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/search")
 public class SearchController {
+    
+    private static final Logger log = LoggerFactory.getLogger(SearchController.class);
 
     @Autowired
     private SearchService searchService;
@@ -31,9 +35,15 @@ public class SearchController {
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "20") Integer pageSize) {
         
+        log.info("全局搜索 - 关键词: {}, 类型: {}", keyword, priorityType);
+        
         Map<String, Object> result = searchService.globalSearch(
             keyword, priorityType, pageNum, pageSize
         );
+        
+        log.info("搜索结果 - 总数: {}, 菜谱: {}, 食材: {}", 
+            result.get("total"), result.get("recipeCount"), result.get("ingredientCount"));
+        
         return Result.success(result);
     }
 }

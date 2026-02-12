@@ -13,6 +13,7 @@ public class ExternalRecipe {
     private String title;
     private String url;
     private String source;
+    private String thumbnail;  // 缩略图URL
     private Long addedBy;
     private LocalDateTime createdAt;
     
