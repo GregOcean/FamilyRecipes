@@ -248,15 +248,37 @@
 
     </androidx.core.widget.NestedScrollView>
 
-    <!-- Bottom Favorite Button -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_favorite"
+    <!-- Bottom Action Buttons -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
-        android:text="收藏"
-        app:icon="@drawable/ic_favorite_border"
-        app:iconGravity="textStart" />
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_favorite"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="收藏"
+            app:icon="@drawable/ic_favorite_border"
+            app:iconGravity="textStart" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_dislike"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:minWidth="48dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            app:icon="@drawable/ic_thumb_down_outline"
+            app:iconGravity="textStart"
+            app:iconPadding="0dp"
+            app:strokeColor="#FF6B6B" />
+    </LinearLayout>
 
 </LinearLayout>
 

@@ -19,8 +19,6 @@ class RecipeAdapter(
     inner class ViewHolder(val binding: ItemRecipeBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(recipe: Recipe) {
             binding.tvName.text = recipe.name
-            binding.tvDescription.text = recipe.description ?: ""
-            binding.tvCreator.text = "创建者：${recipe.creator?.username ?: "未知"}"
             
             // 显示标签
             val tags = recipe.tags?.joinToString(" · ") { it.tagValue } ?: ""
@@ -35,7 +33,7 @@ class RecipeAdapter(
             }
             
             // 显示统计信息
-            binding.tvStats.text = "❤ ${recipe.favoriteCount ?: 0}  👁 ${recipe.viewCount ?: 0}"
+            binding.tvStats.text = "❤ ${recipe.favoriteCount ?: 0}  👎 ${recipe.dislikeCount ?: 0}  👁 ${recipe.viewCount ?: 0}"
             
             binding.root.setOnClickListener {
                 onItemClick(recipe)

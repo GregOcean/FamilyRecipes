@@ -5,7 +5,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
+    android:layout_marginStart="8dp"
+    android:layout_marginEnd="8dp"
+    android:layout_marginTop="4dp"
+    android:layout_marginBottom="4dp"
     app:cardCornerRadius="8dp"
     app:cardElevation="2dp">
 
@@ -13,13 +16,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="12dp">
+        android:padding="8dp">
 
         <!-- 封面图片 -->
         <ImageView
             android:id="@+id/iv_cover"
-            android:layout_width="80dp"
-            android:layout_height="80dp"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
             android:scaleType="centerCrop"
             android:contentDescription="菜谱封面"
             tools:src="@drawable/placeholder_recipe" />
@@ -29,8 +32,9 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="12dp"
-            android:orientation="vertical">
+            android:layout_marginStart="8dp"
+            android:orientation="vertical"
+            android:layout_gravity="center_vertical">
 
             <!-- 菜名 -->
             <TextView
@@ -38,55 +42,38 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="@color/black"
-                android:textSize="16sp"
+                android:textSize="15sp"
                 android:textStyle="bold"
+                android:maxLines="1"
+                android:ellipsize="end"
                 tools:text="红烧肉" />
 
-            <!-- 描述 -->
-            <TextView
-                android:id="@+id/tv_description"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:ellipsize="end"
-                android:maxLines="2"
-                android:textColor="@color/gray"
-                android:textSize="12sp"
-                tools:text="美味的红烧肉，肥而不腻" />
-
-            <!-- 标签 -->
-            <TextView
-                android:id="@+id/tv_tags"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textColor="@color/primary"
-                android:textSize="11sp"
-                tools:text="午餐 · 炒菜 · 猪肉" />
-
-            <!-- 创建者和统计 -->
+            <!-- 第二行：标签 · 统计信息 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="2dp"
                 android:orientation="horizontal">
 
                 <TextView
-                    android:id="@+id/tv_creator"
+                    android:id="@+id/tv_tags"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:textColor="@color/gray"
+                    android:textColor="@color/primary"
                     android:textSize="11sp"
-                    tools:text="创建者：张三" />
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    tools:text="午餐 · 炒菜 · 猪肉" />
 
                 <TextView
                     android:id="@+id/tv_stats"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
                     android:textColor="@color/gray"
                     android:textSize="11sp"
-                    tools:text="❤ 10  👁 100" />
+                    tools:text="❤ 10  👎 2  👁 100" />
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>

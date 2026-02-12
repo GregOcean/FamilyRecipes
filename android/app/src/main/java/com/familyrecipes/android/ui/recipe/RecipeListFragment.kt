@@ -68,6 +68,12 @@ class RecipeListFragment : Fragment(), SearchableFragment {
         }
         startActivity(intent)
     }
+    
+    override fun onResume() {
+        super.onResume()
+        // 从详情页返回时刷新数据
+        loadRecipes()
+    }
 
     private fun setupListeners() {
         // 下拉刷新
@@ -79,20 +85,25 @@ class RecipeListFragment : Fragment(), SearchableFragment {
     private fun loadRecipes(keyword: String? = null) {
         lifecycleScope.launch {
             try {
-                val response = if (keyword.isNullOrEmpty()) {
-                    ApiClient.getService().searchRecipes()
-                } else {
-                    ApiClient.getService().searchRecipes(keyword = keyword)
-                }
+                // 只搜索当前用户的菜谱（使用keyword参数）
+                val response = ApiClient.getService().searchRecipes(keyword = keyword)
                 
                 if (response.isSuccessful && response.body()?.code == 200) {
-                    val data = response.body()?.data
                     recipes.clear()
-                    data?.list?.let { recipes.addAll(it) }
+                    
+                    val data = response.body()?.data as? com.familyrecipes.android.data.model.PageResult<*>
+                    data?.list?.let { list ->
+                        recipes.addAll(list.filterIsInstance<com.familyrecipes.android.data.model.Recipe>())
+                    }
+                    
                     recipeAdapter.notifyDataSetChanged()
                     
-                    if (recipes.isEmpty() && !keyword.isNullOrEmpty()) {
-                        Toast.makeText(context, "没有找到相关菜谱", Toast.LENGTH_SHORT).show()
+                    if (!keyword.isNullOrEmpty()) {
+                        if (recipes.isEmpty()) {
+                            Toast.makeText(context, "没有找到相关菜谱", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(context, "找到 ${recipes.size} 个菜谱", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 } else {
                     Toast.makeText(context, "加载失败", Toast.LENGTH_SHORT).show()
@@ -107,6 +118,7 @@ class RecipeListFragment : Fragment(), SearchableFragment {
     }
     
     override fun performSearch(keyword: String) {
+        // 菜谱页面：只搜索用户自己的菜谱，在当前页面显示
         binding.swipeRefresh.isRefreshing = true
         loadRecipes(keyword)
     }

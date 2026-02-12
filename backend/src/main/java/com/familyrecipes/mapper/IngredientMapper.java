@@ -22,6 +22,10 @@ public interface IngredientMapper {
 
     @Select("SELECT * FROM ingredient WHERE name LIKE CONCAT('%', #{keyword}, '%') LIMIT 20")
     List<Ingredient> searchByName(String keyword);
+    
+    // 搜索食材（用于全局搜索，无限制）
+    @Select("SELECT * FROM ingredient WHERE name LIKE CONCAT('%', #{keyword}, '%')")
+    List<Ingredient> searchIngredients(String keyword);
 
     @Select("SELECT * FROM ingredient ORDER BY name")
     List<Ingredient> findAll();

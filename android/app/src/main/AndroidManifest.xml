@@ -89,6 +89,13 @@
             android:theme="@style/Theme.FamilyRecipes"
             android:windowSoftInputMode="stateHidden|adjustResize" />
         
+        <!-- 搜索结果Activity -->
+        <activity
+            android:name=".ui.search.SearchResultActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FamilyRecipes"
+            android:windowSoftInputMode="stateHidden|adjustPan" />
+        
         <!-- FileProvider for camera -->
         <provider
             android:name="androidx.core.content.FileProvider"

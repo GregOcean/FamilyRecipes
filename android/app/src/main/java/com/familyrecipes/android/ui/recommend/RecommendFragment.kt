@@ -68,6 +68,12 @@ class RecommendFragment : Fragment(), SearchableFragment {
         startActivity(intent)
     }
     
+    override fun onResume() {
+        super.onResume()
+        // 从详情页返回时刷新数据
+        loadRecommendations()
+    }
+    
     private fun setupListeners() {
         binding.btnRandomRecommend.setOnClickListener {
             loadRecommendations()
@@ -81,22 +87,84 @@ class RecommendFragment : Fragment(), SearchableFragment {
     private fun loadRecommendations(keyword: String? = null) {
         lifecycleScope.launch {
             try {
-                // 使用相同的搜索接口，但可以添加不同的排序规则
                 val response = if (keyword.isNullOrEmpty()) {
                     // 推荐页面按浏览量或收藏量排序
                     ApiClient.getService().searchRecipes(orderBy = "view_count")
                 } else {
-                    ApiClient.getService().searchRecipes(keyword = keyword)
+                    // 使用全局搜索，按相关性排序
+                    ApiClient.getService().globalSearch(
+                        keyword = keyword,
+                        priorityType = "relevance"
+                    )
                 }
                 
                 if (response.isSuccessful && response.body()?.code == 200) {
-                    val data = response.body()?.data
                     recipes.clear()
-                    data?.list?.let { recipes.addAll(it) }
+                    
+                    if (keyword.isNullOrEmpty()) {
+                        // 普通搜索，直接使用菜谱列表
+                        val data = response.body()?.data as? com.familyrecipes.android.data.model.PageResult<*>
+                        data?.list?.let { list ->
+                            recipes.addAll(list.filterIsInstance<com.familyrecipes.android.data.model.Recipe>())
+                        }
+                    } else {
+                        // 全局搜索，提取type为recipe的项
+                        val searchResult = response.body()?.data as? com.familyrecipes.android.data.model.GlobalSearchResult
+                        
+                        // 先打印日志，看看返回了什么
+                        android.util.Log.d("RecommendFragment", "搜索结果: total=${searchResult?.total}, recipeCount=${searchResult?.recipeCount}, ingredientCount=${searchResult?.ingredientCount}")
+                        android.util.Log.d("RecommendFragment", "items: ${searchResult?.items}")
+                        
+                        searchResult?.items?.filter { it.type == "recipe" }?.forEach { item ->
+                            val recipe = com.familyrecipes.android.data.model.Recipe(
+                                id = item.id,
+                                name = item.name,
+                                description = item.description,
+                                coverImage = item.coverImageUrl,
+                                cookingTime = item.cookTime,
+                                difficulty = if (item.difficulty == "easy") 1 else if (item.difficulty == "medium") 2 else if (item.difficulty == "hard") 3 else 2,
+                                servings = null,
+                                creatorId = null,
+                                viewCount = null,
+                                favoriteCount = null,
+                                dislikeCount = null,
+                                recentlyCookedCount = null,
+                                createdAt = null,
+                                creator = null,
+                                tags = null,
+                                ingredients = null,
+                                steps = null,
+                                externalRecipes = null,
+                                cooks = null,
+                                isFavorite = null,
+                                isDisliked = null
+                            )
+                            recipes.add(recipe)
+                        }
+                        
+                        // 显示搜索统计
+                        val totalCount = searchResult?.total ?: 0
+                        val recipeCount = searchResult?.recipeCount ?: 0
+                        val ingredientCount = searchResult?.ingredientCount ?: 0
+                        
+                        if (totalCount > 0) {
+                            val message = if (recipeCount > 0 && ingredientCount > 0) {
+                                "找到 ${recipeCount} 个菜谱, ${ingredientCount} 个食材"
+                            } else if (recipeCount > 0) {
+                                "找到 ${recipeCount} 个菜谱"
+                            } else if (ingredientCount > 0) {
+                                "找到 ${ingredientCount} 个食材（可在食材页面查看）"
+                            } else {
+                                "未找到结果"
+                            }
+                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    
                     recipeAdapter.notifyDataSetChanged()
                     
                     if (recipes.isEmpty() && !keyword.isNullOrEmpty()) {
-                        Toast.makeText(context, "没有找到相关菜谱", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "没有找到相关结果", Toast.LENGTH_SHORT).show()
                     }
                 } else {
                     Toast.makeText(context, "加载失败", Toast.LENGTH_SHORT).show()
@@ -111,8 +179,8 @@ class RecommendFragment : Fragment(), SearchableFragment {
     }
     
     override fun performSearch(keyword: String) {
-        binding.swipeRefresh.isRefreshing = true
-        loadRecommendations(keyword)
+        // 推荐页面的搜索由 MainActivity 处理，跳转到 SearchResultActivity
+        // 这个方法不应该被调用，但为了接口完整性保留
     }
 
     override fun onDestroyView() {

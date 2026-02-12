@@ -25,6 +25,7 @@
     <color name="light_gray">#FFE0E0E0</color>
     <color name="gray_bg">#FFF5F5F5</color>
     <color name="background">#FFFAFAFA</color>
+    <color name="background_light">#FFF0F0F0</color>
     
     <!-- 功能色 -->
     <color name="success">#FF4CAF50</color>

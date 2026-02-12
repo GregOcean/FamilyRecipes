@@ -2,6 +2,10 @@ package com.familyrecipes.android.ui.fridge
 
 import android.app.Activity
 import android.content.Intent
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.RectF
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -10,10 +14,13 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.familyrecipes.android.data.model.FridgeItem
 import com.familyrecipes.android.data.remote.ApiClient
 import com.familyrecipes.android.databinding.FragmentFridgeBinding
+import com.familyrecipes.android.ui.SearchableFragment
 import com.familyrecipes.android.ui.adapter.FridgeAdapter
 import com.google.android.material.tabs.TabLayout
 import kotlinx.coroutines.launch
@@ -21,7 +28,7 @@ import kotlinx.coroutines.launch
 /**
  * 冰箱管理Fragment
  */
-class FridgeFragment : Fragment() {
+class FridgeFragment : Fragment(), SearchableFragment {
 
     private var _binding: FragmentFridgeBinding? = null
     private val binding get() = _binding!!
@@ -81,6 +88,99 @@ class FridgeFragment : Fragment() {
             layoutManager = LinearLayoutManager(context)
             adapter = fridgeAdapter
         }
+        
+        // 设置滑动手势
+        setupSwipeGesture()
+    }
+    
+    private fun setupSwipeGesture() {
+        val itemTouchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(
+            0,
+            ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT
+        ) {
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean = false
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                val position = viewHolder.adapterPosition
+                val item = items[position]
+                
+                when (direction) {
+                    ItemTouchHelper.LEFT -> {
+                        // 左滑删除
+                        deleteItem(item.id!!)
+                    }
+                    ItemTouchHelper.RIGHT -> {
+                        // 右滑标记为已消耗
+                        markAsConsumed(item.id!!)
+                    }
+                }
+            }
+            
+            override fun onChildDraw(
+                c: Canvas,
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                dX: Float,
+                dY: Float,
+                actionState: Int,
+                isCurrentlyActive: Boolean
+            ) {
+                val itemView = viewHolder.itemView
+                val paint = Paint()
+                
+                if (dX > 0) {
+                    // 右滑 - 已消耗（绿色背景）
+                    paint.color = Color.parseColor("#4CAF50")
+                    val background = RectF(
+                        itemView.left.toFloat(),
+                        itemView.top.toFloat(),
+                        itemView.left + dX,
+                        itemView.bottom.toFloat()
+                    )
+                    c.drawRect(background, paint)
+                    
+                    // 绘制文字
+                    paint.color = Color.WHITE
+                    paint.textSize = 48f
+                    paint.textAlign = Paint.Align.LEFT
+                    c.drawText(
+                        "已消耗",
+                        itemView.left + 40f,
+                        itemView.top + (itemView.height / 2f) + 15f,
+                        paint
+                    )
+                } else if (dX < 0) {
+                    // 左滑 - 删除（红色背景）
+                    paint.color = Color.parseColor("#F44336")
+                    val background = RectF(
+                        itemView.right + dX,
+                        itemView.top.toFloat(),
+                        itemView.right.toFloat(),
+                        itemView.bottom.toFloat()
+                    )
+                    c.drawRect(background, paint)
+                    
+                    // 绘制文字
+                    paint.color = Color.WHITE
+                    paint.textSize = 48f
+                    paint.textAlign = Paint.Align.RIGHT
+                    c.drawText(
+                        "删除",
+                        itemView.right - 40f,
+                        itemView.top + (itemView.height / 2f) + 15f,
+                        paint
+                    )
+                }
+                
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
+            }
+        })
+        
+        itemTouchHelper.attachToRecyclerView(binding.recyclerView)
     }
     
     private fun setupTabLayout() {
@@ -125,18 +225,38 @@ class FridgeFragment : Fragment() {
         }
     }
 
-    private fun loadFridgeItems() {
+    private fun loadFridgeItems(keyword: String? = null) {
         lifecycleScope.launch {
             try {
                 val response = ApiClient.getService().getFridgeItems()
                 
                 if (response.isSuccessful && response.body()?.code == 200) {
                     items.clear()
-                    response.body()?.data?.let { items.addAll(it) }
+                    val allItems = response.body()?.data ?: emptyList()
+                    
+                    // 如果有搜索关键词，进行本地过滤
+                    val filteredItems = if (!keyword.isNullOrEmpty()) {
+                        allItems.filter { 
+                            it.ingredient?.name?.contains(keyword, ignoreCase = true) == true ||
+                            it.storageLocation?.contains(keyword, ignoreCase = true) == true
+                        }
+                    } else {
+                        allItems
+                    }
+                    
+                    items.addAll(filteredItems)
                     fridgeAdapter.notifyDataSetChanged()
                     
-                    // 检查即将过期的食材
-                    checkExpiringItems()
+                    if (!keyword.isNullOrEmpty()) {
+                        if (filteredItems.isEmpty()) {
+                            Toast.makeText(context, "没有找到相关食材", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(context, "找到 ${filteredItems.size} 个食材", Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        // 检查即将过期的食材
+                        checkExpiringItems()
+                    }
                 } else {
                     Toast.makeText(context, "加载失败", Toast.LENGTH_SHORT).show()
                 }
@@ -148,17 +268,35 @@ class FridgeFragment : Fragment() {
         }
     }
     
-    private fun loadConsumedItems() {
+    private fun loadConsumedItems(keyword: String? = null) {
         lifecycleScope.launch {
             try {
                 val response = ApiClient.getService().getConsumedItems()
                 
                 if (response.isSuccessful && response.body()?.code == 200) {
                     items.clear()
-                    response.body()?.data?.let { items.addAll(it) }
+                    val allItems = response.body()?.data ?: emptyList()
+                    
+                    // 如果有搜索关键词，进行本地过滤
+                    val filteredItems = if (!keyword.isNullOrEmpty()) {
+                        allItems.filter { 
+                            it.ingredient?.name?.contains(keyword, ignoreCase = true) == true ||
+                            it.storageLocation?.contains(keyword, ignoreCase = true) == true
+                        }
+                    } else {
+                        allItems
+                    }
+                    
+                    items.addAll(filteredItems)
                     fridgeAdapter.notifyDataSetChanged()
                     
-                    if (items.isEmpty()) {
+                    if (!keyword.isNullOrEmpty()) {
+                        if (filteredItems.isEmpty()) {
+                            Toast.makeText(context, "没有找到相关食材", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(context, "找到 ${filteredItems.size} 个食材", Toast.LENGTH_SHORT).show()
+                        }
+                    } else if (filteredItems.isEmpty()) {
                         Toast.makeText(context, "暂无消耗记录", Toast.LENGTH_SHORT).show()
                     }
                 } else {
@@ -211,6 +349,25 @@ class FridgeFragment : Fragment() {
                 }
             } catch (e: Exception) {
                 Toast.makeText(context, "操作失败", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+    
+    override fun performSearch(keyword: String) {
+        // 食材页面：只搜索用户自己的食材（本地过滤）
+        binding.swipeRefresh.isRefreshing = true
+        lifecycleScope.launch {
+            try {
+                // 重新加载数据
+                when (currentTab) {
+                    TAB_CURRENT -> loadFridgeItems(keyword)
+                    TAB_CONSUMED -> loadConsumedItems(keyword)
+                }
+            } catch (e: Exception) {
+                Toast.makeText(context, "搜索失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                e.printStackTrace()
+            } finally {
+                binding.swipeRefresh.isRefreshing = false
             }
         }
     }

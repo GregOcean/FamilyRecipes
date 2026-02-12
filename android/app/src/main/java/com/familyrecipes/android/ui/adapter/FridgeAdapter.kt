@@ -20,9 +20,9 @@ class FridgeAdapter(
     inner class ViewHolder(val binding: ItemFridgeBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(item: FridgeItem) {
             binding.tvName.text = item.ingredient?.name ?: "未知食材"
-            binding.tvAmount.text = "数量：${item.amount ?: "未知"}"
-            binding.tvExpiryDate.text = "过期日期：${item.expiryDate}"
-            binding.tvStorage.text = "存储位置：${item.storageLocation ?: "未知"}"
+            binding.tvAmount.text = item.amount ?: "未知"
+            binding.tvExpiryDate.text = item.expiryDate
+            binding.tvStorage.text = item.storageLocation ?: "未知"
             
             // 根据状态设置颜色
             when (item.status) {
@@ -43,14 +43,6 @@ class FridgeAdapter(
             // 点击食材卡片，跳转到相关菜谱
             binding.root.setOnClickListener {
                 onItemClick(item)
-            }
-            
-            binding.btnConsume.setOnClickListener {
-                onConsumeClick(item)
-            }
-            
-            binding.btnDelete.setOnClickListener {
-                onDeleteClick(item)
             }
         }
     }

@@ -57,14 +57,29 @@ object ConfigManager {
     private suspend fun loadConfigFromServer() {
         val response = ApiClient.getService().getAllConfigs()
         if (response.isSuccessful && response.body()?.code == 200) {
-            val config = response.body()?.data
-            if (config != null) {
-                appConfig = config
+            val serverConfig = response.body()?.data
+            if (serverConfig != null) {
+                // texts已经是Map<String, String>了，直接使用
+                val textsMap = serverConfig.texts
+                
+                // 找到默认存储位置
+                val defaultLocation = serverConfig.storageLocations
+                    .firstOrNull { it.isDefault }
+                    ?: serverConfig.defaultStorageLocation
+                
+                // 创建AppConfig对象
+                appConfig = AppConfig(
+                    ingredients = serverConfig.ingredients.filter { it.isEnabled },
+                    storageLocations = serverConfig.storageLocations.filter { it.isEnabled },
+                    categories = serverConfig.categories.filter { it.isEnabled },
+                    texts = textsMap,
+                    defaultStorageLocation = defaultLocation
+                )
                 
                 // 提取为简单列表和Map
-                ingredientsList = config.ingredients.map { it.name }
-                storageLocationsList = config.storageLocations.map { it.name }
-                textsMap = config.texts
+                ingredientsList = appConfig!!.ingredients.map { it.name }
+                storageLocationsList = appConfig!!.storageLocations.map { it.name }
+                this.textsMap = textsMap
                 
                 Log.d(TAG, "Loaded ${ingredientsList.size} ingredients, " +
                           "${storageLocationsList.size} storage locations, " +

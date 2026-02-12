@@ -19,6 +19,7 @@ public class Recipe {
     private Long creatorId;
     private Integer viewCount;
     private Integer favoriteCount;
+    private Integer dislikeCount;
     private Integer recentlyCookedCount;
     private LocalDateTime lastCookedAt;
     private LocalDateTime createdAt;
@@ -32,5 +33,6 @@ public class Recipe {
     private List<ExternalRecipe> externalRecipes;
     private List<User> cooks; // 会做这道菜的人
     private Boolean isFavorite; // 当前用户是否收藏
+    private Boolean isDisliked; // 当前用户是否差评
 }
 

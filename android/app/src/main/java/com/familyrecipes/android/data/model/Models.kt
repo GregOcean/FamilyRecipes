@@ -56,6 +56,7 @@ data class Recipe(
     @SerializedName("creator_id") val creatorId: Long?,
     @SerializedName("view_count") val viewCount: Int?,
     @SerializedName("favorite_count") val favoriteCount: Int?,
+    @SerializedName("dislike_count") val dislikeCount: Int?,
     @SerializedName("recently_cooked_count") val recentlyCookedCount: Int?,
     @SerializedName("created_at") val createdAt: String?,
     
@@ -66,7 +67,8 @@ data class Recipe(
     val steps: List<CookingStep>?,
     @SerializedName("external_recipes") val externalRecipes: List<ExternalRecipe>?,
     val cooks: List<User>?,
-    @SerializedName("is_favorite") val isFavorite: Boolean?
+    @SerializedName("is_favorite") val isFavorite: Boolean?,
+    @SerializedName("is_disliked") val isDisliked: Boolean?
 )
 
 /**

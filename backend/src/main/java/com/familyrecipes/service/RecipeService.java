@@ -37,6 +37,9 @@ public class RecipeService {
 
     @Autowired
     private UserFavoriteMapper userFavoriteMapper;
+    
+    @Autowired
+    private UserDislikeMapper userDislikeMapper;
 
     @Autowired
     private UserMapper userMapper;
@@ -212,10 +215,33 @@ public class RecipeService {
     public boolean toggleFavorite(Long userId, Long recipeId) {
         int exists = userFavoriteMapper.existsByUserAndRecipe(userId, recipeId);
         if (exists > 0) {
+            // 取消收藏
             userFavoriteMapper.delete(userId, recipeId);
+            recipeMapper.decrementFavoriteCount(recipeId);
             return false;
         } else {
+            // 添加收藏
             userFavoriteMapper.insert(userId, recipeId);
+            recipeMapper.incrementFavoriteCount(recipeId);
+            return true;
+        }
+    }
+    
+    /**
+     * 差评/取消差评菜谱
+     */
+    @Transactional
+    public boolean toggleDislike(Long userId, Long recipeId) {
+        int exists = userDislikeMapper.existsByUserAndRecipe(userId, recipeId);
+        if (exists > 0) {
+            // 取消差评
+            userDislikeMapper.delete(userId, recipeId);
+            recipeMapper.decrementDislikeCount(recipeId);
+            return false;
+        } else {
+            // 添加差评
+            userDislikeMapper.insert(userId, recipeId);
+            recipeMapper.incrementDislikeCount(recipeId);
             return true;
         }
     }

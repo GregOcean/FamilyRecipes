@@ -44,21 +44,31 @@ data class ConfigCategory(
  */
 data class ConfigText(
     val id: Int,
-    @SerializedName("config_key") val configKey: String,
-    @SerializedName("config_value") val configValue: String,
+    @SerializedName("key_name") val keyName: String,
+    @SerializedName("value_zh") val valueZh: String,
     val description: String?,
-    val category: String?,
     @SerializedName("is_enabled") val isEnabled: Boolean
 )
 
 /**
- * 完整配置数据
+ * 完整配置数据（服务器返回格式）
+ */
+data class AllConfigsResponse(
+    val ingredients: List<ConfigIngredient>,
+    @SerializedName("storageLocations") val storageLocations: List<ConfigStorageLocation>,
+    val categories: List<ConfigCategory>,
+    val texts: Map<String, String>,  // 后端已经转换成 Map 了
+    @SerializedName("defaultStorageLocation") val defaultStorageLocation: ConfigStorageLocation?
+)
+
+/**
+ * 应用配置数据（处理后的格式）
  */
 data class AppConfig(
     val ingredients: List<ConfigIngredient>,
-    @SerializedName("storage_locations") val storageLocations: List<ConfigStorageLocation>,
+    val storageLocations: List<ConfigStorageLocation>,
     val categories: List<ConfigCategory>,
     val texts: Map<String, String>,
-    @SerializedName("default_storage_location") val defaultStorageLocation: ConfigStorageLocation?
+    val defaultStorageLocation: ConfigStorageLocation?
 )
 

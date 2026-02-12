@@ -227,6 +227,7 @@ class EditRecipeActivity : AppCompatActivity() {
                     creatorId = null, // 后端会从token中获取
                     viewCount = null,
                     favoriteCount = null,
+                    dislikeCount = null,
                     recentlyCookedCount = null,
                     createdAt = null,
                     creator = null,
@@ -235,7 +236,8 @@ class EditRecipeActivity : AppCompatActivity() {
                     steps = null,
                     externalRecipes = null,
                     cooks = null,
-                    isFavorite = null
+                    isFavorite = null,
+                    isDisliked = null
                 )
 
                 // 4. 准备标签数据

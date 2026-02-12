@@ -169,6 +169,12 @@ class RecipeDetailActivity : AppCompatActivity() {
         binding.btnFavorite.setOnClickListener {
             toggleFavorite()
         }
+        
+        // 设置差评按钮
+        updateDislikeButton(recipe.isDisliked == true)
+        binding.btnDislike.setOnClickListener {
+            toggleDislike()
+        }
     }
 
     private fun updateFavoriteButton(isFavorite: Boolean) {
@@ -178,6 +184,16 @@ class RecipeDetailActivity : AppCompatActivity() {
         } else {
             binding.btnFavorite.text = "收藏"
             binding.btnFavorite.setIconResource(R.drawable.ic_favorite_border)
+        }
+    }
+    
+    private fun updateDislikeButton(isDisliked: Boolean) {
+        if (isDisliked) {
+            binding.btnDislike.setIconResource(R.drawable.ic_thumb_down)
+            binding.btnDislike.strokeColor = getColorStateList(R.color.error)
+        } else {
+            binding.btnDislike.setIconResource(R.drawable.ic_thumb_down_outline)
+            binding.btnDislike.strokeColor = getColorStateList(R.color.gray)
         }
     }
 
@@ -190,7 +206,69 @@ class RecipeDetailActivity : AppCompatActivity() {
                     val isFavorite = response.body()?.data ?: false
                     updateFavoriteButton(isFavorite)
                     
+                    // 更新收藏数
+                    recipe?.let {
+                        val newCount = if (isFavorite) {
+                            (it.favoriteCount ?: 0) + 1
+                        } else {
+                            maxOf((it.favoriteCount ?: 0) - 1, 0)
+                        }
+                        recipe = it.copy(
+                            isFavorite = isFavorite,
+                            favoriteCount = newCount
+                        )
+                        binding.tvFavoriteCount.text = "$newCount"
+                    }
+                    
+                    // 设置 RESULT_OK 以便列表刷新
+                    setResult(RESULT_OK)
+                    
                     val message = if (isFavorite) "已收藏" else "已取消收藏"
+                    android.widget.Toast.makeText(this@RecipeDetailActivity, message, android.widget.Toast.LENGTH_SHORT).show()
+                } else {
+                    android.widget.Toast.makeText(
+                        this@RecipeDetailActivity,
+                        "操作失败",
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                }
+            } catch (e: Exception) {
+                android.widget.Toast.makeText(
+                    this@RecipeDetailActivity,
+                    "网络错误",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+                e.printStackTrace()
+            }
+        }
+    }
+    
+    private fun toggleDislike() {
+        lifecycleScope.launch {
+            try {
+                val response = ApiClient.getService().toggleDislike(recipeId)
+                
+                if (response.isSuccessful && response.body()?.code == 200) {
+                    val isDisliked = response.body()?.data ?: false
+                    updateDislikeButton(isDisliked)
+                    
+                    // 更新差评数
+                    recipe?.let {
+                        val newCount = if (isDisliked) {
+                            (it.dislikeCount ?: 0) + 1
+                        } else {
+                            maxOf((it.dislikeCount ?: 0) - 1, 0)
+                        }
+                        recipe = it.copy(
+                            isDisliked = isDisliked,
+                            dislikeCount = newCount
+                        )
+                    }
+                    
+                    // 设置 RESULT_OK 以便列表刷新
+                    setResult(RESULT_OK)
+                    
+                    val message = if (isDisliked) "已标记为不喜欢" else "已取消标记"
                     android.widget.Toast.makeText(this@RecipeDetailActivity, message, android.widget.Toast.LENGTH_SHORT).show()
                 } else {
                     android.widget.Toast.makeText(

@@ -22,7 +22,7 @@ interface ApiService {
     
     // ========== 配置相关 ==========
     @GET("/api/config/all")
-    suspend fun getAllConfigs(): Response<ApiResponse<AppConfig>>
+    suspend fun getAllConfigs(): Response<ApiResponse<AllConfigsResponse>>
     
     @GET("/api/config/ingredients")
     suspend fun getConfigIngredients(): Response<ApiResponse<List<ConfigIngredient>>>
@@ -79,6 +79,9 @@ interface ApiService {
 
     @POST("/api/recipes/{id}/favorite")
     suspend fun toggleFavorite(@Path("id") id: Long): Response<ApiResponse<Boolean>>
+    
+    @POST("/api/recipes/{id}/dislike")
+    suspend fun toggleDislike(@Path("id") id: Long): Response<ApiResponse<Boolean>>
 
     @POST("/api/recipes/{id}/external-links")
     suspend fun addExternalRecipe(
@@ -132,6 +135,15 @@ interface ApiService {
 
     @POST("/api/fridge/ingredients")
     suspend fun createIngredient(@Body ingredient: Ingredient): Response<ApiResponse<Ingredient>>
+    
+    // ========== 全局搜索 ==========
+    @GET("/api/search/global")
+    suspend fun globalSearch(
+        @Query("keyword") keyword: String,
+        @Query("priorityType") priorityType: String = "relevance",
+        @Query("pageNum") pageNum: Int = 1,
+        @Query("pageSize") pageSize: Int = 20
+    ): Response<ApiResponse<GlobalSearchResult>>
 
     // ========== 文件上传 ==========
     @Multipart

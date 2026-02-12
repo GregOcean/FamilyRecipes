@@ -35,6 +35,18 @@ public interface RecipeMapper {
 
     @Update("UPDATE recipe SET view_count = view_count + 1 WHERE id = #{id}")
     int incrementViewCount(Long id);
+    
+    @Update("UPDATE recipe SET favorite_count = favorite_count + 1 WHERE id = #{id}")
+    int incrementFavoriteCount(Long id);
+    
+    @Update("UPDATE recipe SET favorite_count = GREATEST(favorite_count - 1, 0) WHERE id = #{id}")
+    int decrementFavoriteCount(Long id);
+    
+    @Update("UPDATE recipe SET dislike_count = dislike_count + 1 WHERE id = #{id}")
+    int incrementDislikeCount(Long id);
+    
+    @Update("UPDATE recipe SET dislike_count = GREATEST(dislike_count - 1, 0) WHERE id = #{id}")
+    int decrementDislikeCount(Long id);
 
     @Update("UPDATE recipe SET recently_cooked_count = recently_cooked_count + 1, " +
             "last_cooked_at = NOW() WHERE id = #{id}")
@@ -47,5 +59,10 @@ public interface RecipeMapper {
     @Select("SELECT * FROM recipe WHERE recently_cooked_count > 0 " +
             "ORDER BY recently_cooked_count DESC, last_cooked_at DESC LIMIT #{limit}")
     List<Recipe> findRecentlyCooked(int limit);
+    
+    // 按关键词搜索菜谱（用于全局搜索）
+    @Select("SELECT * FROM recipe WHERE name LIKE CONCAT('%', #{keyword}, '%') " +
+            "OR description LIKE CONCAT('%', #{keyword}, '%')")
+    List<Recipe> searchByKeyword(String keyword);
 }
 

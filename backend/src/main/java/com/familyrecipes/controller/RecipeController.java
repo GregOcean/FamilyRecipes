@@ -167,6 +167,20 @@ public class RecipeController {
             return Result.error(e.getMessage());
         }
     }
+    
+    /**
+     * 差评/取消差评
+     */
+    @PostMapping("/{id}/dislike")
+    public Result<Boolean> toggleDislike(@PathVariable Long id, HttpServletRequest request) {
+        try {
+            Long userId = (Long) request.getAttribute("userId");
+            boolean isDisliked = recipeService.toggleDislike(userId, id);
+            return Result.success(isDisliked);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
 
     /**
      * 添加外链食谱
