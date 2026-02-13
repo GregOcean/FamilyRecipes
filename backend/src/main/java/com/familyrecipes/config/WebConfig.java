@@ -17,9 +17,9 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addResourceHandler("/**")
                 .addResourceLocations("classpath:/static/");
         
-        // APK文件下载
+        // APK文件下载 - 使用文件系统路径
         registry.addResourceHandler("/apk/**")
-                .addResourceLocations("classpath:/static/apk/")
+                .addResourceLocations("file:/opt/familyrecipes/apk/")
                 .setCachePeriod(3600); // 缓存1小时
     }
 
