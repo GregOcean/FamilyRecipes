@@ -2,6 +2,7 @@ package com.familyrecipes.android.data.local
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.familyrecipes.android.BuildConfig
 
 /**
  * SharedPreferences管理类
@@ -38,10 +39,14 @@ object PreferenceManager {
         get() = prefs.getString(KEY_USER_NAME, null)
         set(value) = prefs.edit().putString(KEY_USER_NAME, value).apply()
 
-    // 服务器地址
+    // 服务器地址 - 自动根据编译类型选择
     var baseUrl: String
-        get() = prefs.getString(KEY_BASE_URL, "http://10.0.2.2:8080") ?: "http://10.0.2.2:8080"
+        get() = prefs.getString(KEY_BASE_URL, BuildConfig.API_BASE_URL) ?: BuildConfig.API_BASE_URL
         set(value) = prefs.edit().putString(KEY_BASE_URL, value).apply()
+    
+    // 获取当前环境
+    val environment: String
+        get() = BuildConfig.ENVIRONMENT
 
     // 是否已登录
     fun isLoggedIn(): Boolean {

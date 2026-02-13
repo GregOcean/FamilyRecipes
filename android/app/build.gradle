@@ -15,10 +15,25 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        
+        // 默认 API 地址（开发环境）
+        buildConfigField "String", "API_BASE_URL", "\"http://10.0.2.2:8080\""
+        buildConfigField "String", "ENVIRONMENT", "\"development\""
     }
 
     buildTypes {
+        debug {
+            // 开发环境 - 本地服务器
+            buildConfigField "String", "API_BASE_URL", "\"http://10.0.2.2:8080\""
+            buildConfigField "String", "ENVIRONMENT", "\"development\""
+            applicationIdSuffix ".debug"
+            versionNameSuffix "-debug"
+        }
+        
         release {
+            // 生产环境 - 线上服务器
+            buildConfigField "String", "API_BASE_URL", "\"https://api.familyrecipes.live\""
+            buildConfigField "String", "ENVIRONMENT", "\"production\""
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
@@ -35,6 +50,7 @@ android {
     
     buildFeatures {
         viewBinding true
+        buildConfig true
     }
 }
 
