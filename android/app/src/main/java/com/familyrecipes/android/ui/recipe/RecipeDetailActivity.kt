@@ -258,6 +258,11 @@ class RecipeDetailActivity : AppCompatActivity() {
     }
 
     private fun toggleFavorite() {
+        // 检查登录状态
+        if (!com.familyrecipes.android.util.AuthUtil.requireLogin(this, "收藏")) {
+            return
+        }
+        
         lifecycleScope.launch {
             try {
                 val response = ApiClient.getService().toggleFavorite(recipeId)
@@ -304,6 +309,11 @@ class RecipeDetailActivity : AppCompatActivity() {
     }
     
     private fun toggleDislike() {
+        // 检查登录状态
+        if (!com.familyrecipes.android.util.AuthUtil.requireLogin(this, "差评")) {
+            return
+        }
+        
         lifecycleScope.launch {
             try {
                 val response = ApiClient.getService().toggleDislike(recipeId)

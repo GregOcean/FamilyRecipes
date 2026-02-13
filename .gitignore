@@ -45,3 +45,8 @@ uploads/
 *.swp
 *~.nib
 
+
+# 签名密钥和配置（敏感信息，不要提交）
+*.keystore
+*.jks
+keystore.properties

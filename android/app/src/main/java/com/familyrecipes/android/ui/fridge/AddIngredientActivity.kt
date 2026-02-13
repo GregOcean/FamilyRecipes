@@ -495,11 +495,24 @@ class AddIngredientActivity : AppCompatActivity() {
                 // 3. 计算过期日期
                 val expiryDate = IngredientParser.calculateExpiryDate(parseResult.expiryDays)
                 android.util.Log.d("AddIngredient", "过期日期: $expiryDate")
+                
+                // 3.5 检查用户ID
+                val currentUserId = PreferenceManager.userId
+                android.util.Log.d("AddIngredient", "当前用户ID: $currentUserId")
+                android.util.Log.d("AddIngredient", "是否已登录: ${PreferenceManager.isLoggedIn()}")
+                
+                if (currentUserId <= 0) {
+                    android.util.Log.e("AddIngredient", "❌ 用户ID无效，无法添加食材")
+                    Toast.makeText(this@AddIngredientActivity, "用户未登录，请先登录", Toast.LENGTH_LONG).show()
+                    binding.btnSave.isEnabled = true
+                    binding.btnSave.text = "保存"
+                    return@launch
+                }
 
                 // 4. 创建食材项
                 val fridgeItem = FridgeItem(
                     id = null,
-                    userId = PreferenceManager.userId,
+                    userId = currentUserId,
                     ingredientId = ingredient.id,
                     amount = parseResult.amount,
                     purchaseDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date()),

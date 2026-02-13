@@ -64,6 +64,12 @@ class FridgeFragment : Fragment(), SearchableFragment {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         
+        // 检查登录状态
+        if (!com.familyrecipes.android.util.AuthUtil.isLoggedIn()) {
+            showLoginPrompt()
+            return
+        }
+        
         setupRecyclerView()
         setupTabLayout()
         setupListeners()
@@ -324,6 +330,13 @@ class FridgeFragment : Fragment(), SearchableFragment {
     }
 
     private fun markAsConsumed(itemId: Long) {
+        // 检查登录状态
+        if (!com.familyrecipes.android.util.AuthUtil.requireLogin(requireContext(), "标记食材为已消耗")) {
+            // 恢复列表状态
+            fridgeAdapter.notifyDataSetChanged()
+            return
+        }
+        
         lifecycleScope.launch {
             try {
                 val response = ApiClient.getService().markAsConsumed(itemId)
@@ -339,6 +352,13 @@ class FridgeFragment : Fragment(), SearchableFragment {
     }
 
     private fun deleteItem(itemId: Long) {
+        // 检查登录状态
+        if (!com.familyrecipes.android.util.AuthUtil.requireLogin(requireContext(), "删除食材")) {
+            // 恢复列表状态
+            fridgeAdapter.notifyDataSetChanged()
+            return
+        }
+        
         lifecycleScope.launch {
             try {
                 val response = ApiClient.getService().deleteFridgeItem(itemId)
@@ -368,6 +388,40 @@ class FridgeFragment : Fragment(), SearchableFragment {
                 e.printStackTrace()
             } finally {
                 binding.swipeRefresh.isRefreshing = false
+            }
+        }
+    }
+    
+    /**
+     * 显示登录提示
+     */
+    private fun showLoginPrompt() {
+        // 隐藏主要内容
+        binding.recyclerView.visibility = View.GONE
+        binding.swipeRefresh.visibility = View.GONE
+        binding.tabLayout.visibility = View.GONE
+        
+        // 显示提示信息（可以用一个TextView或者空状态视图）
+        android.widget.Toast.makeText(context, "冰箱功能需要登录后使用", android.widget.Toast.LENGTH_LONG).show()
+        
+        // 自动跳转到"我的"页面
+        com.familyrecipes.android.util.AuthUtil.navigateToProfile(requireContext())
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        // 每次回到此页面时检查登录状态
+        if (com.familyrecipes.android.util.AuthUtil.isLoggedIn()) {
+            // 如果已登录但界面还未初始化，则初始化
+            if (binding.recyclerView.visibility == View.GONE) {
+                binding.recyclerView.visibility = View.VISIBLE
+                binding.swipeRefresh.visibility = View.VISIBLE
+                binding.tabLayout.visibility = View.VISIBLE
+                
+                setupRecyclerView()
+                setupTabLayout()
+                setupListeners()
+                loadData()
             }
         }
     }

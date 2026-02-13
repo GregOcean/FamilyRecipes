@@ -3,6 +3,13 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
+// 加载签名配置文件
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace 'com.familyrecipes.android'
     compileSdk 34
@@ -21,6 +28,16 @@ android {
         buildConfigField "String", "ENVIRONMENT", "\"development\""
     }
 
+    // 签名配置
+    signingConfigs {
+        release {
+            storeFile file(keystoreProperties['storeFile'] ?: '../familyrecipes-release.keystore')
+            storePassword keystoreProperties['storePassword']
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+        }
+    }
+
     buildTypes {
         debug {
             // 开发环境 - 本地服务器
@@ -36,6 +53,7 @@ android {
             buildConfigField "String", "ENVIRONMENT", "\"production\""
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release  // 使用 release 签名
         }
     }
     

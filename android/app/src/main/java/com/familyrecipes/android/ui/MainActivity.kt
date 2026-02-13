@@ -314,8 +314,11 @@ class MainActivity : AppCompatActivity() {
         // 菜谱按钮
         binding.btnAddRecipe.setOnClickListener {
             bottomSheetDialog.dismiss()
-            val intent = Intent(this, EditRecipeActivity::class.java)
-            startActivity(intent)
+            // 检查登录状态
+            if (com.familyrecipes.android.util.AuthUtil.requireLogin(this, "发布菜谱")) {
+                val intent = Intent(this, EditRecipeActivity::class.java)
+                startActivity(intent)
+            }
         }
         
         // 作品按钮
@@ -335,8 +338,11 @@ class MainActivity : AppCompatActivity() {
         // 食材按钮
         binding.btnAddIngredient.setOnClickListener {
             bottomSheetDialog.dismiss()
-            val intent = Intent(this, AddIngredientActivity::class.java)
-            startActivity(intent)
+            // 检查登录状态
+            if (com.familyrecipes.android.util.AuthUtil.requireLogin(this, "添加食材")) {
+                val intent = Intent(this, AddIngredientActivity::class.java)
+                startActivity(intent)
+            }
         }
         
         bottomSheetDialog.show()

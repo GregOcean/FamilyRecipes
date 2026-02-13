@@ -260,6 +260,7 @@ class EditRecipeActivity : AppCompatActivity() {
                 val title = binding.etRecipeTitle.text.toString().trim()
                 val content = binding.etRecipeContent.text.toString().trim()
                 val tags = parseTags(binding.etTags.text.toString())
+                val currentUserId = com.familyrecipes.android.data.local.PreferenceManager.userId
 
                 val recipe = Recipe(
                     id = null,
@@ -269,7 +270,7 @@ class EditRecipeActivity : AppCompatActivity() {
                     cookingTime = null,
                     difficulty = null,
                     servings = null,
-                    creatorId = null, // 后端会从token中获取
+                    creatorId = if (currentUserId > 0) currentUserId else null,
                     viewCount = null,
                     favoriteCount = null,
                     dislikeCount = null,
@@ -296,7 +297,6 @@ class EditRecipeActivity : AppCompatActivity() {
                 }
                 
                 // 4. 准备外部链接数据
-                val currentUserId = com.familyrecipes.android.data.local.PreferenceManager.userId
                 val externalRecipeObjects = externalLinks.map { link ->
                     ExternalRecipe(
                         id = null,
