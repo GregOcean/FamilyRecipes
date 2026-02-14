@@ -104,6 +104,21 @@ class FridgeFragment : Fragment(), SearchableFragment {
             0,
             ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT
         ) {
+            override fun getMovementFlags(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder
+            ): Int {
+                // 根据当前tab决定允许的滑动方向
+                val swipeFlags = if (currentTab == TAB_CONSUMED) {
+                    // 消耗历史：只允许左滑删除
+                    ItemTouchHelper.LEFT
+                } else {
+                    // 当前库存：允许左滑删除和右滑消耗
+                    ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT
+                }
+                return makeMovementFlags(0, swipeFlags)
+            }
+            
             override fun onMove(
                 recyclerView: RecyclerView,
                 viewHolder: RecyclerView.ViewHolder,
@@ -120,8 +135,10 @@ class FridgeFragment : Fragment(), SearchableFragment {
                         deleteItem(item.id!!)
                     }
                     ItemTouchHelper.RIGHT -> {
-                        // 右滑标记为已消耗
-                        markAsConsumed(item.id!!)
+                        // 右滑标记为已消耗（仅在当前库存tab可用）
+                        if (currentTab == TAB_CURRENT) {
+                            markAsConsumed(item.id!!)
+                        }
                     }
                 }
             }
@@ -138,7 +155,8 @@ class FridgeFragment : Fragment(), SearchableFragment {
                 val itemView = viewHolder.itemView
                 val paint = Paint()
                 
-                if (dX > 0) {
+                // 只在当前库存tab显示右滑"已消耗"提示
+                if (dX > 0 && currentTab == TAB_CURRENT) {
                     // 右滑 - 已消耗（绿色背景）
                     paint.color = Color.parseColor("#4CAF50")
                     val background = RectF(
