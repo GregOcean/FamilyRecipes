@@ -21,7 +21,6 @@ import com.familyrecipes.android.R
 import com.familyrecipes.android.data.model.*
 import com.familyrecipes.android.data.remote.ApiClient
 import com.familyrecipes.android.databinding.ActivityEditRecipeBinding
-import com.familyrecipes.android.util.WebPageParser
 import com.google.android.material.chip.Chip
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -139,15 +138,10 @@ class EditRecipeActivity : AppCompatActivity() {
         
         // 手动处理添加按钮点击
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-            val url = etLinkUrl.text.toString().trim()
+            val pastedText = etLinkUrl.text.toString().trim()
             
-            if (url.isEmpty()) {
-                android.widget.Toast.makeText(this, "请输入链接地址", android.widget.Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            
-            if (!url.startsWith("http://") && !url.startsWith("https://")) {
-                android.widget.Toast.makeText(this, "请输入有效的网址（以http://或https://开头）", android.widget.Toast.LENGTH_SHORT).show()
+            if (pastedText.isEmpty()) {
+                android.widget.Toast.makeText(this, "请粘贴分享链接或网址", android.widget.Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             
@@ -157,64 +151,66 @@ class EditRecipeActivity : AppCompatActivity() {
             etLinkUrl.isEnabled = false
             progressParsing.visibility = View.VISIBLE
             tvParsingStatus.visibility = View.VISIBLE
-            tvParsingStatus.text = "正在解析网页..."
+            tvParsingStatus.text = "正在解析链接..."
             
-            // 异步解析网页
+            // 使用后端API解析链接
             lifecycleScope.launch {
                 try {
-                    val parsed = WebPageParser.parseUrl(url)
+                    val request = ParseLinkRequest(pastedText = pastedText)
+                    val response = ApiClient.getService().parseExternalLink(request)
                     
-                    if (parsed != null) {
+                    if (response.isSuccessful && response.body()?.code == 200) {
                         // 解析成功
-                        val link = ParsedExternalLink(
-                            title = parsed.title,
-                            url = parsed.originalUrl,
-                            source = parsed.source,
-                            thumbnail = parsed.thumbnailUrl
-                        )
-                        externalLinks.add(link)
-                        linkAdapter.notifyItemInserted(externalLinks.size - 1)
-                        
+                        val parsed = response.body()?.data
+                        if (parsed != null) {
+                            val link = ParsedExternalLink(
+                                title = parsed.title,
+                                url = parsed.url,
+                                source = parsed.source ?: "网络",
+                                thumbnail = parsed.thumbnail
+                            )
+                            externalLinks.add(link)
+                            linkAdapter.notifyItemInserted(externalLinks.size - 1)
+                            
+                            android.widget.Toast.makeText(
+                                this@EditRecipeActivity,
+                                "添加成功：${parsed.title}",
+                                android.widget.Toast.LENGTH_SHORT
+                            ).show()
+                            dialog.dismiss()
+                        } else {
+                            // 后端返回null
+                            tvParsingStatus.text = "解析失败，请检查链接"
+                            dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = true
+                            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).isEnabled = true
+                            etLinkUrl.isEnabled = true
+                            progressParsing.visibility = View.GONE
+                        }
+                    } else {
+                        // API返回错误
+                        val errorMsg = response.body()?.message ?: "解析失败"
+                        tvParsingStatus.text = errorMsg
                         android.widget.Toast.makeText(
                             this@EditRecipeActivity,
-                            "添加成功：${parsed.title}",
+                            errorMsg,
                             android.widget.Toast.LENGTH_SHORT
                         ).show()
-                        dialog.dismiss()
-                    } else {
-                        // 解析失败，使用默认值
-                        tvParsingStatus.text = "解析失败，使用默认信息"
-                        val link = ParsedExternalLink(
-                            title = "外部菜谱",
-                            url = url,
-                            source = "网络",
-                            thumbnail = null
-                        )
-                        externalLinks.add(link)
-                        linkAdapter.notifyItemInserted(externalLinks.size - 1)
-                        dialog.dismiss()
+                        
+                        // 恢复按钮状态
+                        dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = true
+                        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).isEnabled = true
+                        etLinkUrl.isEnabled = true
+                        progressParsing.visibility = View.GONE
                     }
                 } catch (e: Exception) {
-                    android.util.Log.e("EditRecipe", "解析链接失败", e)
-                    tvParsingStatus.text = "解析失败：${e.message}"
-                    
-                    // 仍然可以添加，但使用默认值
+                    android.util.Log.e("EditRecipe", "解析链接异常", e)
+                    tvParsingStatus.text = "网络错误，请重试"
                     android.widget.Toast.makeText(
                         this@EditRecipeActivity,
-                        "无法解析网页，已使用默认信息添加",
+                        "网络错误：${e.message}",
                         android.widget.Toast.LENGTH_SHORT
                     ).show()
                     
-                    val link = ParsedExternalLink(
-                        title = "外部菜谱",
-                        url = url,
-                        source = "网络",
-                        thumbnail = null
-                    )
-                    externalLinks.add(link)
-                    linkAdapter.notifyItemInserted(externalLinks.size - 1)
-                    dialog.dismiss()
-                } finally {
                     // 恢复按钮状态
                     dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = true
                     dialog.getButton(AlertDialog.BUTTON_NEGATIVE).isEnabled = true

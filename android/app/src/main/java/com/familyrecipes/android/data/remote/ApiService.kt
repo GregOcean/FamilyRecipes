@@ -88,6 +88,14 @@ interface ApiService {
         @Path("id") id: Long,
         @Body externalRecipe: ExternalRecipe
     ): Response<ApiResponse<Unit>>
+    
+    /**
+     * 智能解析外部链接（由后端处理）
+     */
+    @POST("/api/recipes/parse-external-link")
+    suspend fun parseExternalLink(
+        @Body request: ParseLinkRequest
+    ): Response<ApiResponse<ExternalRecipe>>
 
     @POST("/api/recipes/{id}/cook")
     suspend fun recordCooking(@Path("id") id: Long): Response<ApiResponse<Unit>>

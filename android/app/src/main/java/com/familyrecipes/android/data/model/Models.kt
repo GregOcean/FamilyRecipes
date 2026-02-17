@@ -182,3 +182,10 @@ data class CreateRecipeRequest(
     @SerializedName("external_recipes") val externalRecipes: List<ExternalRecipe>?
 )
 
+/**
+ * 解析外部链接请求
+ */
+data class ParseLinkRequest(
+    @SerializedName("pastedText") val pastedText: String
+)
+

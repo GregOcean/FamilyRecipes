@@ -4,8 +4,12 @@ import com.familyrecipes.common.PageResult;
 import com.familyrecipes.common.Result;
 import com.familyrecipes.entity.*;
 import com.familyrecipes.service.RecipeService;
+import com.familyrecipes.service.ExternalLinkParseService;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.Data;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,9 +21,14 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/recipes")
 public class RecipeController {
+    
+    private static final Logger log = LoggerFactory.getLogger(RecipeController.class);
 
     @Autowired
     private RecipeService recipeService;
+    
+    @Autowired
+    private ExternalLinkParseService externalLinkParseService;
 
     /**
      * 创建菜谱
@@ -185,7 +194,42 @@ public class RecipeController {
     }
 
     /**
-     * 添加外链食谱
+     * 智能解析外部链接
+     * 
+     * @param request HTTP请求
+     * @param parseRequest 包含粘贴文本的请求体
+     * @return 解析后的ExternalRecipe对象
+     */
+    @PostMapping("/parse-external-link")
+    public Result<ExternalRecipe> parseExternalLink(HttpServletRequest request,
+                                                     @RequestBody ParseLinkRequest parseRequest) {
+        try {
+            log.info("收到解析请求，pastedText: {}", parseRequest != null ? parseRequest.getPastedText() : "null");
+            
+            Long userId = (Long) request.getAttribute("userId");
+            
+            if (parseRequest == null || parseRequest.getPastedText() == null || parseRequest.getPastedText().trim().isEmpty()) {
+                return Result.error("请求参数不能为空");
+            }
+            
+            ExternalRecipe result = externalLinkParseService.parseExternalLink(
+                parseRequest.getPastedText(), 
+                userId
+            );
+            
+            if (result == null) {
+                return Result.error("无法解析该链接，请检查链接格式是否正确");
+            }
+            
+            return Result.success(result);
+        } catch (Exception e) {
+            log.error("解析链接时发生异常", e);
+            return Result.error("解析链接时发生错误: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 添加外链食谱（旧接口，保持向后兼容）
      */
     @PostMapping("/{id}/external-links")
     public Result<Void> addExternalRecipe(@PathVariable Long id,
@@ -241,6 +285,32 @@ public class RecipeController {
         private List<CookingStep> steps;
         private List<Long> cookUserIds;
         private List<ExternalRecipe> externalRecipes;
+    }
+    
+    public static class ParseLinkRequest {
+        @JsonProperty("pastedText")
+        private String pastedText;
+        
+        public ParseLinkRequest() {}
+        
+        public ParseLinkRequest(String pastedText) {
+            this.pastedText = pastedText;
+        }
+        
+        @JsonProperty("pastedText")
+        public String getPastedText() {
+            return pastedText;
+        }
+        
+        @JsonProperty("pastedText")
+        public void setPastedText(String pastedText) {
+            this.pastedText = pastedText;
+        }
+        
+        @Override
+        public String toString() {
+            return "ParseLinkRequest{pastedText='" + pastedText + "'}";
+        }
     }
 }
 

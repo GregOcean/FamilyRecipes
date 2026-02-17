@@ -10,7 +10,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="粘贴网页链接，将自动解析标题和缩略图"
+        android:text="粘贴完整的分享内容或网址，将自动解析"
         android:textColor="@color/text_secondary"
         android:textSize="13sp"
         android:layout_marginBottom="12dp" />
@@ -18,7 +18,7 @@
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="链接地址（如：小红书、下厨房等）"
+        android:hint="粘贴分享内容（支持小红书、下厨房、抖音、B站等）"
         app:boxBackgroundMode="outline"
         app:boxStrokeColor="@color/primary">
 
@@ -26,9 +26,11 @@
             android:id="@+id/et_link_url"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="text|textNoSuggestions"
+            android:inputType="textMultiLine"
             android:imeOptions="actionDone"
-            android:maxLines="3" />
+            android:minLines="2"
+            android:maxLines="5"
+            android:scrollbars="vertical" />
 
     </com.google.android.material.textfield.TextInputLayout>
     

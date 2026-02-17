@@ -122,9 +122,6 @@ dependencies {
     // SharedPreferences封装
     implementation 'androidx.preference:preference-ktx:1.2.1'
     
-    // Jsoup - HTML解析
-    implementation 'org.jsoup:jsoup:1.17.2'
-    
     // 测试
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
