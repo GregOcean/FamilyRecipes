@@ -216,10 +216,28 @@ class ProfileFragment : Fragment() {
             startActivity(intent)
         }
         
+        // 顶部工具栏按钮
         // 扫一扫
         binding.ivScanQr.setOnClickListener {
             val intent = android.content.Intent(requireContext(), com.familyrecipes.android.ui.social.ScanQRActivity::class.java)
             startActivity(intent)
+        }
+        
+        // 编辑资料
+        binding.ivEditProfile.setOnClickListener {
+            android.widget.Toast.makeText(context, "编辑资料功能即将上线", android.widget.Toast.LENGTH_SHORT).show()
+            // TODO: 跳转到编辑资料页面
+        }
+        
+        // 设置
+        binding.ivSettings.setOnClickListener {
+            android.widget.Toast.makeText(context, "设置功能即将上线", android.widget.Toast.LENGTH_SHORT).show()
+            // TODO: 跳转到设置页面
+        }
+        
+        // 分享
+        binding.ivShare.setOnClickListener {
+            shareApp()
         }
         
         // 我的名片码
@@ -239,6 +257,19 @@ class ProfileFragment : Fragment() {
             val intent = android.content.Intent(requireContext(), com.familyrecipes.android.ui.social.GroupsListActivity::class.java)
             startActivity(intent)
         }
+    }
+    
+    /**
+     * 分享App
+     */
+    private fun shareApp() {
+        val shareText = "推荐你使用「家肴」App，记录美味生活！"
+        val shareIntent = android.content.Intent().apply {
+            action = android.content.Intent.ACTION_SEND
+            putExtra(android.content.Intent.EXTRA_TEXT, shareText)
+            type = "text/plain"
+        }
+        startActivity(android.content.Intent.createChooser(shareIntent, "分享到"))
     }
 
     private fun generateRandomString(length: Int): String {

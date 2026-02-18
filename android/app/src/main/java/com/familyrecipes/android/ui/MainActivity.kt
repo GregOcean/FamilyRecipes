@@ -39,6 +39,7 @@ class MainActivity : AppCompatActivity() {
     private var currentFragment: Fragment? = null
     private lateinit var searchHistoryManager: SearchHistoryManager
     private var searchHistoryAdapter: SearchHistoryAdapter? = null
+    private var currentKitchenName: String = "我的厨房" // 当前厨房名称
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,6 +54,7 @@ class MainActivity : AppCompatActivity() {
         setupFabButton()
         setupKeyboardBehavior()
         setupSearchHistory()
+        loadCurrentKitchen()
         
         // 默认显示首页
         if (savedInstanceState == null) {
@@ -101,9 +103,14 @@ class MainActivity : AppCompatActivity() {
             }
         })
         
-        // 搜索按钮点击事件
-        binding.btnSearch.setOnClickListener {
-            performSearch()
+        // 切换厨房按钮点击事件
+        binding.btnSwitchKitchen.setOnClickListener {
+            showSwitchKitchenDialog()
+        }
+        
+        // 添加社交功能按钮点击事件（消息Tab使用）
+        binding.btnAddSocial.setOnClickListener {
+            showAddSocialMenu()
         }
         
         // 搜索框回车键事件
@@ -241,6 +248,82 @@ class MainActivity : AppCompatActivity() {
     }
     
     /**
+     * 显示切换厨房对话框
+     */
+    private fun showSwitchKitchenDialog() {
+        Toast.makeText(this, "切换厨房功能开发中\n当前：$currentKitchenName", Toast.LENGTH_LONG).show()
+        // TODO: 实现切换厨房功能
+        // 1. 获取用户加入的所有群组/厨房
+        // 2. 显示厨房列表对话框
+        // 3. 切换当前厨房上下文
+        // 4. 刷新所有数据（菜谱、食材、推荐等）
+        // 5. 调用 updateCurrentKitchen(kitchenName) 更新显示
+    }
+    
+    /**
+     * 显示添加社交功能菜单（消息Tab使用）
+     */
+    private fun showAddSocialMenu() {
+        val options = arrayOf("创建群组", "添加好友", "扫码加好友")
+        
+        android.app.AlertDialog.Builder(this)
+            .setTitle("添加")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> {
+                        // 创建群组
+                        Toast.makeText(this, "创建群组功能开发中", Toast.LENGTH_SHORT).show()
+                        // TODO: 跳转到创建群组页面
+                    }
+                    1 -> {
+                        // 添加好友
+                        Toast.makeText(this, "添加好友功能开发中", Toast.LENGTH_SHORT).show()
+                        // TODO: 跳转到添加好友页面
+                    }
+                    2 -> {
+                        // 扫码加好友
+                        val intent = android.content.Intent(this, com.familyrecipes.android.ui.social.ScanQRActivity::class.java)
+                        startActivity(intent)
+                    }
+                }
+            }
+            .show()
+    }
+    
+    /**
+     * 加载当前厨房信息
+     */
+    private fun loadCurrentKitchen() {
+        // 从SharedPreferences加载当前选中的厨房
+        val savedKitchen = com.familyrecipes.android.data.local.PreferenceManager.currentKitchenName
+        if (!savedKitchen.isNullOrEmpty()) {
+            currentKitchenName = savedKitchen
+        } else {
+            // 如果没有保存的厨房，使用默认值
+            currentKitchenName = "我的厨房"
+            // TODO: 后续可以从后端获取用户的默认群组/厨房
+        }
+        
+        updateCurrentKitchen(currentKitchenName)
+    }
+    
+    /**
+     * 更新当前厨房名称显示
+     */
+    private fun updateCurrentKitchen(kitchenName: String) {
+        currentKitchenName = kitchenName
+        binding.tvCurrentKitchen.text = kitchenName
+        
+        // 如果厨房名称超过4个字，启用跑马灯效果
+        if (kitchenName.length > 4) {
+            binding.tvCurrentKitchen.isSelected = true
+            binding.tvCurrentKitchen.requestFocus()
+        } else {
+            binding.tvCurrentKitchen.isSelected = false
+        }
+    }
+    
+    /**
      * 点击搜索框外的区域时隐藏键盘
      */
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
@@ -312,6 +395,26 @@ class MainActivity : AppCompatActivity() {
         
         transaction.commit()
         currentFragment = fragment
+        
+        // 根据Fragment类型控制搜索栏和按钮显示/隐藏
+        when (fragment) {
+            is ProfileFragment -> {
+                // 我的页面：隐藏搜索栏
+                binding.toolbar.visibility = View.GONE
+            }
+            is MessageFragment -> {
+                // 消息页面：显示搜索栏，显示添加按钮，隐藏切换厨房按钮
+                binding.toolbar.visibility = View.VISIBLE
+                binding.btnSwitchKitchen.visibility = View.GONE
+                binding.btnAddSocial.visibility = View.VISIBLE
+            }
+            else -> {
+                // 其他页面：显示搜索栏，显示切换厨房按钮，隐藏添加按钮
+                binding.toolbar.visibility = View.VISIBLE
+                binding.btnSwitchKitchen.visibility = View.VISIBLE
+                binding.btnAddSocial.visibility = View.GONE
+            }
+        }
     }
     
     /**

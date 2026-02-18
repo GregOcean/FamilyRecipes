@@ -14,6 +14,82 @@
         android:orientation="horizontal"
         android:paddingVertical="20dp">
 
+        <!-- 即将过期 -->
+        <LinearLayout
+            android:id="@+id/layout_expiring"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackground"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="8dp">
+
+            <FrameLayout
+                android:layout_width="64dp"
+                android:layout_height="64dp">
+                
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/bg_message_icon_blue" />
+                
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_clock_filled"
+                    android:tint="@color/white"
+                    android:contentDescription="即将过期" />
+            </FrameLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="即将过期"
+                android:textColor="@color/black"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <!-- 家人呼唤 -->
+        <LinearLayout
+            android:id="@+id/layout_needed"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackground"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="8dp">
+
+            <FrameLayout
+                android:layout_width="64dp"
+                android:layout_height="64dp">
+                
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/bg_message_icon_green" />
+                
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_at"
+                    android:tint="@color/white"
+                    android:contentDescription="家人呼唤" />
+            </FrameLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="家人呼唤"
+                android:textColor="@color/black"
+                android:textSize="14sp" />
+        </LinearLayout>
+
         <!-- 爱心点赞 -->
         <LinearLayout
             android:id="@+id/layout_likes"
@@ -25,66 +101,29 @@
             android:orientation="vertical"
             android:padding="8dp">
 
-            <View
+            <FrameLayout
                 android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:background="@drawable/bg_message_icon_red" />
+                android:layout_height="64dp">
+                
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/bg_message_icon_red" />
+                
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_heart_filled"
+                    android:tint="@color/white"
+                    android:contentDescription="爱心点赞" />
+            </FrameLayout>
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:text="爱心点赞"
-                android:textColor="@color/black"
-                android:textSize="14sp" />
-        </LinearLayout>
-
-        <!-- 新增粉丝 -->
-        <LinearLayout
-            android:id="@+id/layout_followers"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="?attr/selectableItemBackground"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:padding="8dp">
-
-            <View
-                android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:background="@drawable/bg_message_icon_blue" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="新增粉丝"
-                android:textColor="@color/black"
-                android:textSize="14sp" />
-        </LinearLayout>
-
-        <!-- 我被需要 -->
-        <LinearLayout
-            android:id="@+id/layout_needed"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="?attr/selectableItemBackground"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:padding="8dp">
-
-            <View
-                android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:background="@drawable/bg_message_icon_green" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="我被需要"
                 android:textColor="@color/black"
                 android:textSize="14sp" />
         </LinearLayout>

@@ -41,22 +41,22 @@ class MessageFragment : Fragment() {
     }
 
     private fun setupListeners() {
+        // 即将过期
+        binding.layoutExpiring.setOnClickListener {
+            // TODO: 跳转到即将过期食材页面
+            android.widget.Toast.makeText(context, "即将过期功能开发中", android.widget.Toast.LENGTH_SHORT).show()
+        }
+
+        // 家人呼唤
+        binding.layoutNeeded.setOnClickListener {
+            // TODO: 跳转到家人呼唤页面
+            android.widget.Toast.makeText(context, "家人呼唤功能开发中", android.widget.Toast.LENGTH_SHORT).show()
+        }
+
         // 爱心点赞
         binding.layoutLikes.setOnClickListener {
             // TODO: 跳转到爱心点赞页面
             android.widget.Toast.makeText(context, "爱心点赞功能开发中", android.widget.Toast.LENGTH_SHORT).show()
-        }
-
-        // 新增粉丝
-        binding.layoutFollowers.setOnClickListener {
-            // TODO: 跳转到新增粉丝页面
-            android.widget.Toast.makeText(context, "新增粉丝功能开发中", android.widget.Toast.LENGTH_SHORT).show()
-        }
-
-        // 我被需要
-        binding.layoutNeeded.setOnClickListener {
-            // TODO: 跳转到我被需要页面
-            android.widget.Toast.makeText(context, "我被需要功能开发中", android.widget.Toast.LENGTH_SHORT).show()
         }
 
         // 查看所有群组

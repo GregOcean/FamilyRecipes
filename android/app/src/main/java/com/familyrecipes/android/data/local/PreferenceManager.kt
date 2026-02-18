@@ -14,6 +14,8 @@ object PreferenceManager {
     private const val KEY_USER_EMAIL = "user_email"
     private const val KEY_USER_NAME = "user_name"
     private const val KEY_BASE_URL = "base_url"
+    private const val KEY_CURRENT_KITCHEN = "current_kitchen"
+    private const val KEY_CURRENT_KITCHEN_ID = "current_kitchen_id"
 
     private lateinit var prefs: SharedPreferences
 
@@ -71,6 +73,27 @@ object PreferenceManager {
             putLong(KEY_USER_ID, userId)
             putString(KEY_USER_EMAIL, email)
             putString(KEY_USER_NAME, userName)
+            apply()
+        }
+    }
+    
+    // 当前厨房信息
+    var currentKitchenName: String?
+        get() = prefs.getString(KEY_CURRENT_KITCHEN, null)
+        set(value) = prefs.edit().putString(KEY_CURRENT_KITCHEN, value).apply()
+    
+    var currentKitchenId: Long?
+        get() {
+            val id = prefs.getLong(KEY_CURRENT_KITCHEN_ID, -1)
+            return if (id == -1L) null else id
+        }
+        set(value) = prefs.edit().putLong(KEY_CURRENT_KITCHEN_ID, value ?: -1).apply()
+    
+    // 保存当前厨房
+    fun saveCurrentKitchen(kitchenId: Long?, kitchenName: String?) {
+        prefs.edit().apply {
+            putLong(KEY_CURRENT_KITCHEN_ID, kitchenId ?: -1)
+            putString(KEY_CURRENT_KITCHEN, kitchenName)
             apply()
         }
     }
