@@ -215,6 +215,30 @@ class ProfileFragment : Fragment() {
             val intent = android.content.Intent(requireContext(), MyCreatedRecipesActivity::class.java)
             startActivity(intent)
         }
+        
+        // 扫一扫
+        binding.ivScanQr.setOnClickListener {
+            val intent = android.content.Intent(requireContext(), com.familyrecipes.android.ui.social.ScanQRActivity::class.java)
+            startActivity(intent)
+        }
+        
+        // 我的名片码
+        binding.layoutMyQr.setOnClickListener {
+            val intent = android.content.Intent(requireContext(), com.familyrecipes.android.ui.social.MyQRCodeActivity::class.java)
+            startActivity(intent)
+        }
+        
+        // 我的好友
+        binding.layoutFriends.setOnClickListener {
+            val intent = android.content.Intent(requireContext(), com.familyrecipes.android.ui.social.FriendsListActivity::class.java)
+            startActivity(intent)
+        }
+        
+        // 我的群组
+        binding.layoutGroups.setOnClickListener {
+            val intent = android.content.Intent(requireContext(), com.familyrecipes.android.ui.social.GroupsListActivity::class.java)
+            startActivity(intent)
+        }
     }
 
     private fun generateRandomString(length: Int): String {

@@ -19,6 +19,8 @@ import com.familyrecipes.android.databinding.BottomSheetAddMenuBinding
 import com.familyrecipes.android.ui.adapter.SearchHistoryAdapter
 import com.familyrecipes.android.ui.fridge.AddIngredientActivity
 import com.familyrecipes.android.ui.fridge.FridgeFragment
+import com.familyrecipes.android.ui.home.HomeFragment
+import com.familyrecipes.android.ui.message.MessageFragment
 import com.familyrecipes.android.ui.profile.ProfileFragment
 import com.familyrecipes.android.ui.recipe.EditRecipeActivity
 import com.familyrecipes.android.ui.recipe.RecipeListFragment
@@ -52,13 +54,14 @@ class MainActivity : AppCompatActivity() {
         setupKeyboardBehavior()
         setupSearchHistory()
         
-        // 默认显示推荐页面
+        // 默认显示首页
         if (savedInstanceState == null) {
             val navigateTo = intent.getStringExtra("navigate_to")
             when (navigateTo) {
                 "fridge" -> binding.bottomNavigation.selectedItemId = R.id.nav_fridge
+                "message" -> binding.bottomNavigation.selectedItemId = R.id.nav_message
                 "profile" -> binding.bottomNavigation.selectedItemId = R.id.nav_profile
-                else -> binding.bottomNavigation.selectedItemId = R.id.nav_recommend
+                else -> binding.bottomNavigation.selectedItemId = R.id.nav_home
             }
         }
     }
@@ -210,6 +213,14 @@ class MainActivity : AppCompatActivity() {
                 }
                 startActivity(intent)
             }
+            is HomeFragment -> {
+                // 首页：全局搜索，跳转到搜索结果页面
+                val intent = Intent(this, SearchResultActivity::class.java).apply {
+                    putExtra(SearchResultActivity.EXTRA_KEYWORD, keyword)
+                    putExtra(SearchResultActivity.EXTRA_PRIORITY_TYPE, "relevance")
+                }
+                startActivity(intent)
+            }
             else -> {
                 // 其他页面不支持搜索
                 Toast.makeText(this, "当前页面不支持搜索", Toast.LENGTH_SHORT).show()
@@ -262,16 +273,16 @@ class MainActivity : AppCompatActivity() {
         binding.bottomNavigation.setOnItemSelectedListener(
             NavigationBarView.OnItemSelectedListener { item ->
                 when (item.itemId) {
-                    R.id.nav_recommend -> {
-                        showFragment(RecommendFragment())
-                        return@OnItemSelectedListener true
-                    }
-                    R.id.nav_recipes -> {
-                        showFragment(RecipeListFragment())
+                    R.id.nav_home -> {
+                        showFragment(HomeFragment())
                         return@OnItemSelectedListener true
                     }
                     R.id.nav_fridge -> {
                         showFragment(FridgeFragment())
+                        return@OnItemSelectedListener true
+                    }
+                    R.id.nav_message -> {
+                        showFragment(MessageFragment())
                         return@OnItemSelectedListener true
                     }
                     R.id.nav_profile -> {

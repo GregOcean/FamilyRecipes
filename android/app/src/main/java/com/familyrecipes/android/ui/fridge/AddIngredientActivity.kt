@@ -585,11 +585,12 @@ class AddIngredientActivity : AppCompatActivity() {
 
     /**
      * 获取或创建食材
+     * 原则：用户输入什么就保存什么，只查找完全匹配的食材
      */
     private suspend fun getOrCreateIngredient(name: String): Ingredient {
         android.util.Log.d("AddIngredient", "--- 开始获取或创建食材: $name ---")
         
-        // 先搜索是否已存在
+        // 先搜索是否已存在完全匹配的食材
         val searchResponse = ApiClient.getService().searchIngredients(name)
         android.util.Log.d("AddIngredient", "搜索食材响应: ${searchResponse.isSuccessful}, code=${searchResponse.body()?.code}")
         
@@ -597,18 +598,31 @@ class AddIngredientActivity : AppCompatActivity() {
             val existingIngredients = searchResponse.body()?.data
             android.util.Log.d("AddIngredient", "找到 ${existingIngredients?.size ?: 0} 个相关食材")
             
-            val exactMatch = existingIngredients?.find { it.name.equals(name, ignoreCase = true) }
+            // 只使用完全匹配的食材（不区分大小写）
+            val exactMatch = existingIngredients?.find { 
+                it.name.equals(name, ignoreCase = true) 
+            }
+            
             if (exactMatch != null) {
                 android.util.Log.d("AddIngredient", "✅ 找到完全匹配的食材: ID=${exactMatch.id}, 名称=${exactMatch.name}")
                 return exactMatch
+            } else {
+                // 记录模糊匹配结果（仅用于日志分析，不影响用户输入）
+                if (!existingIngredients.isNullOrEmpty()) {
+                    android.util.Log.i("AddIngredient", "📝 未找到完全匹配，发现模糊匹配（仅供参考）:")
+                    existingIngredients.take(3).forEach {
+                        android.util.Log.i("AddIngredient", "  - ${it.name} (可能相关，但不使用)")
+                    }
+                }
+                android.util.Log.d("AddIngredient", "⚠️ 用户输入 '$name' 未找到完全匹配，将创建新食材")
             }
         }
 
-        // 不存在则创建
-        android.util.Log.d("AddIngredient", "食材不存在，开始创建...")
+        // 不存在则创建新食材，完全使用用户输入的名称
+        android.util.Log.d("AddIngredient", "食材 '$name' 不存在，开始创建...")
         val newIngredient = Ingredient(
             id = null,
-            name = name,
+            name = name,  // 完全使用用户输入，不做任何修改
             category = "其他",
             unit = null
         )

@@ -161,5 +161,73 @@ interface ApiService {
     @Multipart
     @POST("/api/upload/images")
     suspend fun uploadImages(@Part files: List<MultipartBody.Part>): Response<ApiResponse<List<String>>>
+
+    // ========== 好友相关 ==========
+    @POST("/api/friends/add")
+    suspend fun addFriend(@Body request: Map<String, Long>): Response<ApiResponse<Unit>>
+
+    @GET("/api/friends/list")
+    suspend fun getFriendsList(): Response<ApiResponse<List<Friendship>>>
+
+    @DELETE("/api/friends/{friendId}")
+    suspend fun deleteFriend(@Path("friendId") friendId: Long): Response<ApiResponse<Unit>>
+
+    @PUT("/api/friends/{friendId}/nickname")
+    suspend fun updateFriendNickname(
+        @Path("friendId") friendId: Long,
+        @Body request: Map<String, String>
+    ): Response<ApiResponse<Unit>>
+
+    // ========== 群组相关 ==========
+    @POST("/api/groups/create")
+    suspend fun createGroup(@Body request: Map<String, Any>): Response<ApiResponse<GroupChat>>
+
+    @GET("/api/groups/list")
+    suspend fun getGroupsList(): Response<ApiResponse<List<GroupChat>>>
+
+    @GET("/api/groups/{groupId}")
+    suspend fun getGroupDetail(@Path("groupId") groupId: Long): Response<ApiResponse<GroupChat>>
+
+    @POST("/api/groups/{groupId}/members")
+    suspend fun addGroupMembers(
+        @Path("groupId") groupId: Long,
+        @Body request: Map<String, List<Long>>
+    ): Response<ApiResponse<Unit>>
+
+    @DELETE("/api/groups/{groupId}/members/{memberId}")
+    suspend fun removeGroupMember(
+        @Path("groupId") groupId: Long,
+        @Path("memberId") memberId: Long
+    ): Response<ApiResponse<Unit>>
+
+    @POST("/api/groups/{groupId}/leave")
+    suspend fun leaveGroup(@Path("groupId") groupId: Long): Response<ApiResponse<Unit>>
+
+    @PUT("/api/groups/{groupId}")
+    suspend fun updateGroup(
+        @Path("groupId") groupId: Long,
+        @Body request: Map<String, String>
+    ): Response<ApiResponse<Unit>>
+
+    @DELETE("/api/groups/{groupId}")
+    suspend fun dismissGroup(@Path("groupId") groupId: Long): Response<ApiResponse<Unit>>
+
+    // ========== 消息相关 ==========
+    @POST("/api/messages/send")
+    suspend fun sendMessage(@Body request: Map<String, Any>): Response<ApiResponse<Message>>
+
+    @GET("/api/messages/list")
+    suspend fun getMessages(
+        @Query("groupId") groupId: Long,
+        @Query("pageNum") pageNum: Int = 1,
+        @Query("pageSize") pageSize: Int = 50
+    ): Response<ApiResponse<List<Message>>>
+
+    @POST("/api/messages/read")
+    suspend fun markAsRead(@Body request: Map<String, Long>): Response<ApiResponse<Unit>>
+
+    @GET("/api/messages/unread")
+    suspend fun getUnreadCount(@Query("groupId") groupId: Long): Response<ApiResponse<Int>>
 }
+
 

@@ -225,20 +225,37 @@ class FridgeFragment : Fragment(), SearchableFragment {
         }
     }
     
+    /**
+     * 点击食材，查看相关菜谱
+     * 即使食材ID不存在或没有关联菜谱，也应优雅处理
+     */
     private fun navigateToRecipesByIngredient(item: FridgeItem) {
         item.ingredient?.let { ingredient ->
-            // TODO: 跳转到菜谱列表页面，传递食材ID
+            android.util.Log.d("FridgeFragment", "点击食材: ${ingredient.name}, ID: ${ingredient.id}")
+            
+            // 跳转到主页的菜谱tab，并传递食材信息用于搜索
             Toast.makeText(
                 context, 
                 "查看包含「${ingredient.name}」的菜谱（功能待实现）", 
                 Toast.LENGTH_SHORT
             ).show()
             
-            // 实际使用时：
+            // TODO: 实际实现时的代码
+            // 方式1: 跳转到菜谱列表并按食材过滤
             // val intent = Intent(requireContext(), RecipeListActivity::class.java)
             // intent.putExtra("ingredient_id", ingredient.id)
             // intent.putExtra("ingredient_name", ingredient.name)
             // startActivity(intent)
+            
+            // 方式2: 切换到主页的菜谱tab并设置搜索关键词
+            // (parentFragment?.parentFragment as? MainActivity)?.switchToRecipeTabWithSearch(ingredient.name)
+            
+            // 注意：即使ingredient.id为null或后端没有关联的菜谱，
+            // 界面应该显示"暂无包含该食材的菜谱"而不是崩溃
+        } ?: run {
+            // ingredient为null的异常情况
+            android.util.Log.w("FridgeFragment", "点击的食材对象ingredient为null")
+            Toast.makeText(context, "食材信息缺失", Toast.LENGTH_SHORT).show()
         }
     }
     
@@ -439,8 +456,9 @@ class FridgeFragment : Fragment(), SearchableFragment {
                 setupRecyclerView()
                 setupTabLayout()
                 setupListeners()
-                loadData()
             }
+            // 无论是否初始化过，都刷新数据（从添加食材页面返回时需要）
+            loadData()
         }
     }
 

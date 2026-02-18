@@ -189,3 +189,71 @@ data class ParseLinkRequest(
     @SerializedName("pastedText") val pastedText: String
 )
 
+/**
+ * 好友关系
+ */
+data class Friendship(
+    val id: Long?,
+    @SerializedName("user_id") val userId: Long?,
+    @SerializedName("friend_id") val friendId: Long?,
+    val nickname: String?,
+    val status: String?,
+    @SerializedName("created_at") val createdAt: String?,
+    val friend: User?
+)
+
+/**
+ * 群组
+ */
+data class GroupChat(
+    val id: Long?,
+    val name: String,
+    val avatar: String?,
+    @SerializedName("creator_id") val creatorId: Long?,
+    @SerializedName("member_count") val memberCount: Int?,
+    @SerializedName("max_members") val maxMembers: Int?,
+    val description: String?,
+    @SerializedName("created_at") val createdAt: String?,
+    @SerializedName("updated_at") val updatedAt: String?,
+    val members: List<GroupMember>?,
+    @SerializedName("last_message") val lastMessage: Message?,
+    @SerializedName("unread_count") val unreadCount: Int?
+)
+
+/**
+ * 群组成员
+ */
+data class GroupMember(
+    val id: Long?,
+    @SerializedName("group_id") val groupId: Long?,
+    @SerializedName("user_id") val userId: Long?,
+    val role: String?,
+    val nickname: String?,
+    @SerializedName("joined_at") val joinedAt: String?,
+    val user: User?
+) {
+    companion object {
+        const val ROLE_MANAGER = "manager"  // 群管理员（有且只有1个）
+        const val ROLE_MEMBER = "member"    // 普通成员
+    }
+}
+
+/**
+ * 消息
+ */
+data class Message(
+    val id: Long?,
+    @SerializedName("group_id") val groupId: Long?,
+    @SerializedName("sender_id") val senderId: Long?,
+    val content: String,
+    @SerializedName("message_type") val messageType: String?,
+    @SerializedName("created_at") val createdAt: String?,
+    val sender: User?
+) {
+    companion object {
+        const val TYPE_TEXT = "text"
+        const val TYPE_IMAGE = "image"
+        const val TYPE_SYSTEM = "system"
+    }
+}
+
