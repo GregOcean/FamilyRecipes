@@ -37,11 +37,17 @@ public class GroupChatController {
                 return Result.error("群组名称不能为空");
             }
             
-            if (request.getMemberIds() == null || request.getMemberIds().isEmpty()) {
-                return Result.error("请至少选择一个好友");
+            // 支持不选择初始成员（可以创建后再邀请）
+            List<Long> memberIds = request.getMemberIds();
+            if (memberIds == null) {
+                memberIds = new java.util.ArrayList<>();
             }
             
-            GroupChat group = groupChatService.createGroup(userId, request.getName(), request.getMemberIds());
+            // 设置默认值
+            String description = request.getDescription() != null ? request.getDescription() : "";
+            Integer maxMembers = request.getMaxMembers() != null ? request.getMaxMembers() : 20;
+            
+            GroupChat group = groupChatService.createGroup(userId, request.getName(), description, maxMembers, memberIds);
             return Result.success(group);
         } catch (Exception e) {
             log.error("创建群组失败", e);
@@ -172,6 +178,8 @@ public class GroupChatController {
     @Data
     static class CreateGroupRequest {
         private String name;
+        private String description;
+        private Integer maxMembers;
         private List<Long> memberIds;
     }
     

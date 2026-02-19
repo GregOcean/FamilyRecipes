@@ -32,19 +32,22 @@ public class GroupChatService {
      * 创建群组
      */
     @Transactional
-    public GroupChat createGroup(Long creatorId, String groupName, List<Long> memberIds) {
-        // 检查成员数量（包括创建者，最多5人）
-        if (memberIds.size() + 1 > 5) {
-            throw new RuntimeException("群组成员数量不能超过5人");
+    public GroupChat createGroup(Long creatorId, String groupName, String description, 
+                                  Integer maxMembers, List<Long> memberIds) {
+        // 检查成员数量（包括创建者）
+        int totalMembers = memberIds.size() + 1;
+        if (totalMembers > maxMembers) {
+            throw new RuntimeException("群组成员数量不能超过" + maxMembers + "人");
         }
         
         // 创建群组
         GroupChat group = new GroupChat();
         group.setName(groupName);
+        group.setDescription(description);
         group.setCreatorId(creatorId);
         group.setManagerId(creatorId);  // 创建者即为管理员
-        group.setMemberCount(memberIds.size() + 1); // 包括创建者
-        group.setMaxMembers(5);  // 默认5人，会员可扩展
+        group.setMemberCount(totalMembers); // 包括创建者
+        group.setMaxMembers(maxMembers);
         groupChatMapper.insertGroup(group);
         
         // 添加创建者为群管理员

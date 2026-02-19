@@ -140,6 +140,20 @@
             android:name=".ui.social.GroupsListActivity"
             android:exported="false" />
         
+        <!-- 创建群聊 -->
+        <activity
+            android:name=".ui.social.CreateGroupActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.FamilyRecipes" />
+        
+        <!-- 群聊天 -->
+        <activity
+            android:name=".ui.social.GroupChatActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.FamilyRecipes" />
+        
     </application>
 
 </manifest>

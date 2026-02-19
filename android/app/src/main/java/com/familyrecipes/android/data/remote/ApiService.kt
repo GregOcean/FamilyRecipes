@@ -180,7 +180,7 @@ interface ApiService {
 
     // ========== 群组相关 ==========
     @POST("/api/groups/create")
-    suspend fun createGroup(@Body request: Map<String, Any>): Response<ApiResponse<GroupChat>>
+    suspend fun createGroup(@Body request: CreateGroupRequest): Response<ApiResponse<GroupChat>>
 
     @GET("/api/groups/list")
     suspend fun getGroupsList(): Response<ApiResponse<List<GroupChat>>>

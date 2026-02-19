@@ -15,14 +15,17 @@ public interface RecipeMapper {
     Recipe findById(Long id);
 
     @Insert("INSERT INTO recipe(name, description, cover_image, cooking_time, difficulty, " +
-            "servings, creator_id) VALUES(#{name}, #{description}, #{coverImage}, " +
-            "#{cookingTime}, #{difficulty}, #{servings}, #{creatorId})")
+            "servings, creator_id, visibility, shared_group_ids, owner_group_id) " +
+            "VALUES(#{name}, #{description}, #{coverImage}, " +
+            "#{cookingTime}, #{difficulty}, #{servings}, #{creatorId}, " +
+            "#{visibility}, #{sharedGroupIds}, #{ownerGroupId})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(Recipe recipe);
 
     @Update("UPDATE recipe SET name=#{name}, description=#{description}, " +
             "cover_image=#{coverImage}, cooking_time=#{cookingTime}, difficulty=#{difficulty}, " +
-            "servings=#{servings} WHERE id=#{id}")
+            "servings=#{servings}, visibility=#{visibility}, shared_group_ids=#{sharedGroupIds}, " +
+            "owner_group_id=#{ownerGroupId} WHERE id=#{id}")
     int update(Recipe recipe);
 
     @Delete("DELETE FROM recipe WHERE id = #{id}")

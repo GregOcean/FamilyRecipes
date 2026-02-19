@@ -43,6 +43,10 @@ class EditRecipeActivity : AppCompatActivity() {
     private var recipeId: Long? = null  // 如果是编辑模式，这里保存菜谱ID
     private var existingRecipe: Recipe? = null  // 保存现有菜谱数据
     
+    // 权限相关
+    private var selectedVisibility: String = "group" // public, private, group
+    private val selectedGroupIds = mutableListOf<Long>() // 分享的群组ID列表
+    
     /**
      * 解析后的外部链接数据
      */
@@ -75,6 +79,7 @@ class EditRecipeActivity : AppCompatActivity() {
         setupToolbar()
         setupImageGrid()
         setupExternalLinks()
+        setupPermission()
         setupPublishButton()
         
         // 如果是编辑模式，加载现有数据
@@ -221,6 +226,145 @@ class EditRecipeActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 设置权限选择
+     */
+    private fun setupPermission() {
+        // 初始化显示当前厨房名称
+        updatePermissionDisplay()
+        
+        binding.layoutPermission.setOnClickListener {
+            showPermissionDialog()
+        }
+    }
+    
+    /**
+     * 更新权限显示
+     */
+    private fun updatePermissionDisplay() {
+        val subtitle = when (selectedVisibility) {
+            "public" -> "公开可见"
+            "private" -> "仅自己可见"
+            "group" -> {
+                if (selectedGroupIds.isEmpty()) {
+                    // 显示当前厨房名称
+                    val currentKitchenName = com.familyrecipes.android.data.local.PreferenceManager.currentKitchenName
+                    currentKitchenName ?: "当前厨房可见"
+                } else {
+                    "已分享给 ${selectedGroupIds.size} 个群组"
+                }
+            }
+            else -> "当前厨房可见"
+        }
+        
+        binding.tvPermissionSubtitle.text = subtitle
+    }
+    
+    /**
+     * 显示权限选择对话框
+     */
+    private fun showPermissionDialog() {
+        val options = arrayOf("公开可见", "仅自己可见", "分享给群组")
+        
+        AlertDialog.Builder(this)
+            .setTitle("可见范围")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> {
+                        // 公开可见
+                        selectedVisibility = "public"
+                        selectedGroupIds.clear()
+                        updatePermissionDisplay()
+                    }
+                    1 -> {
+                        // 仅自己可见
+                        selectedVisibility = "private"
+                        selectedGroupIds.clear()
+                        updatePermissionDisplay()
+                    }
+                    2 -> {
+                        // 分享给群组
+                        selectedVisibility = "group"
+                        showGroupSelectionDialog()
+                    }
+                }
+            }
+            .show()
+    }
+    
+    /**
+     * 显示群组选择对话框（多选）
+     */
+    private fun showGroupSelectionDialog() {
+        lifecycleScope.launch {
+            try {
+                // 调用API获取用户的群组列表
+                val response = ApiClient.getService().getGroupsList()
+                
+                if (response.isSuccessful && response.body()?.code == 200) {
+                    val groups = response.body()?.data ?: emptyList()
+                    
+                    if (groups.isEmpty()) {
+                        android.widget.Toast.makeText(
+                            this@EditRecipeActivity,
+                            "您还没有加入任何群组",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                        return@launch
+                    }
+                    
+                    showGroupCheckboxDialog(groups)
+                } else {
+                    android.widget.Toast.makeText(
+                        this@EditRecipeActivity,
+                        "获取群组列表失败",
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                android.widget.Toast.makeText(
+                    this@EditRecipeActivity,
+                    "获取群组列表失败：${e.message}",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+    }
+    
+    /**
+     * 显示群组多选对话框
+     */
+    private fun showGroupCheckboxDialog(groups: List<GroupChat>) {
+        val groupNames = groups.map { it.name }.toTypedArray()
+        val checkedItems = groups.map { selectedGroupIds.contains(it.id) }.toBooleanArray()
+        
+        AlertDialog.Builder(this)
+            .setTitle("选择要分享的群组")
+            .setMultiChoiceItems(groupNames, checkedItems) { _, which, isChecked ->
+                val groupId = groups[which].id ?: return@setMultiChoiceItems
+                if (isChecked) {
+                    if (!selectedGroupIds.contains(groupId)) {
+                        selectedGroupIds.add(groupId)
+                    }
+                } else {
+                    selectedGroupIds.remove(groupId)
+                }
+            }
+            .setPositiveButton("确定") { _, _ ->
+                // 如果没有选择任何群组，默认为当前厨房
+                if (selectedGroupIds.isEmpty()) {
+                    val currentKitchenId = com.familyrecipes.android.data.local.PreferenceManager.currentKitchenId
+                    if (currentKitchenId != null) {
+                        selectedGroupIds.add(currentKitchenId)
+                    }
+                }
+                updatePermissionDisplay()
+            }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
     private fun setupPublishButton() {
         binding.btnPublish.setOnClickListener {
             val title = binding.etRecipeTitle.text.toString().trim()
@@ -272,6 +416,12 @@ class EditRecipeActivity : AppCompatActivity() {
                     dislikeCount = null,
                     recentlyCookedCount = null,
                     createdAt = null,
+                    // 权限信息
+                    visibility = selectedVisibility,
+                    sharedGroupIds = if (selectedGroupIds.isNotEmpty()) {
+                        com.google.gson.Gson().toJson(selectedGroupIds)
+                    } else null,
+                    ownerGroupId = com.familyrecipes.android.data.local.PreferenceManager.currentKitchenId,
                     creator = null,
                     tags = null,
                     ingredients = null,
@@ -378,6 +528,13 @@ class EditRecipeActivity : AppCompatActivity() {
                     dislikeCount = null,
                     recentlyCookedCount = null,
                     createdAt = null,
+                    // 权限信息
+                    visibility = selectedVisibility,
+                    sharedGroupIds = if (selectedGroupIds.isNotEmpty()) {
+                        com.google.gson.Gson().toJson(selectedGroupIds)
+                    } else null,
+                    ownerGroupId = existingRecipe?.ownerGroupId 
+                        ?: com.familyrecipes.android.data.local.PreferenceManager.currentKitchenId,
                     creator = null,
                     tags = null,
                     ingredients = null,
@@ -571,6 +728,19 @@ class EditRecipeActivity : AppCompatActivity() {
             externalLinks.add(link)
         }
         linkAdapter.notifyDataSetChanged()
+        
+        // 加载权限信息
+        selectedVisibility = recipe.visibility ?: "group"
+        recipe.sharedGroupIds?.let { json ->
+            try {
+                val groupIds = com.google.gson.Gson().fromJson(json, Array<Long>::class.java)
+                selectedGroupIds.clear()
+                selectedGroupIds.addAll(groupIds)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        updatePermissionDisplay()
         
         // TODO: 加载图片（需要将URL转换为Uri）
     }

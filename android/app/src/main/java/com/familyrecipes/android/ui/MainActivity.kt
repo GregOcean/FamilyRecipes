@@ -264,24 +264,18 @@ class MainActivity : AppCompatActivity() {
      * 显示添加社交功能菜单（消息Tab使用）
      */
     private fun showAddSocialMenu() {
-        val options = arrayOf("创建群组", "添加好友", "扫码加好友")
+        val options = arrayOf("创建群聊", "扫一扫")
         
         android.app.AlertDialog.Builder(this)
-            .setTitle("添加")
             .setItems(options) { _, which ->
                 when (which) {
                     0 -> {
-                        // 创建群组
-                        Toast.makeText(this, "创建群组功能开发中", Toast.LENGTH_SHORT).show()
-                        // TODO: 跳转到创建群组页面
+                        // 创建群聊
+                        val intent = android.content.Intent(this, com.familyrecipes.android.ui.social.CreateGroupActivity::class.java)
+                        startActivity(intent)
                     }
                     1 -> {
-                        // 添加好友
-                        Toast.makeText(this, "添加好友功能开发中", Toast.LENGTH_SHORT).show()
-                        // TODO: 跳转到添加好友页面
-                    }
-                    2 -> {
-                        // 扫码加好友
+                        // 扫一扫
                         val intent = android.content.Intent(this, com.familyrecipes.android.ui.social.ScanQRActivity::class.java)
                         startActivity(intent)
                     }

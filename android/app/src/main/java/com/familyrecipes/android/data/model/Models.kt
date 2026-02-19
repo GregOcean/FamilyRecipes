@@ -60,6 +60,11 @@ data class Recipe(
     @SerializedName("recently_cooked_count") val recentlyCookedCount: Int?,
     @SerializedName("created_at") val createdAt: String?,
     
+    // 权限相关
+    val visibility: String? = "group", // public, private, group
+    @SerializedName("shared_group_ids") val sharedGroupIds: String? = null, // JSON数组
+    @SerializedName("owner_group_id") val ownerGroupId: Long? = null,
+    
     // 关联数据
     val creator: User?,
     val tags: List<RecipeTag>?,
@@ -218,6 +223,16 @@ data class GroupChat(
     val members: List<GroupMember>?,
     @SerializedName("last_message") val lastMessage: Message?,
     @SerializedName("unread_count") val unreadCount: Int?
+)
+
+/**
+ * 创建群组请求
+ */
+data class CreateGroupRequest(
+    val name: String,
+    val description: String?,
+    @SerializedName("maxMembers") val maxMembers: Int?,
+    @SerializedName("memberIds") val memberIds: List<Long>?
 )
 
 /**
