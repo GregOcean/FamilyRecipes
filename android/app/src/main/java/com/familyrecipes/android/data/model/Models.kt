@@ -94,13 +94,28 @@ data class RecipeTag(
 }
 
 /**
- * 食材
+ * 库存分类
+ */
+data class InventoryCategory(
+    val id: Long,
+    val name: String,
+    @SerializedName("parent_id") val parentId: Long?,
+    val icon: String?,
+    @SerializedName("sort_order") val sortOrder: Int,
+    @SerializedName("created_at") val createdAt: String?,
+    @SerializedName("updated_at") val updatedAt: String?,
+    val children: List<InventoryCategory>? = null // 子分类
+)
+
+/**
+ * 食材/库存物品
  */
 data class Ingredient(
     val id: Long?,
     val name: String,
     val category: String?,
-    val unit: String? = null
+    val unit: String? = null,
+    @SerializedName("category_id") val categoryId: Long? = null // 库存分类ID
 )
 
 /**

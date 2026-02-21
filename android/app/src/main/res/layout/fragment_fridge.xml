@@ -31,20 +31,38 @@
 
     </com.google.android.material.tabs.TabLayout>
 
-    <!-- SwipeRefreshLayout -->
-    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-        android:id="@+id/swipe_refresh"
+    <!-- 主内容区域：左侧分类 + 右侧列表 -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:orientation="horizontal">
 
+        <!-- 左侧分类栏 -->
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recycler_view"
-            android:layout_width="match_parent"
+            android:id="@+id/category_sidebar"
+            android:layout_width="85dp"
             android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:padding="8dp" />
+            android:background="@color/category_sidebar_bg"
+            android:elevation="2dp"
+            android:scrollbars="none" />
 
-    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+        <!-- 右侧库存列表 -->
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swipe_refresh"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:padding="8dp" />
+
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    </LinearLayout>
 
 </LinearLayout>
 

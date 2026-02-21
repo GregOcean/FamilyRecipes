@@ -18,10 +18,12 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.familyrecipes.android.data.model.FridgeItem
+import com.familyrecipes.android.data.model.InventoryCategory
 import com.familyrecipes.android.data.remote.ApiClient
 import com.familyrecipes.android.databinding.FragmentFridgeBinding
 import com.familyrecipes.android.ui.SearchableFragment
 import com.familyrecipes.android.ui.adapter.FridgeAdapter
+import com.familyrecipes.android.ui.fridge.adapter.CategorySidebarAdapter
 import com.google.android.material.tabs.TabLayout
 import kotlinx.coroutines.launch
 
@@ -34,9 +36,13 @@ class FridgeFragment : Fragment(), SearchableFragment {
     private val binding get() = _binding!!
     
     private lateinit var fridgeAdapter: FridgeAdapter
+    private lateinit var categoryAdapter: CategorySidebarAdapter
     private val items = mutableListOf<FridgeItem>()
+    private val allItems = mutableListOf<FridgeItem>() // 保存所有数据用于筛选
+    private val categories = mutableListOf<InventoryCategory>()
     
     private var currentTab = TAB_CURRENT  // 当前选中的Tab
+    private var selectedCategoryId: Long? = null // 当前选中的分类ID
     
     companion object {
         private const val TAB_CURRENT = 0    // 当前库存
@@ -70,10 +76,68 @@ class FridgeFragment : Fragment(), SearchableFragment {
             return
         }
         
+        setupCategorySidebar()
         setupRecyclerView()
         setupTabLayout()
         setupListeners()
+        loadCategories()
         loadData()
+    }
+
+    /**
+     * 设置分类侧边栏
+     */
+    private fun setupCategorySidebar() {
+        categoryAdapter = CategorySidebarAdapter { category, isExpanded ->
+            // 点击分类时的回调
+            selectedCategoryId = category?.id
+            filterItemsByCategory()
+        }
+        
+        binding.categorySidebar.apply {
+            layoutManager = LinearLayoutManager(context)
+            adapter = categoryAdapter
+        }
+    }
+
+    /**
+     * 加载分类数据
+     */
+    private fun loadCategories() {
+        lifecycleScope.launch {
+            try {
+                val response = ApiClient.getService().getCategoryTree()
+                
+                if (response.isSuccessful && response.body()?.code == 200) {
+                    val categoryList = response.body()?.data ?: emptyList()
+                    categories.clear()
+                    categories.addAll(categoryList)
+                    categoryAdapter.submitList(categoryList)
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("FridgeFragment", "加载分类失败", e)
+            }
+        }
+    }
+
+    /**
+     * 根据分类筛选库存
+     */
+    private fun filterItemsByCategory() {
+        items.clear()
+        
+        if (selectedCategoryId == null) {
+            // 显示全部
+            items.addAll(allItems)
+        } else {
+            // 筛选指定分类
+            items.addAll(allItems.filter { it.ingredient?.categoryId == selectedCategoryId })
+        }
+        
+        fridgeAdapter.notifyDataSetChanged()
+        
+        // 更新适配器选中状态
+        categoryAdapter.setSelectedCategory(selectedCategoryId)
     }
 
     private fun setupRecyclerView() {
@@ -272,27 +336,26 @@ class FridgeFragment : Fragment(), SearchableFragment {
                 val response = ApiClient.getService().getFridgeItems()
                 
                 if (response.isSuccessful && response.body()?.code == 200) {
-                    items.clear()
-                    val allItems = response.body()?.data ?: emptyList()
+                    allItems.clear()
+                    allItems.addAll(response.body()?.data ?: emptyList())
                     
-                    // 如果有搜索关键词，进行本地过滤
-                    val filteredItems = if (!keyword.isNullOrEmpty()) {
-                        allItems.filter { 
+                    // 应用分类筛选
+                    filterItemsByCategory()
+                    
+                    // 如果有搜索关键词，进一步过滤
+                    if (!keyword.isNullOrEmpty()) {
+                        val searchFiltered = items.filter { 
                             it.ingredient?.name?.contains(keyword, ignoreCase = true) == true ||
                             it.storageLocation?.contains(keyword, ignoreCase = true) == true
                         }
-                    } else {
-                        allItems
-                    }
-                    
-                    items.addAll(filteredItems)
-                    fridgeAdapter.notifyDataSetChanged()
-                    
-                    if (!keyword.isNullOrEmpty()) {
-                        if (filteredItems.isEmpty()) {
-                            Toast.makeText(context, "没有找到相关食材", Toast.LENGTH_SHORT).show()
+                        items.clear()
+                        items.addAll(searchFiltered)
+                        fridgeAdapter.notifyDataSetChanged()
+                        
+                        if (searchFiltered.isEmpty()) {
+                            Toast.makeText(context, "没有找到相关库存", Toast.LENGTH_SHORT).show()
                         } else {
-                            Toast.makeText(context, "找到 ${filteredItems.size} 个食材", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "找到 ${searchFiltered.size} 个库存", Toast.LENGTH_SHORT).show()
                         }
                     } else {
                         // 检查即将过期的食材
@@ -315,29 +378,28 @@ class FridgeFragment : Fragment(), SearchableFragment {
                 val response = ApiClient.getService().getConsumedItems()
                 
                 if (response.isSuccessful && response.body()?.code == 200) {
-                    items.clear()
-                    val allItems = response.body()?.data ?: emptyList()
+                    allItems.clear()
+                    allItems.addAll(response.body()?.data ?: emptyList())
                     
-                    // 如果有搜索关键词，进行本地过滤
-                    val filteredItems = if (!keyword.isNullOrEmpty()) {
-                        allItems.filter { 
+                    // 应用分类筛选
+                    filterItemsByCategory()
+                    
+                    // 如果有搜索关键词，进一步过滤
+                    if (!keyword.isNullOrEmpty()) {
+                        val searchFiltered = items.filter { 
                             it.ingredient?.name?.contains(keyword, ignoreCase = true) == true ||
                             it.storageLocation?.contains(keyword, ignoreCase = true) == true
                         }
-                    } else {
-                        allItems
-                    }
-                    
-                    items.addAll(filteredItems)
-                    fridgeAdapter.notifyDataSetChanged()
-                    
-                    if (!keyword.isNullOrEmpty()) {
-                        if (filteredItems.isEmpty()) {
-                            Toast.makeText(context, "没有找到相关食材", Toast.LENGTH_SHORT).show()
+                        items.clear()
+                        items.addAll(searchFiltered)
+                        fridgeAdapter.notifyDataSetChanged()
+                        
+                        if (searchFiltered.isEmpty()) {
+                            Toast.makeText(context, "没有找到相关库存", Toast.LENGTH_SHORT).show()
                         } else {
-                            Toast.makeText(context, "找到 ${filteredItems.size} 个食材", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "找到 ${searchFiltered.size} 个库存", Toast.LENGTH_SHORT).show()
                         }
-                    } else if (filteredItems.isEmpty()) {
+                    } else if (items.isEmpty()) {
                         Toast.makeText(context, "暂无消耗记录", Toast.LENGTH_SHORT).show()
                     }
                 } else {
@@ -352,13 +414,13 @@ class FridgeFragment : Fragment(), SearchableFragment {
     }
 
     private fun checkExpiringItems() {
-        val expiringCount = items.count { it.status == FridgeItem.STATUS_EXPIRING }
-        val expiredCount = items.count { it.status == FridgeItem.STATUS_EXPIRED }
+        val expiringCount = allItems.count { it.status == FridgeItem.STATUS_EXPIRING }
+        val expiredCount = allItems.count { it.status == FridgeItem.STATUS_EXPIRED }
         
         if (expiringCount > 0 || expiredCount > 0) {
             val message = buildString {
-                if (expiredCount > 0) append("${expiredCount}个食材已过期\n")
-                if (expiringCount > 0) append("${expiringCount}个食材即将过期")
+                if (expiredCount > 0) append("${expiredCount}个库存已过期\n")
+                if (expiringCount > 0) append("${expiringCount}个库存即将过期")
             }
             Toast.makeText(context, message, Toast.LENGTH_LONG).show()
         }
@@ -366,7 +428,7 @@ class FridgeFragment : Fragment(), SearchableFragment {
 
     private fun markAsConsumed(itemId: Long) {
         // 检查登录状态
-        if (!com.familyrecipes.android.util.AuthUtil.requireLogin(requireContext(), "标记食材为已消耗")) {
+        if (!com.familyrecipes.android.util.AuthUtil.requireLogin(requireContext(), "标记库存为已消耗")) {
             // 恢复列表状态
             fridgeAdapter.notifyDataSetChanged()
             return
@@ -388,7 +450,7 @@ class FridgeFragment : Fragment(), SearchableFragment {
 
     private fun deleteItem(itemId: Long) {
         // 检查登录状态
-        if (!com.familyrecipes.android.util.AuthUtil.requireLogin(requireContext(), "删除食材")) {
+        if (!com.familyrecipes.android.util.AuthUtil.requireLogin(requireContext(), "删除库存")) {
             // 恢复列表状态
             fridgeAdapter.notifyDataSetChanged()
             return
@@ -409,7 +471,7 @@ class FridgeFragment : Fragment(), SearchableFragment {
     }
     
     override fun performSearch(keyword: String) {
-        // 食材页面：只搜索用户自己的食材（本地过滤）
+        // 库存页面：只搜索用户自己的库存（本地过滤）
         binding.swipeRefresh.isRefreshing = true
         lifecycleScope.launch {
             try {
@@ -435,9 +497,10 @@ class FridgeFragment : Fragment(), SearchableFragment {
         binding.recyclerView.visibility = View.GONE
         binding.swipeRefresh.visibility = View.GONE
         binding.tabLayout.visibility = View.GONE
+        binding.categorySidebar.visibility = View.GONE
         
         // 显示提示信息（可以用一个TextView或者空状态视图）
-        android.widget.Toast.makeText(context, "冰箱功能需要登录后使用", android.widget.Toast.LENGTH_LONG).show()
+        android.widget.Toast.makeText(context, "库存功能需要登录后使用", android.widget.Toast.LENGTH_LONG).show()
         
         // 自动跳转到"我的"页面
         com.familyrecipes.android.util.AuthUtil.navigateToProfile(requireContext())
@@ -452,12 +515,15 @@ class FridgeFragment : Fragment(), SearchableFragment {
                 binding.recyclerView.visibility = View.VISIBLE
                 binding.swipeRefresh.visibility = View.VISIBLE
                 binding.tabLayout.visibility = View.VISIBLE
+                binding.categorySidebar.visibility = View.VISIBLE
                 
+                setupCategorySidebar()
                 setupRecyclerView()
                 setupTabLayout()
                 setupListeners()
+                loadCategories()
             }
-            // 无论是否初始化过，都刷新数据（从添加食材页面返回时需要）
+            // 无论是否初始化过，都刷新数据（从添加库存页面返回时需要）
             loadData()
         }
     }

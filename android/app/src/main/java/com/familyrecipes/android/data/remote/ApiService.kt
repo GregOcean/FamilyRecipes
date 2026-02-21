@@ -144,6 +144,19 @@ interface ApiService {
     @POST("/api/fridge/ingredients")
     suspend fun createIngredient(@Body ingredient: Ingredient): Response<ApiResponse<Ingredient>>
     
+    // ========== 库存分类相关 ==========
+    @GET("/api/inventory/categories/tree")
+    suspend fun getCategoryTree(): Response<ApiResponse<List<InventoryCategory>>>
+    
+    @GET("/api/inventory/categories/all")
+    suspend fun getAllCategories(): Response<ApiResponse<List<InventoryCategory>>>
+    
+    @GET("/api/inventory/categories/{id}")
+    suspend fun getCategoryById(@Path("id") id: Long): Response<ApiResponse<InventoryCategory>>
+    
+    @POST("/api/inventory/categories/smart-match")
+    suspend fun smartMatchCategory(@Body itemName: String): Response<ApiResponse<Long>>
+    
     // ========== 全局搜索 ==========
     @GET("/api/search/global")
     suspend fun globalSearch(

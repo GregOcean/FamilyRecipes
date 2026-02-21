@@ -38,6 +38,15 @@
     <color name="text_hint">#FFBDBDBD</color>
     <color name="text_dark">#FF333333</color>
     
+    <!-- 分类侧边栏配色 -->
+    <color name="category_sidebar_bg">#FFFFF8F0</color>           <!-- 浅橘色背景 -->
+    <color name="category_parent_bg">#FFFFF8F0</color>            <!-- 一级分类背景（同侧边栏） -->
+    <color name="category_parent_selected_bg">#FFFFE5CC</color>   <!-- 一级分类选中背景（橘黄高亮） -->
+    <color name="category_child_bg">#FFFEF5E7</color>             <!-- 二级分类背景（稍深） -->
+    <color name="category_child_selected_bg">#FFFFD9B3</color>    <!-- 二级分类选中背景 -->
+    <color name="category_text_normal">#FF8D6E63</color>          <!-- 未选中文字（温暖的棕色） -->
+    <color name="category_text_selected">#FFFF6B35</color>        <!-- 选中文字（主题橘红色） -->
+    
     <!-- 启动图标背景色 -->
     <color name="ic_launcher_background">#FFFFFF</color>
 </resources>

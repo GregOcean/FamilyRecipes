@@ -121,7 +121,7 @@
                 android:layout_marginTop="8dp" />
         </LinearLayout>
 
-        <!-- 食材 -->
+        <!-- 库存 -->
         <LinearLayout
             android:id="@+id/btn_add_ingredient"
             android:layout_width="0dp"
@@ -144,7 +144,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="食材"
+                android:text="库存"
                 android:textSize="14sp"
                 android:textColor="@color/text_primary"
                 android:layout_marginTop="8dp" />

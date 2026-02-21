@@ -209,7 +209,7 @@ class MainActivity : AppCompatActivity() {
         // 根据当前Fragment决定搜索方式
         when (currentFragment) {
             is RecipeListFragment, is FridgeFragment -> {
-                // 菜谱和食材页面：在当前页面搜索（只搜自己的数据）
+                // 菜谱和库存页面：在当前页面搜索（只搜自己的数据）
                 (currentFragment as? SearchableFragment)?.performSearch(keyword)
             }
             is RecommendFragment -> {
@@ -443,11 +443,11 @@ class MainActivity : AppCompatActivity() {
             // TODO: 跳转到添加菜单页面
         }
         
-        // 食材按钮
+        // 食材/库存按钮
         binding.btnAddIngredient.setOnClickListener {
             bottomSheetDialog.dismiss()
             // 检查登录状态
-            if (com.familyrecipes.android.util.AuthUtil.requireLogin(this, "添加食材")) {
+            if (com.familyrecipes.android.util.AuthUtil.requireLogin(this, "添加库存")) {
                 val intent = Intent(this, AddIngredientActivity::class.java)
                 startActivity(intent)
             }
