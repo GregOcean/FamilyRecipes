@@ -186,8 +186,9 @@ class AddIngredientActivity : AppCompatActivity() {
                     return@launch
                 }
                 
-                // 3. 显示识别结果确认
-                showParseResultDialog(parseResult)
+                // 3. 加载所属人候选（群成员）后显示识别结果确认
+                val ownerCandidates = loadOwnerCandidates()
+                runOnUiThread { showParseResultDialog(parseResult, ownerCandidates) }
                 
             } catch (e: Exception) {
                 Toast.makeText(
@@ -276,6 +277,8 @@ class AddIngredientActivity : AppCompatActivity() {
             val amount = dialogBinding.etAmount.text.toString().trim()
             val expiryDaysStr = dialogBinding.etExpiryDays.text.toString().trim()
             val storageLocation = dialogBinding.etStorageLocation.text.toString().trim()
+            val selectedOwnerIndex = dialogBinding.spinnerOwner.selectedItemPosition.coerceIn(0, ownerCandidates.size - 1)
+            val ownerUserId = ownerCandidates.getOrNull(selectedOwnerIndex)?.first
             
             // 验证输入
             if (name.isEmpty()) {
@@ -305,7 +308,8 @@ class AddIngredientActivity : AppCompatActivity() {
                 amount = amount.ifEmpty { null },
                 expiryDays = expiryDays,
                 storageLocation = storageLocation.ifEmpty { "冰箱冷藏" },
-                notes = parseResult.notes
+                notes = parseResult.notes,
+                ownerUserId = ownerUserId
             )
             
             dialog.dismiss()
@@ -520,6 +524,7 @@ class AddIngredientActivity : AppCompatActivity() {
                     storageLocation = parseResult.storageLocation ?: "冰箱",  // 使用用户输入的存储位置
                     status = FridgeItem.STATUS_NORMAL,
                     notes = parseResult.notes,
+                    ownerUserId = parseResult.ownerUserId,
                     ingredient = null
                 )
                 

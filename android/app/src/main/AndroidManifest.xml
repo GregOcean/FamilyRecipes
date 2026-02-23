@@ -140,6 +140,16 @@
             android:name=".ui.social.GroupsListActivity"
             android:exported="false" />
         
+        <!-- 我加入的群 -->
+        <activity
+            android:name=".ui.social.JoinedGroupsActivity"
+            android:exported="false" />
+        
+        <!-- 我创建的群 -->
+        <activity
+            android:name=".ui.social.CreatedGroupsActivity"
+            android:exported="false" />
+        
         <!-- 创建群聊 -->
         <activity
             android:name=".ui.social.CreateGroupActivity"

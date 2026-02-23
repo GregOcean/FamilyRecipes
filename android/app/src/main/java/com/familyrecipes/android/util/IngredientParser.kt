@@ -103,7 +103,8 @@ object IngredientParser {
             amount = amount,
             expiryDays = finalExpiryDays,
             storageLocation = ConfigManager.getDefaultStorageLocation(),  // 从配置获取默认存储位置
-            notes = text
+            notes = text,
+            ownerUserId = null  // 所属人需在确认对话框中选择用户
         )
     }
 

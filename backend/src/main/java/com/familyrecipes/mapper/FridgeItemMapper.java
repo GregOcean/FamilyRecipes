@@ -37,7 +37,7 @@ public interface FridgeItemMapper {
 
     @Update("UPDATE fridge_item SET amount=#{amount}, purchase_date=#{purchaseDate}, " +
             "expiry_date=#{expiryDate}, storage_location=#{storageLocation}, " +
-            "status=#{status}, notes=#{notes} WHERE id=#{id}")
+            "status=#{status}, notes=#{notes}, owner_name=#{ownerName} WHERE id=#{id}")
     int update(FridgeItem item);
 
     @Update("UPDATE fridge_item SET status='consumed', consumed_at=NOW() WHERE id=#{id}")
@@ -47,8 +47,9 @@ public interface FridgeItemMapper {
     int delete(Long id);
 
     // 查找即将过期的食材
-    @Select("SELECT fi.*, i.name as 'ingredient.name' FROM fridge_item fi " +
+    @Select("SELECT fi.*, i.name as 'ingredient.name', ou.username as owner_username FROM fridge_item fi " +
             "LEFT JOIN ingredient i ON fi.ingredient_id = i.id " +
+            "LEFT JOIN user ou ON fi.owner_user_id = ou.id " +
             "WHERE fi.user_id = #{userId} AND fi.status = 'normal' " +
             "AND fi.expiry_date BETWEEN #{startDate} AND #{endDate}")
     List<FridgeItem> findExpiring(@Param("userId") Long userId, 

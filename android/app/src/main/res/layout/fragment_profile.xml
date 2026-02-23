@@ -388,9 +388,9 @@
                         android:layout_height="1dp"
                         android:background="@color/light_gray" />
 
-                    <!-- 我的群组 -->
+                    <!-- 我加入的群 -->
                     <LinearLayout
-                        android:id="@+id/layout_groups"
+                        android:id="@+id/layout_joined_groups"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:background="?attr/selectableItemBackground"
@@ -409,7 +409,44 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="16dp"
                             android:layout_weight="1"
-                            android:text="我的群组"
+                            android:text="我加入的群"
+                            android:textColor="@color/black"
+                            android:textSize="16sp" />
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@android:drawable/ic_menu_more"
+                            android:tint="@color/gray" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/light_gray" />
+
+                    <!-- 我创建的群 -->
+                    <LinearLayout
+                        android:id="@+id/layout_created_groups"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="16dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_add_circle"
+                            android:tint="@color/primary" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="16dp"
+                            android:layout_weight="1"
+                            android:text="我创建的群"
                             android:textColor="@color/black"
                             android:textSize="16sp" />
 

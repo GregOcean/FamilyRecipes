@@ -252,9 +252,15 @@ class ProfileFragment : Fragment() {
             startActivity(intent)
         }
         
-        // 我的群组
-        binding.layoutGroups.setOnClickListener {
-            val intent = android.content.Intent(requireContext(), com.familyrecipes.android.ui.social.GroupsListActivity::class.java)
+        // 我加入的群
+        binding.layoutJoinedGroups.setOnClickListener {
+            val intent = android.content.Intent(requireContext(), com.familyrecipes.android.ui.social.JoinedGroupsActivity::class.java)
+            startActivity(intent)
+        }
+        
+        // 我创建的群
+        binding.layoutCreatedGroups.setOnClickListener {
+            val intent = android.content.Intent(requireContext(), com.familyrecipes.android.ui.social.CreatedGroupsActivity::class.java)
             startActivity(intent)
         }
     }

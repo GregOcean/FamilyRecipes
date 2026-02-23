@@ -198,6 +198,12 @@ interface ApiService {
     @GET("/api/groups/list")
     suspend fun getGroupsList(): Response<ApiResponse<List<GroupChat>>>
 
+    @GET("/api/groups/joined")
+    suspend fun getJoinedGroups(): Response<ApiResponse<List<GroupChat>>>
+
+    @GET("/api/groups/created")
+    suspend fun getCreatedGroups(): Response<ApiResponse<List<GroupChat>>>
+
     @GET("/api/groups/{groupId}")
     suspend fun getGroupDetail(@Path("groupId") groupId: Long): Response<ApiResponse<GroupChat>>
 
