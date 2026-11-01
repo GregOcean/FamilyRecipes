@@ -54,6 +54,8 @@ public class WebSocketMessageController {
             messagingTemplate.convertAndSend("/topic/group/" + groupId, message);
 
             log.info("消息已广播到群组: {}", groupId);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
             log.error("发送消息失败", e);
         }
@@ -80,6 +82,8 @@ public class WebSocketMessageController {
             systemMessage.setMessageType(Message.MessageType.system);
 
             messagingTemplate.convertAndSend("/topic/group/" + groupId, systemMessage);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
             log.error("加入群组失败", e);
         }
@@ -106,6 +110,8 @@ public class WebSocketMessageController {
             systemMessage.setMessageType(Message.MessageType.system);
 
             messagingTemplate.convertAndSend("/topic/group/" + groupId, systemMessage);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
             log.error("离开群组失败", e);
         }

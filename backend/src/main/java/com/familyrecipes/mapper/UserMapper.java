@@ -9,6 +9,9 @@ import org.apache.ibatis.annotations.*;
 @Mapper
 public interface UserMapper {
 
+    @Select("SELECT id FROM user WHERE id = #{id} FOR UPDATE")
+    Long lockId(Long id);
+
     @Select("SELECT * FROM user WHERE id = #{id}")
     User findById(Long id);
 

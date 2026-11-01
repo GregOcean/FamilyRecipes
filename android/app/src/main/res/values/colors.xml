@@ -9,11 +9,11 @@
     <color name="white">#FFFFFFFF</color>
     
     <!-- 家肴应用主题色 - 温暖的食物色调 -->
-    <color name="primary">#FFFF6B35</color>           <!-- 温暖的橙红色 -->
-    <color name="primary_dark">#FFE55C2E</color>      <!-- 深橙色 -->
-    <color name="primary_light">#FFFF8C66</color>     <!-- 浅橙色 -->
-    <color name="accent">#FFFFB84D</color>            <!-- 金黄色 -->
-    <color name="accent_light">#FFFFD280</color>      <!-- 浅金黄 -->
+    <color name="primary">#007CA9</color>           <!-- 温暖的橙红色 -->
+    <color name="primary_dark">#006182</color>      <!-- 深橙色 -->
+    <color name="primary_light">#E2F5FC</color>     <!-- 浅橙色 -->
+    <color name="accent">#007CA9</color>            <!-- 金黄色 -->
+    <color name="accent_light">#FFF1BD</color>      <!-- 浅金黄 -->
     
     <!-- 辅助色 -->
     <color name="secondary">#FF4ECDC4</color>         <!-- 青绿色 -->
@@ -24,7 +24,7 @@
     <color name="gray_light">#FFBDBDBD</color>
     <color name="light_gray">#FFE0E0E0</color>
     <color name="gray_bg">#FFF5F5F5</color>
-    <color name="background">#FFFAFAFA</color>
+    <color name="background">#F3F8FB</color>
     <color name="background_light">#FFF0F0F0</color>
     
     <!-- 功能色 -->
@@ -33,19 +33,19 @@
     <color name="error">#FFF44336</color>
     
     <!-- 文字颜色 -->
-    <color name="text_primary">#FF212121</color>
-    <color name="text_secondary">#FF757575</color>
-    <color name="text_hint">#FFBDBDBD</color>
+    <color name="text_primary">#153344</color>
+    <color name="text_secondary">#516B7B</color>
+    <color name="text_hint">#516B7B</color>
     <color name="text_dark">#FF333333</color>
     
     <!-- 分类侧边栏配色 -->
-    <color name="category_sidebar_bg">#FFFFF8F0</color>           <!-- 浅橘色背景 -->
-    <color name="category_parent_bg">#FFFFF8F0</color>            <!-- 一级分类背景（同侧边栏） -->
-    <color name="category_parent_selected_bg">#FFFFE5CC</color>   <!-- 一级分类选中背景（橘黄高亮） -->
-    <color name="category_child_bg">#FFFEF5E7</color>             <!-- 二级分类背景（稍深） -->
-    <color name="category_child_selected_bg">#FFFFD9B3</color>    <!-- 二级分类选中背景 -->
-    <color name="category_text_normal">#FF8D6E63</color>          <!-- 未选中文字（温暖的棕色） -->
-    <color name="category_text_selected">#FFFF6B35</color>        <!-- 选中文字（主题橘红色） -->
+    <color name="category_sidebar_bg">#E2F5FC</color>           <!-- 浅橘色背景 -->
+    <color name="category_parent_bg">#E2F5FC</color>            <!-- 一级分类背景（同侧边栏） -->
+    <color name="category_parent_selected_bg">#B9E6F6</color>   <!-- 一级分类选中背景（橘黄高亮） -->
+    <color name="category_child_bg">#F3F8FB</color>             <!-- 二级分类背景（稍深） -->
+    <color name="category_child_selected_bg">#B9E6F6</color>    <!-- 二级分类选中背景 -->
+    <color name="category_text_normal">#516B7B</color>          <!-- 未选中文字（温暖的棕色） -->
+    <color name="category_text_selected">#006182</color>        <!-- 选中文字（主题橘红色） -->
     
     <!-- 启动图标背景色 -->
     <color name="ic_launcher_background">#FFFFFF</color>

@@ -41,9 +41,11 @@ public class FriendshipController {
             
             friendshipService.addFriend(userId, friendId);
             return Result.success(null);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
             log.error("添加好友失败", e);
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
     
@@ -56,9 +58,11 @@ public class FriendshipController {
             Long userId = (Long) httpRequest.getAttribute("userId");
             List<Friendship> friends = friendshipService.getFriendsList(userId);
             return Result.success(friends);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
             log.error("获取好友列表失败", e);
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
     
@@ -71,9 +75,11 @@ public class FriendshipController {
             Long userId = (Long) httpRequest.getAttribute("userId");
             friendshipService.deleteFriend(userId, friendId);
             return Result.success(null);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
             log.error("删除好友失败", e);
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
     
@@ -90,9 +96,11 @@ public class FriendshipController {
             
             friendshipService.updateNickname(userId, friendId, nickname);
             return Result.success(null);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
             log.error("更新好友备注失败", e);
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
 }

@@ -21,6 +21,10 @@ public class FridgeController {
     @Autowired
     private FridgeService fridgeService;
 
+    @PostMapping("/items/{id}/status")
+    public Result<Void> status(@PathVariable Long id,@RequestBody java.util.Map<String,String> body,HttpServletRequest r) {
+        fridgeService.changeStatus(id,(Long)r.getAttribute("userId"),body.getOrDefault("status",""));return Result.success();
+    }
     /**
      * 添加食材到冰箱
      */
@@ -31,8 +35,10 @@ public class FridgeController {
             item.setUserId(userId);
             FridgeItem created = fridgeService.addItem(item);
             return Result.success(created);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
 
@@ -49,8 +55,10 @@ public class FridgeController {
             item.setUserId(userId);
             FridgeItem updated = fridgeService.updateItem(item);
             return Result.success(updated);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
 
@@ -58,12 +66,14 @@ public class FridgeController {
      * 标记为已消耗
      */
     @PostMapping("/items/{id}/consume")
-    public Result<Void> markAsConsumed(@PathVariable Long id) {
+    public Result<Void> markAsConsumed(@PathVariable Long id, HttpServletRequest request) {
         try {
-            fridgeService.markAsConsumed(id);
+            fridgeService.markAsConsumed(id, (Long) request.getAttribute("userId"));
             return Result.success();
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
 
@@ -76,8 +86,10 @@ public class FridgeController {
             Long userId = (Long) request.getAttribute("userId");
             fridgeService.deleteItem(id, userId);
             return Result.success();
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
 
@@ -85,9 +97,9 @@ public class FridgeController {
      * 获取冰箱食材列表
      */
     @GetMapping("/items")
-    public Result<List<FridgeItem>> getFridgeItems(HttpServletRequest request) {
+    public Result<List<FridgeItem>> getFridgeItems(@RequestParam Long kitchenId, HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
-        List<FridgeItem> items = fridgeService.getUserFridgeItems(userId);
+        List<FridgeItem> items = fridgeService.getUserFridgeItems(userId, kitchenId);
         return Result.success(items);
     }
     
@@ -95,9 +107,9 @@ public class FridgeController {
      * 获取已消耗的食材列表
      */
     @GetMapping("/items/consumed")
-    public Result<List<FridgeItem>> getConsumedItems(HttpServletRequest request) {
+    public Result<List<FridgeItem>> getConsumedItems(@RequestParam Long kitchenId, HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
-        List<FridgeItem> items = fridgeService.getConsumedItems(userId);
+        List<FridgeItem> items = fridgeService.getConsumedItems(userId, kitchenId);
         return Result.success(items);
     }
 
@@ -132,8 +144,10 @@ public class FridgeController {
             setting.setUserId(userId);
             fridgeService.updateReminderSetting(setting);
             return Result.success();
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
 
@@ -146,6 +160,11 @@ public class FridgeController {
         return Result.success(ingredients);
     }
 
+    @GetMapping("/ingredients/preview")
+    public Result<Ingredient> previewIngredient(@RequestParam String name) {
+        return Result.success(fridgeService.previewIngredient(name));
+    }
+
     /**
      * 创建食材
      */
@@ -154,11 +173,13 @@ public class FridgeController {
         try {
             Ingredient created = fridgeService.getOrCreateIngredient(
                 ingredient.getName(),
-                ingredient.getCategory()
+                ingredient.getCategory(), ingredient.getCategoryId()
             );
             return Result.success(created);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
 }

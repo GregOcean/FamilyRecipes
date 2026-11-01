@@ -16,8 +16,6 @@ public interface ReminderSettingMapper {
             "VALUES(#{userId}, #{daysBeforeExpiry}, #{reminderTime}, #{enabled})")
     int insert(ReminderSetting setting);
 
-    @Update("UPDATE reminder_setting SET days_before_expiry=#{daysBeforeExpiry}, " +
-            "reminder_time=#{reminderTime}, enabled=#{enabled} WHERE user_id=#{userId}")
+    @Insert("INSERT INTO reminder_setting(user_id,days_before_expiry,reminder_time,enabled) VALUES(#{userId},#{daysBeforeExpiry},#{reminderTime},#{enabled}) ON DUPLICATE KEY UPDATE days_before_expiry=VALUES(days_before_expiry),reminder_time=VALUES(reminder_time),enabled=VALUES(enabled)")
     int update(ReminderSetting setting);
 }
-

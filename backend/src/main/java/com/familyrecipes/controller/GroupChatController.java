@@ -45,13 +45,15 @@ public class GroupChatController {
             
             // 设置默认值
             String description = request.getDescription() != null ? request.getDescription() : "";
-            Integer maxMembers = request.getMaxMembers() != null ? request.getMaxMembers() : 20;
+            Integer maxMembers = request.getMaxMembers() != null ? request.getMaxMembers() : 10;
             
             GroupChat group = groupChatService.createGroup(userId, request.getName(), description, maxMembers, memberIds);
             return Result.success(group);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
             log.error("创建群组失败", e);
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
     
@@ -64,9 +66,11 @@ public class GroupChatController {
             Long userId = (Long) httpRequest.getAttribute("userId");
             List<GroupChat> groups = groupChatService.getUserGroups(userId);
             return Result.success(groups);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
             log.error("获取群组列表失败", e);
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
     
@@ -80,9 +84,11 @@ public class GroupChatController {
             Long userId = (Long) httpRequest.getAttribute("userId");
             GroupChat group = groupChatService.getGroupDetail(groupId, userId);
             return Result.success(group);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
             log.error("获取群组详情失败", e);
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
     
@@ -103,9 +109,11 @@ public class GroupChatController {
             
             groupChatService.addGroupMember(groupId, userId, userIds);
             return Result.success(null);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
             log.error("添加群成员失败", e);
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
     
@@ -120,9 +128,11 @@ public class GroupChatController {
             Long userId = (Long) httpRequest.getAttribute("userId");
             groupChatService.removeGroupMember(groupId, userId, memberId);
             return Result.success(null);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
             log.error("移除群成员失败", e);
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
     
@@ -136,9 +146,11 @@ public class GroupChatController {
             Long userId = (Long) httpRequest.getAttribute("userId");
             groupChatService.leaveGroup(groupId, userId);
             return Result.success(null);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
             log.error("退出群组失败", e);
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
     
@@ -153,9 +165,11 @@ public class GroupChatController {
             Long userId = (Long) httpRequest.getAttribute("userId");
             groupChatService.updateGroup(groupId, userId, request.getName(), request.getDescription());
             return Result.success(null);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
             log.error("更新群组信息失败", e);
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
     
@@ -169,9 +183,11 @@ public class GroupChatController {
             Long userId = (Long) httpRequest.getAttribute("userId");
             groupChatService.dismissGroup(groupId, userId);
             return Result.success(null);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
             log.error("解散群组失败", e);
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
     

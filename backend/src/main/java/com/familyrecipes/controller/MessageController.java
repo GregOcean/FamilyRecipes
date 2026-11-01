@@ -44,12 +44,14 @@ public class MessageController {
                 request.getGroupId(), 
                 userId, 
                 request.getContent(), 
-                request.getMessageType()
+                request.getMessageType(), request.getClientMessageId()
             );
             return Result.success(message);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
             log.error("发送消息失败", e);
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
     
@@ -65,9 +67,11 @@ public class MessageController {
             Long userId = (Long) httpRequest.getAttribute("userId");
             List<Message> messages = messageService.getMessages(groupId, userId, pageNum, pageSize);
             return Result.success(messages);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
             log.error("获取消息列表失败", e);
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
     
@@ -88,9 +92,11 @@ public class MessageController {
             
             messageService.markAsRead(groupId, userId, messageId);
             return Result.success(null);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
             log.error("标记消息已读失败", e);
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
     
@@ -104,14 +110,23 @@ public class MessageController {
             Long userId = (Long) httpRequest.getAttribute("userId");
             int count = messageService.getUnreadCount(groupId, userId);
             return Result.success(count);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
             log.error("获取未读消息数失败", e);
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
     
+    @GetMapping("/sync")
+    public Result<List<Message>> sync(@RequestParam Long groupId,@RequestParam(defaultValue="0") Long afterId,
+        @RequestParam(defaultValue="200") int limit,HttpServletRequest r) {
+        return Result.success(messageService.catchUp(groupId,(Long)r.getAttribute("userId"),afterId,limit));
+    }
+
     @Data
     static class SendMessageRequest {
+        private String clientMessageId;
         private Long groupId;
         private String content;
         private Message.MessageType messageType;

@@ -1,5 +1,7 @@
 # 家庭菜谱管理系统 (FamilyRecipes)
 
+> 2026-11-01：当前新建库与运行方式以 [backend/README.md](backend/README.md) 为准；[本轮实施记录](docs/iterations/2026-11-01-foundation-review/04-implementation.md) 说明单机、本地媒体和权限修复。下方部分功能描述与旧部署示例保留作历史参考。
+
 一个功能完整的家庭菜谱管理系统，包含 Spring Boot 后端和 Android 客户端。
 
 ## 功能特性

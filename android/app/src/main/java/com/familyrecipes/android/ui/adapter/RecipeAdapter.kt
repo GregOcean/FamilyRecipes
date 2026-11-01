@@ -27,7 +27,8 @@ class RecipeAdapter(
             // 加载封面图片
             if (!recipe.coverImage.isNullOrEmpty()) {
                 Glide.with(binding.ivCover.context)
-                    .load(recipe.coverImage)
+                    .load(com.familyrecipes.android.util.MediaImages.model(recipe.coverImage))
+                    .signature(com.bumptech.glide.signature.ObjectKey(com.familyrecipes.android.data.local.PreferenceManager.userId))
                     .placeholder(R.drawable.placeholder_recipe)
                     .into(binding.ivCover)
             }

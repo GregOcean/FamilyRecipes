@@ -22,6 +22,12 @@ public class JwtUtil {
     @Value("${jwt.expiration}")
     private Long expiration;
 
+    @jakarta.annotation.PostConstruct
+    public void validateConfiguration() {
+        getSignKey();
+        if (expiration == null || expiration <= 0) throw new IllegalArgumentException("JWT expiration must be positive");
+    }
+
     /**
      * 生成密钥
      */
@@ -70,7 +76,7 @@ public class JwtUtil {
     public boolean validateToken(String token) {
         try {
             Claims claims = getClaimsFromToken(token);
-            return !claims.getExpiration().before(new Date());
+            return Long.parseLong(claims.getSubject()) > 0 && claims.getExpiration() != null && !claims.getExpiration().before(new Date());
         } catch (Exception e) {
             return false;
         }

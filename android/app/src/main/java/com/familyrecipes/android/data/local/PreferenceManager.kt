@@ -57,7 +57,11 @@ object PreferenceManager {
 
     // 清除登录信息
     fun clearUserData() {
+        com.familyrecipes.android.websocket.WebSocketManager.getInstance().disconnect()
         prefs.edit().apply {
+            remove("current_group_id")
+            remove(KEY_CURRENT_KITCHEN)
+            remove(KEY_CURRENT_KITCHEN_ID)
             remove(KEY_TOKEN)
             remove(KEY_USER_ID)
             remove(KEY_USER_EMAIL)
@@ -77,6 +81,10 @@ object PreferenceManager {
         }
     }
     
+    var currentGroupId: Long?
+        get() = prefs.getLong("current_group_id", -1).takeIf { it > 0 }
+        set(value) { prefs.edit().putLong("current_group_id", value ?: -1).apply() }
+
     // 当前厨房信息
     var currentKitchenName: String?
         get() = prefs.getString(KEY_CURRENT_KITCHEN, null)

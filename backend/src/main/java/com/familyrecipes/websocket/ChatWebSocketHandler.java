@@ -24,7 +24,9 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     @Autowired
     private MessageService messageService;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    @Autowired private ObjectMapper objectMapper;
+    @Autowired private com.familyrecipes.mapper.GroupChatMapper groups;
+    @Autowired private com.familyrecipes.util.JwtUtil jwt;
 
     // 群组ID -> WebSocket会话集合
     private final Map<Long, CopyOnWriteArraySet<WebSocketSession>> groupSessions = new ConcurrentHashMap<>();
@@ -37,7 +39,10 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         String payload = message.getPayload();
-        log.info("收到WebSocket消息: {}", payload);
+        if (!jwt.validateToken((String) session.getAttributes().get("token"))) {
+            session.close(CloseStatus.POLICY_VIOLATION);
+            return;
+        }
 
         try {
             @SuppressWarnings("unchecked")
@@ -70,6 +75,11 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                 try {
                     Long groupId = Long.parseLong(parts[parts.length - 1]);
                     
+                    if (!groups.isGroupMember(groupId, (Long) session.getAttributes().get("userId"))) {
+                        sendError(session, "无权访问群组");
+                        return;
+                    }
+                    handleUnsubscribe(session, null);
                     // 将会话添加到群组
                     groupSessions.computeIfAbsent(groupId, k -> new CopyOnWriteArraySet<>()).add(session);
                     
@@ -115,7 +125,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         
         if (body != null) {
             Long groupId = getLongValue(body.get("groupId"));
-            Long senderId = getLongValue(body.get("senderId"));
+            Long senderId = (Long) session.getAttributes().get("userId");
             String content = (String) body.get("content");
             String messageType = (String) body.getOrDefault("messageType", "text");
 
@@ -128,7 +138,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             );
 
             // 广播消息到群组所有成员
-            broadcastToGroup(groupId, savedMessage);
+            // Broadcast follows the committed database event.
             
             log.info("消息已发送并广播到群组 {}", groupId);
         }
@@ -137,6 +147,9 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     /**
      * 广播消息到群组所有成员
      */
+    @org.springframework.transaction.event.TransactionalEventListener(phase=org.springframework.transaction.event.TransactionPhase.AFTER_COMMIT, fallbackExecution=true)
+    public void onMessage(Message message) { broadcastToGroup(message.getGroupId(), message); }
+
     private void broadcastToGroup(Long groupId, Message message) {
         CopyOnWriteArraySet<WebSocketSession> sessions = groupSessions.get(groupId);
         if (sessions != null) {
@@ -151,9 +164,10 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                 messageJson = objectMapper.writeValueAsString(messageData);
                 
                 for (WebSocketSession session : sessions) {
-                    if (session.isOpen()) {
+                    if (session.isOpen() && jwt.validateToken((String) session.getAttributes().get("token"))
+                            && groups.isGroupMember(groupId, (Long) session.getAttributes().get("userId"))) {
                         try {
-                            session.sendMessage(new TextMessage(messageJson));
+                            synchronized (session) { session.sendMessage(new TextMessage(messageJson)); }
                         } catch (IOException e) {
                             log.error("发送消息到会话 {} 失败", session.getId(), e);
                         }
@@ -174,7 +188,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                 "command", "ACK",
                 "message", message
             );
-            session.sendMessage(new TextMessage(objectMapper.writeValueAsString(ack)));
+            synchronized (session) { session.sendMessage(new TextMessage(objectMapper.writeValueAsString(ack))); }
         } catch (Exception e) {
             log.error("发送ACK失败", e);
         }
@@ -189,7 +203,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                 "command", "ERROR",
                 "message", error
             );
-            session.sendMessage(new TextMessage(objectMapper.writeValueAsString(errorMsg)));
+            synchronized (session) { session.sendMessage(new TextMessage(objectMapper.writeValueAsString(errorMsg))); }
         } catch (Exception e) {
             log.error("发送错误消息失败", e);
         }

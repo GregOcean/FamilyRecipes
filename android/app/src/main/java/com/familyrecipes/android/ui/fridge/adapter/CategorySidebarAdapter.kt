@@ -16,6 +16,10 @@ class CategorySidebarAdapter(
     private val onCategoryClick: (InventoryCategory?, isExpanded: Boolean) -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
+    private var counts: Map<Long, Int> = emptyMap()
+    private var total = 0
+    fun setCounts(values: Map<Long, Int>, count: Int) { counts = values; total = count; notifyDataSetChanged() }
+
     private val items = mutableListOf<CategoryItem>()
     private var selectedCategoryId: Long? = null
     private val expandedCategories = mutableSetOf<Long>() // 记录展开的一级分类
@@ -88,11 +92,11 @@ class CategorySidebarAdapter(
         when (holder) {
             is ParentViewHolder -> {
                 if (item.isAll) {
-                    holder.bind("全部", null, selectedCategoryId == null)
+                    holder.bind("全部 ($total)", null, selectedCategoryId == null)
                 } else {
                     val isExpanded = item.category?.let { expandedCategories.contains(it.id) } ?: false
                     holder.bind(
-                        item.category?.icon + " " + item.category?.name,
+                        "${item.category?.icon.orEmpty()} ${item.category?.name}\n${counts[item.category?.id] ?: 0} 项",
                         item.category?.id,
                         selectedCategoryId == item.category?.id
                     )

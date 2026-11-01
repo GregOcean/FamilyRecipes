@@ -1,96 +1,46 @@
 package com.familyrecipes.controller;
 
 import com.familyrecipes.common.Result;
-import org.springframework.beans.factory.annotation.Value;
+import com.familyrecipes.common.ApiException;
+import com.familyrecipes.service.MediaService;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.*;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.UUID;
 
-/**
- * 文件上传控制器
- */
 @RestController
 @RequestMapping("/api/upload")
 public class FileUploadController {
-
-    @Value("${file.upload-dir}")
-    private String uploadDir;
-
-    @Value("${file.base-url}")
-    private String baseUrl;
-
-    /**
-     * 上传图片
-     */
+    @Autowired private MediaService media;
     @PostMapping("/image")
-    public Result<String> uploadImage(@RequestParam("file") MultipartFile file) {
-        try {
-            // 验证文件
-            if (file.isEmpty()) {
-                return Result.error("文件为空");
-            }
-
-            String originalFilename = file.getOriginalFilename();
-            if (originalFilename == null) {
-                return Result.error("文件名无效");
-            }
-
-            // 验证文件类型
-            String contentType = file.getContentType();
-            if (contentType == null || !contentType.startsWith("image/")) {
-                return Result.error("只能上传图片文件");
-            }
-
-            // 创建上传目录
-            File uploadDirectory = new File(uploadDir);
-            if (!uploadDirectory.exists()) {
-                uploadDirectory.mkdirs();
-            }
-
-            // 生成唯一文件名
-            String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-            String filename = UUID.randomUUID().toString() + extension;
-            Path filePath = Paths.get(uploadDir, filename);
-
-            // 保存文件
-            Files.copy(file.getInputStream(), filePath);
-
-            // 返回文件URL
-            String fileUrl = baseUrl + filename;
-            return Result.success(fileUrl);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            return Result.error("文件上传失败：" + e.getMessage());
-        }
+    public Result<String> uploadImage(@RequestParam("file") MultipartFile file, @RequestParam(defaultValue="other") String category, HttpServletRequest request) throws IOException {
+        return Result.success(media.upload(file, (Long) request.getAttribute("userId"), category));
+    }
+    @PostMapping("/images")
+    public Result<String[]> uploadImages(@RequestParam("files") MultipartFile[] files, HttpServletRequest request) throws IOException {
+        if (files.length < 1 || files.length > 9) throw new ApiException(400, "每次上传1至9张图片");
+        String[] urls = new String[files.length];
+        for (int i = 0; i < files.length; i++) urls[i] = media.upload(files[i], (Long) request.getAttribute("userId"));
+        return Result.success(urls);
+    }
+    @GetMapping("/files/{filename}")
+    public ResponseEntity<Resource> image(@PathVariable String filename, HttpServletRequest request) {
+        Resource resource = new FileSystemResource(media.read(filename, (Long) request.getAttribute("userId")));
+        return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG)
+            .header("X-Content-Type-Options", "nosniff")
+            .cacheControl(CacheControl.noStore()).body(resource);
     }
 
-    /**
-     * 批量上传图片
-     */
-    @PostMapping("/images")
-    public Result<String[]> uploadImages(@RequestParam("files") MultipartFile[] files) {
-        try {
-            String[] urls = new String[files.length];
-            
-            for (int i = 0; i < files.length; i++) {
-                Result<String> result = uploadImage(files[i]);
-                if (result.getCode() != 200) {
-                    return Result.error("第" + (i + 1) + "个文件上传失败：" + result.getMessage());
-                }
-                urls[i] = result.getData();
-            }
-            
-            return Result.success(urls);
-        } catch (Exception e) {
-            return Result.error("批量上传失败：" + e.getMessage());
-        }
+    @GetMapping("/trash") public Result<java.util.List<java.util.Map<String,Object>>> trash(HttpServletRequest r) {
+        return Result.success(media.trash((Long)r.getAttribute("userId")));
+    }
+    @DeleteMapping("/files/{filename}") public Result<Void> trashFile(@PathVariable String filename,HttpServletRequest r) {
+        media.changeTrash(filename,(Long)r.getAttribute("userId"),false);return Result.success();
+    }
+    @PostMapping("/files/{filename}/restore") public Result<Void> restore(@PathVariable String filename,HttpServletRequest r) {
+        media.changeTrash(filename,(Long)r.getAttribute("userId"),true);return Result.success();
     }
 }
-

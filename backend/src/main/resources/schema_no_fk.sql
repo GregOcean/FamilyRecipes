@@ -1,3 +1,4 @@
+-- HISTORICAL ONLY: do not execute. Use schema.sql and data.sql for a fresh database.
 -- 家庭菜谱管理系统数据库表结构（无外键约束版本）
 
 -- 用户表

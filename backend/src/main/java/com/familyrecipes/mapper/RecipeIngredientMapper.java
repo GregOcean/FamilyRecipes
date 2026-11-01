@@ -21,8 +21,8 @@ public interface RecipeIngredientMapper {
         @Result(property = "amount", column = "amount"),
         @Result(property = "isMain", column = "is_main"),
         @Result(property = "ingredient.id", column = "ingredient_id"),
-        @Result(property = "ingredient.name", column = "name"),
-        @Result(property = "ingredient.category", column = "category")
+        @Result(property = "ingredient.name", column = "ingredient.name"),
+        @Result(property = "ingredient.category", column = "ingredient.category")
     })
     List<RecipeIngredient> findByRecipeId(Long recipeId);
 

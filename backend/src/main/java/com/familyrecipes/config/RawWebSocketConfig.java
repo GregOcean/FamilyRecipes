@@ -14,6 +14,8 @@ import org.springframework.web.socket.server.support.HttpSessionHandshakeInterce
 @Configuration
 @EnableWebSocket
 public class RawWebSocketConfig implements WebSocketConfigurer {
+    @org.springframework.beans.factory.annotation.Autowired
+    private ChatHandshakeInterceptor handshake;
 
     @Bean
     public ChatWebSocketHandler chatWebSocketHandler() {
@@ -24,7 +26,7 @@ public class RawWebSocketConfig implements WebSocketConfigurer {
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(chatWebSocketHandler(), "/ws/chat")
                 .setAllowedOriginPatterns("*")
-                .addInterceptors(new HttpSessionHandshakeInterceptor());
+                .addInterceptors(handshake);
     }
 }
 

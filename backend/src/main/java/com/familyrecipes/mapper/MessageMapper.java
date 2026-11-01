@@ -11,12 +11,22 @@ import java.util.List;
  */
 @Mapper
 public interface MessageMapper {
+    @Select("SELECT m.*, u.id AS 'sender.id', u.username AS 'sender.username', u.avatar AS 'sender.avatar' FROM message m LEFT JOIN user u ON u.id=m.sender_id WHERE m.id=#{id}")
+    @ResultMap("messageWithSender")
+    Message findById(Long id);
+
     
+    @Select("SELECT m.*, u.id AS 'sender.id', u.username AS 'sender.username', u.avatar AS 'sender.avatar' FROM message m LEFT JOIN user u ON u.id=m.sender_id WHERE m.group_id=#{groupId} AND m.id>#{afterId} ORDER BY m.id LIMIT #{limit}")
+    @ResultMap("messageWithSender")
+    List<Message> after(@Param("groupId") Long groupId,@Param("afterId") Long afterId,@Param("limit") int limit);
+    @Select("SELECT id FROM message WHERE sender_id=#{senderId} AND client_message_id=#{clientId}")
+    Long findClient(@Param("senderId") Long senderId,@Param("clientId") String clientId);
+
     /**
      * 发送消息
      */
-    @Insert("INSERT INTO message (group_id, sender_id, content, message_type) " +
-            "VALUES (#{groupId}, #{senderId}, #{content}, #{messageType})")
+    @Insert("INSERT INTO message (group_id, sender_id, content, message_type, client_message_id) " +
+            "VALUES (#{groupId}, #{senderId}, #{content}, #{messageType}, #{clientMessageId})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insertMessage(Message message);
     
@@ -29,9 +39,9 @@ public interface MessageMapper {
             "FROM message m " +
             "LEFT JOIN user u ON m.sender_id = u.id " +
             "WHERE m.group_id = #{groupId} " +
-            "ORDER BY m.created_at DESC " +
+            "ORDER BY m.created_at DESC, m.id DESC " +
             "LIMIT #{limit} OFFSET #{offset}")
-    @Results({
+    @Results(id = "messageWithSender", value = {
         @Result(property = "id", column = "id"),
         @Result(property = "groupId", column = "group_id"),
         @Result(property = "senderId", column = "sender_id"),
@@ -55,7 +65,7 @@ public interface MessageMapper {
             "FROM message m " +
             "LEFT JOIN user u ON m.sender_id = u.id " +
             "WHERE m.group_id = #{groupId} " +
-            "ORDER BY m.created_at DESC " +
+            "ORDER BY m.created_at DESC, m.id DESC " +
             "LIMIT 1")
     @Results({
         @Result(property = "id", column = "id"),
@@ -81,7 +91,7 @@ public interface MessageMapper {
      */
     @Insert("INSERT INTO user_read_position (user_id, group_id, last_read_message_id) " +
             "VALUES (#{userId}, #{groupId}, #{lastReadMessageId}) " +
-            "ON DUPLICATE KEY UPDATE last_read_message_id = #{lastReadMessageId}, " +
+            "ON DUPLICATE KEY UPDATE last_read_message_id = GREATEST(COALESCE(last_read_message_id, 0), #{lastReadMessageId}), " +
             "last_read_at = CURRENT_TIMESTAMP")
     int updateReadPosition(UserReadPosition position);
     

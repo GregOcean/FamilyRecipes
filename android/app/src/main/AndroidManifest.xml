@@ -164,6 +164,12 @@
             android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.FamilyRecipes" />
         
+        <activity android:name=".ui.recipe.RecipePickerActivity" android:exported="false" />
+        <activity android:name=".ui.recipe.CookingRecordActivity" android:exported="false" />
+        <activity android:name=".ui.meal.MealEditorActivity" android:exported="true">
+            <intent-filter><action android:name="android.intent.action.VIEW" /><category android:name="android.intent.category.DEFAULT" /><category android:name="android.intent.category.BROWSABLE" /><data android:scheme="familyrecipes" android:host="meal" /></intent-filter>
+        </activity>
+        <activity android:name=".ui.recipe.RecipeCollectionActivity" android:exported="false" />
     </application>
 
 </manifest>

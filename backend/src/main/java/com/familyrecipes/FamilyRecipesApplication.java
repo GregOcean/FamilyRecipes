@@ -7,6 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 /**
  * 家庭菜谱管理系统 - 主启动类
  */
+@org.springframework.scheduling.annotation.EnableScheduling
 @SpringBootApplication
 @MapperScan("com.familyrecipes.mapper")
 public class FamilyRecipesApplication {

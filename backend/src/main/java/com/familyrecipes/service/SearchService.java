@@ -33,7 +33,8 @@ public class SearchService {
      * @param pageNum 页码
      * @param pageSize 每页数量
      */
-    public Map<String, Object> globalSearch(String keyword, String priorityType, Integer pageNum, Integer pageSize) {
+    public Map<String, Object> globalSearch(String keyword, String priorityType, Integer pageNum, Integer pageSize, Long viewerId) {
+        if (pageNum < 1 || pageNum > 1000000 || pageSize < 1 || pageSize > 100) throw new com.familyrecipes.common.ApiException(400, "分页参数不合法");
         Map<String, Object> result = new HashMap<>();
         
         log.info("开始搜索 - keyword: {}, priorityType: {}", keyword, priorityType);
@@ -52,12 +53,12 @@ public class SearchService {
         if (isTagSearch) {
             // 通过tag精确搜索
             log.info("通过tag搜索: {}", searchTerm);
-            recipes = recipeMapper.searchByTag(searchTerm);
+            recipes = recipeMapper.searchByTag(searchTerm, viewerId);
             log.info("找到 {} 个菜谱", recipes.size());
         } else {
             // 通过关键词模糊搜索
             log.info("通过关键词搜索: {}", searchTerm);
-            recipes = recipeMapper.searchByKeyword(searchTerm);
+            recipes = recipeMapper.searchByKeyword(searchTerm, viewerId);
             log.info("找到 {} 个菜谱", recipes.size());
         }
         

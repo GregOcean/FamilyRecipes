@@ -17,7 +17,7 @@ import kotlinx.coroutines.launch
 class CreateGroupActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityCreateGroupBinding
-    private val maxMembers = 20 // 默认最大成员数
+    private val maxMembers = 10 // 默认最大成员数
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

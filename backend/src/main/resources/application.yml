@@ -2,23 +2,36 @@ server:
   port: 8080
 
 spring:
+  mail:
+    host: ${SMTP_HOST:127.0.0.1}
+    port: ${SMTP_PORT:1025}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      "[mail.smtp.auth]": ${SMTP_AUTH:false}
+      "[mail.smtp.starttls.enable]": ${SMTP_STARTTLS:false}
+      "[mail.smtp.starttls.required]": ${SMTP_STARTTLS:false}
+      "[mail.smtp.ssl.enable]": ${SMTP_SSL:false}
+      "[mail.smtp.connectiontimeout]": 5000
+      "[mail.smtp.timeout]": 5000
+      "[mail.smtp.writetimeout]": 5000
   application:
     name: family-recipes-backend
   
   # MySQL配置
   datasource:
-    url: jdbc:mysql://localhost:3306/family_recipes?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
-    username: root
-    password: 123456
+    url: ${DB_URL:jdbc:mysql://localhost:3306/family_recipes?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC}
+    username: ${DB_USERNAME:familyrecipes}
+    password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
   
   # 数据库初始化
   sql:
     init:
-      mode: always
+      mode: never
       schema-locations: classpath:schema.sql
       data-locations: classpath:data.sql
-      continue-on-error: true
+      continue-on-error: false
   
   # 文件上传配置
   servlet:
@@ -43,21 +56,26 @@ mybatis:
   type-aliases-package: com.familyrecipes.entity
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    local-cache-scope: STATEMENT
 
 # JWT配置
 jwt:
-  secret: your-secret-key-change-this-in-production-at-least-256-bits
+  secret: ${JWT_SECRET}
   expiration: 604800000  # 7天，单位毫秒
 
 # 文件存储路径
 file:
-  upload-dir: ./uploads/
-  base-url: http://localhost:8080/files/
+  upload-dir: ${MEDIA_DIR:./uploads/}
+  base-url: ${PUBLIC_BASE_URL:http://localhost:8080}/api/upload/files/
 
 # 日志配置
 logging:
   level:
-    com.familyrecipes: DEBUG
+    com.familyrecipes: INFO
     org.springframework.web: INFO
 
+
+app:
+  email:
+    from: ${SMTP_FROM:noreply@familyrecipes.test}
+    code-secret: ${EMAIL_CODE_SECRET:${JWT_SECRET}}

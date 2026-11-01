@@ -30,6 +30,21 @@ public class RecipeController {
     @Autowired
     private ExternalLinkParseService externalLinkParseService;
 
+    @Autowired private com.familyrecipes.mapper.RecommendationMapper recommendations;
+    @Autowired private com.familyrecipes.service.KitchenService kitchens;
+    @Autowired private java.time.Clock clock;
+    @GetMapping("/recommendations")
+    public Result<PageResult<Recipe>> recommend(@RequestParam(defaultValue="discovery") String mode,
+        @RequestParam(required=false) Long kitchenId,@RequestParam(defaultValue="0") String seed,HttpServletRequest request) {
+        Long userId=(Long)request.getAttribute("userId");
+        if(!java.util.Set.of("discovery","inventory").contains(mode) || seed.length()>64)
+            throw new com.familyrecipes.common.ApiException(400,"推荐参数不合法");
+        if(mode.equals("inventory")) kitchens.requireMember(kitchenId,userId);
+        var ids=recommendations.recommend(userId,kitchenId,mode,seed,java.time.LocalDate.now(clock));
+        var list=ids.stream().map(id->recipeService.getRecipeDetail(id,userId)).toList();
+        return Result.success(new PageResult<>(list,(long)list.size(),1,20));
+    }
+
     /**
      * 创建菜谱
      */
@@ -49,8 +64,10 @@ public class RecipeController {
                 request.getExternalRecipes()
             );
             return Result.success(recipe);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
 
@@ -75,8 +92,10 @@ public class RecipeController {
                 request.getExternalRecipes()
             );
             return Result.success(recipe);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
 
@@ -89,8 +108,10 @@ public class RecipeController {
             Long userId = (Long) request.getAttribute("userId");
             recipeService.deleteRecipe(id, userId);
             return Result.success();
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
 
@@ -100,7 +121,7 @@ public class RecipeController {
     @GetMapping("/{id}")
     public Result<Recipe> getRecipeDetail(@PathVariable Long id, HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
-        Recipe recipe = recipeService.getRecipeDetail(id, userId);
+        Recipe recipe = recipeService.viewRecipe(id, userId);
         if (recipe == null) {
             return Result.error(404, "菜谱不存在");
         }
@@ -112,6 +133,7 @@ public class RecipeController {
      */
     @GetMapping("/search")
     public Result<PageResult<Recipe>> searchRecipes(
+            @RequestParam(required = false) Long kitchenId,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String tagType,
             @RequestParam(required = false) String tagValue,
@@ -126,7 +148,7 @@ public class RecipeController {
         Long userId = (Long) request.getAttribute("userId");
         PageResult<Recipe> result = recipeService.searchRecipes(
             keyword, tagType, tagValue, ingredientIds, creatorId,
-            null, null, creatorUsername, orderBy, pageNum, pageSize
+            null, null, creatorUsername, orderBy, pageNum, pageSize, userId, kitchenId
         );
         return Result.success(result);
     }
@@ -143,7 +165,7 @@ public class RecipeController {
         Long userId = (Long) request.getAttribute("userId");
         PageResult<Recipe> result = recipeService.searchRecipes(
             null, null, null, null, userId,
-            null, null, null, null, pageNum, pageSize
+            null, null, null, null, pageNum, pageSize, userId
         );
         return Result.success(result);
     }
@@ -160,7 +182,7 @@ public class RecipeController {
         Long userId = (Long) request.getAttribute("userId");
         PageResult<Recipe> result = recipeService.searchRecipes(
             null, null, null, null, null,
-            userId, null, null, null, pageNum, pageSize
+            userId, null, null, null, pageNum, pageSize, userId
         );
         return Result.success(result);
     }
@@ -174,8 +196,10 @@ public class RecipeController {
             Long userId = (Long) request.getAttribute("userId");
             boolean isFavorite = recipeService.toggleFavorite(userId, id);
             return Result.success(isFavorite);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
     
@@ -188,8 +212,10 @@ public class RecipeController {
             Long userId = (Long) request.getAttribute("userId");
             boolean isDisliked = recipeService.toggleDislike(userId, id);
             return Result.success(isDisliked);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
 
@@ -222,9 +248,11 @@ public class RecipeController {
             }
             
             return Result.success(result);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
             log.error("解析链接时发生异常", e);
-            return Result.error("解析链接时发生错误: " + e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
     
@@ -241,8 +269,10 @@ public class RecipeController {
             externalRecipe.setAddedBy(userId);
             recipeService.addExternalRecipe(externalRecipe);
             return Result.success();
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
 
@@ -250,12 +280,14 @@ public class RecipeController {
      * 记录烹饪
      */
     @PostMapping("/{id}/cook")
-    public Result<Void> recordCooking(@PathVariable Long id) {
+    public Result<Void> recordCooking(@PathVariable Long id, HttpServletRequest request) {
         try {
-            recipeService.recordCooking(id);
+            recipeService.recordCooking(id, (Long) request.getAttribute("userId"));
             return Result.success();
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
 
@@ -263,8 +295,8 @@ public class RecipeController {
      * 获取最近常做的菜
      */
     @GetMapping("/recently-cooked")
-    public Result<List<Recipe>> getRecentlyCooked(@RequestParam(defaultValue = "10") int limit) {
-        List<Recipe> recipes = recipeService.getRecentlyCooked(limit);
+    public Result<List<Recipe>> getRecentlyCooked(@RequestParam(defaultValue = "10") int limit, HttpServletRequest request) {
+        List<Recipe> recipes = recipeService.getRecentlyCooked(limit, (Long) request.getAttribute("userId"));
         return Result.success(recipes);
     }
 
@@ -272,8 +304,8 @@ public class RecipeController {
      * 获取标签选项
      */
     @GetMapping("/tags/{tagType}")
-    public Result<List<String>> getTagValues(@PathVariable String tagType) {
-        List<String> values = recipeService.getTagValues(tagType);
+    public Result<List<String>> getTagValues(@PathVariable String tagType, HttpServletRequest request) {
+        List<String> values = recipeService.getTagValues(tagType, (Long) request.getAttribute("userId"));
         return Result.success(values);
     }
 

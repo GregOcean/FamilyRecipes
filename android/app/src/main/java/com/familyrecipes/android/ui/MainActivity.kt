@@ -1,459 +1,385 @@
 package com.familyrecipes.android.ui
 
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
-import android.view.LayoutInflater
-import android.view.MotionEvent
-import android.view.View
-import android.view.inputmethod.InputMethodManager
-import android.widget.Toast
+import android.view.Gravity
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
-import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.lifecycle.lifecycleScope
 import com.familyrecipes.android.R
-import com.familyrecipes.android.databinding.ActivityMainBinding
-import com.familyrecipes.android.databinding.BottomSheetAddMenuBinding
-import com.familyrecipes.android.ui.adapter.SearchHistoryAdapter
-import com.familyrecipes.android.ui.fridge.AddIngredientActivity
-import com.familyrecipes.android.ui.fridge.FridgeFragment
-import com.familyrecipes.android.ui.home.HomeFragment
+import com.familyrecipes.android.data.local.PreferenceManager
+import com.familyrecipes.android.data.model.Kitchen
+import com.familyrecipes.android.data.remote.ApiClient
+import com.familyrecipes.android.ui.design.Ui
+import com.familyrecipes.android.ui.fridge.*
+import com.familyrecipes.android.ui.meal.*
 import com.familyrecipes.android.ui.message.MessageFragment
 import com.familyrecipes.android.ui.profile.ProfileFragment
-import com.familyrecipes.android.ui.recipe.EditRecipeActivity
-import com.familyrecipes.android.ui.recipe.RecipeListFragment
-import com.familyrecipes.android.ui.recommend.RecommendFragment
-import com.familyrecipes.android.ui.search.SearchResultActivity
-import com.familyrecipes.android.util.SearchHistoryManager
+import com.familyrecipes.android.ui.recipe.*
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.google.android.material.navigation.NavigationBarView
+import kotlinx.coroutines.launch
 
-/**
- * 主Activity - 包含底部导航
- */
 class MainActivity : AppCompatActivity() {
+    private lateinit var drawer: DrawerLayout
+    private lateinit var kitchenLabel: Button
+    private lateinit var container: FrameLayout
+    private lateinit var bottom: LinearLayout
+    private var selected = "recipes"
+    private var currentKitchenName = "我的厨房"
 
-    private lateinit var binding: ActivityMainBinding
-    private var currentFragment: Fragment? = null
-    private lateinit var searchHistoryManager: SearchHistoryManager
-    private var searchHistoryAdapter: SearchHistoryAdapter? = null
-    private var currentKitchenName: String = "我的厨房" // 当前厨房名称
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-
-        searchHistoryManager = SearchHistoryManager(this)
-        
-        setupBottomNavigation()
-        disableTintForIcons()
-        setupFabButton()
-        setupKeyboardBehavior()
-        setupSearchHistory()
-        loadCurrentKitchen()
-        
-        // 默认显示首页
-        if (savedInstanceState == null) {
-            val navigateTo = intent.getStringExtra("navigate_to")
-            when (navigateTo) {
-                "fridge" -> binding.bottomNavigation.selectedItemId = R.id.nav_fridge
-                "message" -> binding.bottomNavigation.selectedItemId = R.id.nav_message
-                "profile" -> binding.bottomNavigation.selectedItemId = R.id.nav_profile
-                else -> binding.bottomNavigation.selectedItemId = R.id.nav_home
+    override fun onCreate(state: Bundle?) {
+        super.onCreate(state)
+        drawer = DrawerLayout(this)
+        val shell = Ui.box(this, 0)
+        val top =
+            Ui.row(this).apply {
+                setPadding(12, 8, 12, 8)
+                setBackgroundColor(android.graphics.Color.WHITE)
             }
-        }
-    }
-    
-    private fun setupKeyboardBehavior() {
-        // 点击 Fragment 容器时隐藏键盘和搜索历史
-        binding.fragmentContainer.setOnClickListener {
-            hideKeyboard()
-            hideSearchHistory()
-        }
-        
-        // 搜索框获得焦点时显示历史记录
-        binding.searchEditText.setOnFocusChangeListener { _, hasFocus ->
-            if (hasFocus && binding.searchEditText.text.isEmpty()) {
-                showSearchHistory()
-            } else if (!hasFocus) {
-                hideKeyboard()
-                // 延迟隐藏历史记录，以便点击历史记录项有效
-                binding.searchHistoryContainer.postDelayed({
-                    hideSearchHistory()
-                }, 200)
-            }
-        }
-        
-        // 监听搜索框文本变化
-        binding.searchEditText.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) {
-                if (binding.searchEditText.hasFocus()) {
-                    if (s.isNullOrEmpty()) {
-                        showSearchHistory()
-                    } else {
-                        hideSearchHistory()
-                    }
+        top.addView(
+            Ui.button(this, "☰") { drawer.openDrawer(GravityCompat.START) }
+                .apply {
+                    contentDescription = "打开工具栏"
+                    backgroundTintList =
+                        android.content.res.ColorStateList.valueOf(
+                            android.graphics.Color.TRANSPARENT)
+                },
+            LinearLayout.LayoutParams(64.dp(), -2))
+        kitchenLabel =
+            Ui.button(this, PreferenceManager.currentKitchenName ?: "我的厨房") {
+                    showSwitchKitchenDialog()
                 }
-            }
-        })
-        
-        // 切换厨房按钮点击事件
-        binding.btnSwitchKitchen.setOnClickListener {
-            showSwitchKitchenDialog()
-        }
-        
-        // 添加社交功能按钮点击事件（消息Tab使用）
-        binding.btnAddSocial.setOnClickListener {
-            showAddSocialMenu()
-        }
-        
-        // 搜索框回车键事件
-        binding.searchEditText.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH) {
-                performSearch()
-                true
-            } else {
-                false
-            }
-        }
-    }
-    
-    /**
-     * 设置搜索历史
-     */
-    private fun setupSearchHistory() {
-        binding.searchHistoryRecyclerView.layoutManager = LinearLayoutManager(this)
-        
-        // 清空历史按钮
-        binding.btnClearHistory.setOnClickListener {
-            searchHistoryManager.clearHistory()
-            updateSearchHistory()
-            Toast.makeText(this, "搜索历史已清空", Toast.LENGTH_SHORT).show()
-        }
-    }
-    
-    /**
-     * 显示搜索历史
-     */
-    private fun showSearchHistory() {
-        val history = searchHistoryManager.getHistory()
-        if (history.isNotEmpty()) {
-            updateSearchHistory()
-            binding.searchHistoryContainer.visibility = View.VISIBLE
-        } else {
-            binding.searchHistoryContainer.visibility = View.GONE
-        }
-    }
-    
-    /**
-     * 隐藏搜索历史
-     */
-    private fun hideSearchHistory() {
-        binding.searchHistoryContainer.visibility = View.GONE
-    }
-    
-    /**
-     * 更新搜索历史列表
-     */
-    private fun updateSearchHistory() {
-        val history = searchHistoryManager.getHistory()
-        searchHistoryAdapter = SearchHistoryAdapter(
-            history = history,
-            onItemClick = { keyword ->
-                // 点击历史记录，填充到搜索框并执行搜索
-                binding.searchEditText.setText(keyword)
-                binding.searchEditText.setSelection(keyword.length)
-                hideSearchHistory()
-                performSearch()
-            },
-            onDeleteClick = { keyword ->
-                // 删除单条历史记录
-                searchHistoryManager.removeHistory(keyword)
-                updateSearchHistory()
-                
-                // 如果没有历史记录了，隐藏卡片
-                if (searchHistoryManager.getHistory().isEmpty()) {
-                    hideSearchHistory()
+                .apply {
+                    backgroundTintList =
+                        android.content.res.ColorStateList.valueOf(
+                            android.graphics.Color.TRANSPARENT)
                 }
+        top.addView(kitchenLabel, LinearLayout.LayoutParams(0, -2, 1f))
+        top.addView(
+            Ui.button(this, "🌻") { showPage("profile") }
+                .apply {
+                    contentDescription = "个人头像，进入我的"
+                    backgroundTintList =
+                        android.content.res.ColorStateList.valueOf(0xfffff1bd.toInt())
+                },
+            LinearLayout.LayoutParams(64.dp(), -2))
+        shell.addView(top)
+        container = FrameLayout(this).apply { id = R.id.fragment_container }
+        shell.addView(container, LinearLayout.LayoutParams(-1, 0, 1f))
+        bottom = Ui.row(this).apply { setBackgroundColor(android.graphics.Color.WHITE) }
+        shell.addView(bottom)
+        drawer.addView(shell, DrawerLayout.LayoutParams(-1, -1))
+        val panel = Ui.box(this)
+        panel.addView(Ui.text(this, "常用工具", 24f, true))
+        listOf(
+                "厨房与群组" to { showSwitchKitchenDialog() },
+                "创建群聊" to
+                    {
+                        startActivity(
+                            Intent(
+                                this,
+                                com.familyrecipes.android.ui.social.CreateGroupActivity::class
+                                    .java))
+                    },
+                "扫一扫" to
+                    {
+                        startActivity(
+                            Intent(
+                                this,
+                                com.familyrecipes.android.ui.social.ScanQRActivity::class.java))
+                    },
+                "我的二维码" to
+                    {
+                        startActivity(
+                            Intent(
+                                this,
+                                com.familyrecipes.android.ui.social.MyQRCodeActivity::class.java))
+                    },
+                "通知、字体与系统设置" to { showPage("profile") })
+            .forEach { (label, action) ->
+                panel.addView(
+                    Ui.button(this, label) {
+                        drawer.closeDrawers()
+                        action()
+                    })
             }
-        )
-        binding.searchHistoryRecyclerView.adapter = searchHistoryAdapter
-    }
-    
-    /**
-     * 执行搜索
-     */
-    private fun performSearch() {
-        val keyword = binding.searchEditText.text.toString().trim()
-        if (keyword.isEmpty()) {
-            Toast.makeText(this, "请输入搜索关键词", Toast.LENGTH_SHORT).show()
-            return
-        }
-        
-        // 添加到搜索历史
-        searchHistoryManager.addHistory(keyword)
-        
-        // 隐藏键盘和搜索历史
-        hideKeyboard()
-        hideSearchHistory()
-        
-        // 清空搜索框焦点
-        binding.searchEditText.clearFocus()
-        
-        // 根据当前Fragment决定搜索方式
-        when (currentFragment) {
-            is RecipeListFragment, is FridgeFragment -> {
-                // 菜谱和库存页面：在当前页面搜索（只搜自己的数据）
-                (currentFragment as? SearchableFragment)?.performSearch(keyword)
-            }
-            is RecommendFragment -> {
-                // 推荐页面：全局搜索，跳转到搜索结果页面
-                val intent = Intent(this, SearchResultActivity::class.java).apply {
-                    putExtra(SearchResultActivity.EXTRA_KEYWORD, keyword)
-                    putExtra(SearchResultActivity.EXTRA_PRIORITY_TYPE, "relevance")
+        drawer.addView(
+            Ui.scroll(this, panel), DrawerLayout.LayoutParams(300.dp(), -1, Gravity.START))
+        setContentView(drawer)
+        selected =
+            state?.getString("page")
+                ?: when (intent.getStringExtra("navigate_to")) {
+                    "fridge" -> "stock"
+                    "message" -> "messages"
+                    "profile" -> "profile"
+                    else -> "recipes"
                 }
-                startActivity(intent)
-            }
-            is HomeFragment -> {
-                // 首页：全局搜索，跳转到搜索结果页面
-                val intent = Intent(this, SearchResultActivity::class.java).apply {
-                    putExtra(SearchResultActivity.EXTRA_KEYWORD, keyword)
-                    putExtra(SearchResultActivity.EXTRA_PRIORITY_TYPE, "relevance")
-                }
-                startActivity(intent)
-            }
-            else -> {
-                // 其他页面不支持搜索
-                Toast.makeText(this, "当前页面不支持搜索", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-    
-    /**
-     * 隐藏软键盘
-     */
-    private fun hideKeyboard() {
-        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-        val currentFocusView = currentFocus
-        if (currentFocusView != null) {
-            imm.hideSoftInputFromWindow(currentFocusView.windowToken, 0)
-            currentFocusView.clearFocus()
-        }
-    }
-    
-    /**
-     * 显示切换厨房对话框
-     */
-    private fun showSwitchKitchenDialog() {
-        Toast.makeText(this, "切换厨房功能开发中\n当前：$currentKitchenName", Toast.LENGTH_LONG).show()
-        // TODO: 实现切换厨房功能
-        // 1. 获取用户加入的所有群组/厨房
-        // 2. 显示厨房列表对话框
-        // 3. 切换当前厨房上下文
-        // 4. 刷新所有数据（菜谱、食材、推荐等）
-        // 5. 调用 updateCurrentKitchen(kitchenName) 更新显示
-    }
-    
-    /**
-     * 显示添加社交功能菜单（消息Tab使用）
-     */
-    private fun showAddSocialMenu() {
-        val options = arrayOf("创建群聊", "扫一扫")
-        
-        android.app.AlertDialog.Builder(this)
-            .setItems(options) { _, which ->
-                when (which) {
-                    0 -> {
-                        // 创建群聊
-                        val intent = android.content.Intent(this, com.familyrecipes.android.ui.social.CreateGroupActivity::class.java)
-                        startActivity(intent)
-                    }
-                    1 -> {
-                        // 扫一扫
-                        val intent = android.content.Intent(this, com.familyrecipes.android.ui.social.ScanQRActivity::class.java)
-                        startActivity(intent)
-                    }
-                }
-            }
-            .show()
-    }
-    
-    /**
-     * 加载当前厨房信息
-     */
-    private fun loadCurrentKitchen() {
-        // 从SharedPreferences加载当前选中的厨房
-        val savedKitchen = com.familyrecipes.android.data.local.PreferenceManager.currentKitchenName
-        if (!savedKitchen.isNullOrEmpty()) {
-            currentKitchenName = savedKitchen
-        } else {
-            // 如果没有保存的厨房，使用默认值
-            currentKitchenName = "我的厨房"
-            // TODO: 后续可以从后端获取用户的默认群组/厨房
-        }
-        
-        updateCurrentKitchen(currentKitchenName)
-    }
-    
-    /**
-     * 更新当前厨房名称显示
-     */
-    private fun updateCurrentKitchen(kitchenName: String) {
-        currentKitchenName = kitchenName
-        binding.tvCurrentKitchen.text = kitchenName
-        
-        // 如果厨房名称超过4个字，启用跑马灯效果
-        if (kitchenName.length > 4) {
-            binding.tvCurrentKitchen.isSelected = true
-            binding.tvCurrentKitchen.requestFocus()
-        } else {
-            binding.tvCurrentKitchen.isSelected = false
-        }
-    }
-    
-    /**
-     * 点击搜索框外的区域时隐藏键盘
-     */
-    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
-        if (ev.action == MotionEvent.ACTION_DOWN) {
-            val view = currentFocus
-            if (view is android.widget.EditText) {
-                val outRect = android.graphics.Rect()
-                view.getGlobalVisibleRect(outRect)
-                if (!outRect.contains(ev.rawX.toInt(), ev.rawY.toInt())) {
-                    view.clearFocus()
-                    hideKeyboard()
-                }
-            }
-        }
-        return super.dispatchTouchEvent(ev)
-    }
-    
-    private fun disableTintForIcons() {
-        // 禁用底部导航栏图标的自动着色，保持原始彩色图标
-        binding.bottomNavigation.itemIconTintList = null
+        drawNavigation()
+        if (state == null) showPage(selected)
+        initializeKitchen()
     }
 
-    private fun setupFabButton() {
-        binding.fabAdd.setOnClickListener {
-            showAddMenu()
-        }
+    private fun Int.dp() = (this * resources.displayMetrics.density).toInt()
+
+    override fun onSaveInstanceState(out: Bundle) {
+        super.onSaveInstanceState(out)
+        out.putString("page", selected)
     }
 
-    private fun setupBottomNavigation() {
-        binding.bottomNavigation.setOnItemSelectedListener(
-            NavigationBarView.OnItemSelectedListener { item ->
-                when (item.itemId) {
-                    R.id.nav_home -> {
-                        showFragment(HomeFragment())
-                        return@OnItemSelectedListener true
-                    }
-                    R.id.nav_fridge -> {
-                        showFragment(FridgeFragment())
-                        return@OnItemSelectedListener true
-                    }
-                    R.id.nav_message -> {
-                        showFragment(MessageFragment())
-                        return@OnItemSelectedListener true
-                    }
-                    R.id.nav_profile -> {
-                        showFragment(ProfileFragment())
-                        return@OnItemSelectedListener true
-                    }
-                }
-                false
+    fun showPage(page: String) {
+        selected = page
+        val fragment: Fragment =
+            when (page) {
+                "stock" -> FridgeFragment()
+                "meals" -> MealFragment()
+                "messages" -> MessageFragment()
+                "profile" -> ProfileFragment()
+                else -> RecipeListFragment()
             }
-        )
-    }
-
-    private fun showFragment(fragment: Fragment) {
-        if (currentFragment === fragment) return
-        
+        val tag = "main:$page"
         val transaction = supportFragmentManager.beginTransaction()
-        
-        currentFragment?.let {
-            transaction.hide(it)
-        }
-        
-        if (fragment.isAdded) {
-            transaction.show(fragment)
-        } else {
-            transaction.add(R.id.fragment_container, fragment)
-        }
-        
+        supportFragmentManager.fragments.forEach { transaction.hide(it) }
+        val found = supportFragmentManager.findFragmentByTag(tag)
+        if (found == null) transaction.add(container.id, fragment, tag) else transaction.show(found)
         transaction.commit()
-        currentFragment = fragment
-        
-        // 根据Fragment类型控制搜索栏和按钮显示/隐藏
-        when (fragment) {
-            is ProfileFragment -> {
-                // 我的页面：隐藏搜索栏
-                binding.toolbar.visibility = View.GONE
+        drawNavigation()
+    }
+
+    private fun drawNavigation() {
+        bottom.removeAllViews()
+        listOf(
+                Triple("recipes", "菜谱", R.drawable.ic_book_outline),
+                Triple("stock", "库存", R.drawable.ic_inventory_outline),
+                Triple("add", "＋", R.drawable.ic_add_circle),
+                Triple("meals", "安排", R.drawable.ic_calendar),
+                Triple("messages", "消息", R.drawable.ic_message))
+            .forEach { (page, label, icon) ->
+                val b =
+                    androidx.appcompat.widget.AppCompatButton(this).apply {
+                        text = label
+                        isAllCaps = false
+                        textSize = if (page == "add") 28f else 16f
+                        minimumWidth = 0
+                        minWidth = 0
+                        setTextColor(
+                            if (page == "add") android.graphics.Color.WHITE
+                            else if (page == selected) Ui.blue else Ui.muted)
+                        background =
+                            android.graphics.drawable.GradientDrawable().apply {
+                                cornerRadius = 16.dp().toFloat()
+                                setColor(
+                                    if (page == "add") Ui.blue
+                                    else if (page == selected) Ui.pale
+                                    else android.graphics.Color.TRANSPARENT)
+                            }
+                        if (page != "add") {
+                            val d =
+                                androidx.core.content.ContextCompat.getDrawable(
+                                        this@MainActivity, icon)!!
+                                    .mutate()
+                            d.setTint(if (page == selected) Ui.blue else Ui.muted)
+                            d.setBounds(0, 0, 27.dp(), 27.dp())
+                            setCompoundDrawables(null, d, null, null)
+                        }
+                        setPadding(0, 6.dp(), 0, 4.dp())
+                        setOnClickListener { if (page == "add") showAddMenu() else showPage(page) }
+                    }
+                bottom.addView(
+                    b,
+                    LinearLayout.LayoutParams(0, if (page == "add") 56.dp() else 64.dp(), 1f)
+                        .apply { setMargins(4.dp(), 6.dp(), 4.dp(), 8.dp()) })
             }
-            is MessageFragment -> {
-                // 消息页面：显示搜索栏，显示添加按钮，隐藏切换厨房按钮
-                binding.toolbar.visibility = View.VISIBLE
-                binding.btnSwitchKitchen.visibility = View.GONE
-                binding.btnAddSocial.visibility = View.VISIBLE
+    }
+
+    private fun showAddMenu() {
+        val dialog = BottomSheetDialog(this)
+        val box = Ui.box(this)
+        box.addView(Ui.text(this, "新建", 23f, true))
+        listOf(
+                "食材" to AddIngredientActivity::class.java,
+                "菜谱" to EditRecipeActivity::class.java,
+                "点菜" to MealEditorActivity::class.java,
+                "备菜" to MealEditorActivity::class.java)
+            .chunked(2)
+            .forEach { pair ->
+                val row = Ui.row(this)
+                pair.forEach { (label, clazz) ->
+                    val b =
+                        Ui.tile(this, label, when(label){
+                            "食材" -> R.drawable.ic_ui_produce
+                            "菜谱" -> R.drawable.ic_book_outline
+                            "点菜" -> R.drawable.ic_ui_order
+                            else -> R.drawable.ic_ui_prep
+                        }, when(label){"食材"->0xffe9f5e9.toInt();"点菜"->0xfffff1cf.toInt();"备菜"->0xffeeeafb.toInt();else->Ui.pale}) {
+                            dialog.dismiss()
+                            if (com.familyrecipes.android.util.AuthUtil.requireLogin(
+                                this, "创建$label"))
+                                startActivity(
+                                    Intent(this, clazz)
+                                        .putExtra("kind", if (label == "备菜") "prep" else "order"))
+                        }
+                    row.addView(
+                        b,
+                        LinearLayout.LayoutParams(0, -2, 1f).apply {
+                            setMargins(4.dp(), 4.dp(), 4.dp(), 4.dp())
+                        })
+                }
+                box.addView(row)
             }
-            else -> {
-                // 其他页面：显示搜索栏，显示切换厨房按钮，隐藏添加按钮
-                binding.toolbar.visibility = View.VISIBLE
-                binding.btnSwitchKitchen.visibility = View.VISIBLE
-                binding.btnAddSocial.visibility = View.GONE
+        box.addView(
+            Ui.button(this, "继续草稿") {
+                dialog.dismiss()
+                showPage("meals")
+                supportFragmentManager.executePendingTransactions()
+                (supportFragmentManager.findFragmentByTag("main:meals") as? MealFragment)
+                    ?.showDrafts()
+            })
+        dialog.setContentView(box)
+        dialog.show()
+    }
+
+    private fun updateCurrentKitchen(name: String) {
+        currentKitchenName = name
+        kitchenLabel.text = "$name ▾"
+    }
+
+    private fun showSwitchKitchenDialog() {
+        lifecycleScope.launch {
+            try {
+                val response = ApiClient.getService().getKitchens()
+                check(response.isSuccessful && response.body()?.code == 200)
+                val kitchens = response.body()?.data.orEmpty()
+                val labels = kitchens.map { "${it.groupName ?: "群聊"} · ${it.name}" }.toTypedArray()
+                android.app.AlertDialog.Builder(this@MainActivity)
+                    .setTitle("选择厨房")
+                    .setItems(labels) { _, index -> selectKitchen(kitchens[index]) }
+                    .setPositiveButton("新增厨房") { _, _ -> createKitchen() }
+                    .setNeutralButton("重命名当前厨房") { _, _ ->
+                        kitchens
+                            .find { it.id == PreferenceManager.currentKitchenId }
+                            ?.let { editKitchenName(it) }
+                    }
+                    .setNegativeButton("取消", null)
+                    .show()
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Toast.makeText(this@MainActivity, "厨房加载失败，请登录后重试", Toast.LENGTH_SHORT).show()
             }
         }
     }
-    
-    /**
-     * 显示底部添加菜单
-     */
-    private fun showAddMenu() {
-        val bottomSheetDialog = BottomSheetDialog(this)
-        val binding = BottomSheetAddMenuBinding.inflate(LayoutInflater.from(this))
-        bottomSheetDialog.setContentView(binding.root)
-        
-        // 菜谱按钮
-        binding.btnAddRecipe.setOnClickListener {
-            bottomSheetDialog.dismiss()
-            // 检查登录状态
-            if (com.familyrecipes.android.util.AuthUtil.requireLogin(this, "发布菜谱")) {
-                val intent = Intent(this, EditRecipeActivity::class.java)
-                startActivity(intent)
+
+    private fun selectKitchen(kitchen: Kitchen) {
+        PreferenceManager.saveCurrentKitchen(kitchen.id, kitchen.name)
+        PreferenceManager.currentGroupId = kitchen.groupId
+        updateCurrentKitchen(kitchen.name)
+        // Recreate the visible screen, cancelling requests for the previous kitchen.
+        recreate()
+    }
+
+    private fun createKitchen() {
+        lifecycleScope.launch {
+            try {
+                val response = ApiClient.getService().getGroupsList()
+                check(response.isSuccessful && response.body()?.code == 200)
+                val groups =
+                    response.body()?.data.orEmpty().filter {
+                        it.managerId == PreferenceManager.userId
+                    }
+                if (groups.isEmpty()) {
+                    editKitchenName(Kitchen(name = ""))
+                    return@launch
+                }
+                if (groups.size == 1) {
+                    editKitchenName(Kitchen(groupId = groups.single().id!!, name = ""))
+                    return@launch
+                }
+                android.app.AlertDialog.Builder(this@MainActivity)
+                    .setTitle("选择所属群组")
+                    .setItems(groups.map { it.name }.toTypedArray()) { _, index ->
+                        editKitchenName(Kitchen(groupId = groups[index].id!!, name = ""))
+                    }
+                    .show()
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                Toast.makeText(this@MainActivity, "群组加载失败，请重试", Toast.LENGTH_SHORT).show()
             }
         }
-        
-        // 作品按钮
-        binding.btnAddWork.setOnClickListener {
-            bottomSheetDialog.dismiss()
-            Toast.makeText(this, "作品功能开发中...", Toast.LENGTH_SHORT).show()
-            // TODO: 跳转到添加作品页面
-        }
-        
-        // 菜单按钮
-        binding.btnAddMenu.setOnClickListener {
-            bottomSheetDialog.dismiss()
-            Toast.makeText(this, "菜单功能开发中...", Toast.LENGTH_SHORT).show()
-            // TODO: 跳转到添加菜单页面
-        }
-        
-        // 食材/库存按钮
-        binding.btnAddIngredient.setOnClickListener {
-            bottomSheetDialog.dismiss()
-            // 检查登录状态
-            if (com.familyrecipes.android.util.AuthUtil.requireLogin(this, "添加库存")) {
-                val intent = Intent(this, AddIngredientActivity::class.java)
-                startActivity(intent)
+    }
+
+    private fun editKitchenName(kitchen: Kitchen) {
+        val field =
+            android.widget.EditText(this).apply {
+                setText(kitchen.name)
+                hint = "例如：老家的厨房"
+            }
+        val dialog =
+            android.app.AlertDialog.Builder(this)
+                .setTitle("厨房名称（群管理员可修改）")
+                .setView(field)
+                .setPositiveButton("保存", null)
+                .setNegativeButton("取消", null)
+                .create()
+        dialog.show()
+        dialog.getButton(-1).setOnClickListener {
+            val name = field.text.toString().trim()
+            if (name.isBlank()) {
+                field.error = "请输入名称"
+                return@setOnClickListener
+            }
+            lifecycleScope.launch {
+                try {
+                    val response =
+                        if (kitchen.id == null)
+                            ApiClient.getService().createKitchen(kitchen.copy(name = name))
+                        else
+                            ApiClient.getService()
+                                .renameKitchen(kitchen.id, kitchen.copy(name = name))
+                    check(response.isSuccessful && response.body()?.code == 200)
+                    dialog.dismiss()
+                    selectKitchen(response.body()!!.data!!)
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    field.error = "保存失败，请检查权限和网络后重试"
+                }
             }
         }
-        
-        bottomSheetDialog.show()
+    }
+
+    fun initializeKitchen() {
+        if (!PreferenceManager.isLoggedIn()) return
+        val userId = PreferenceManager.userId
+        val selectedId = PreferenceManager.currentKitchenId
+        lifecycleScope.launch {
+            try {
+                val response = ApiClient.getService().getKitchens()
+                check(response.isSuccessful && response.body()?.code == 200)
+                // Ignore a stale response after switching account or kitchen.
+                if (PreferenceManager.userId != userId ||
+                    !PreferenceManager.isLoggedIn() ||
+                    PreferenceManager.currentKitchenId != selectedId)
+                    return@launch
+                val kitchens = response.body()?.data.orEmpty()
+                val kitchen =
+                    kitchens.find { it.id == selectedId }
+                        ?: kitchens.firstOrNull()
+                        ?: error("没有可用厨房")
+                if (kitchen.id != selectedId) selectKitchen(kitchen)
+                else {
+                    PreferenceManager.saveCurrentKitchen(kitchen.id, kitchen.name)
+                    PreferenceManager.currentGroupId = kitchen.groupId
+                    updateCurrentKitchen(kitchen.name)
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                Toast.makeText(this@MainActivity, "厨房初始化失败，请点击顶部厨房入口重试", Toast.LENGTH_LONG).show()
+            }
+        }
     }
 }
-

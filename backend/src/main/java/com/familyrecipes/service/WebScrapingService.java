@@ -21,6 +21,28 @@ public class WebScrapingService {
     
     private static final Logger log = LoggerFactory.getLogger(WebScrapingService.class);
     
+    static void validateTarget(String url) throws IOException {
+        java.net.URI uri;
+        try { uri = java.net.URI.create(url); } catch (IllegalArgumentException e) { throw new IOException("无效地址"); }
+        String host = uri.getHost();
+        if (!"https".equalsIgnoreCase(uri.getScheme()) || uri.getUserInfo() != null ||
+            (uri.getPort() != -1 && uri.getPort() != 443) || host == null)
+            throw new IOException("只抓取支持平台的HTTPS地址");
+        String normalized = host.toLowerCase(java.util.Locale.ROOT);
+        boolean allowed = java.util.List.of("xhslink.com", "xiaohongshu.com", "xiachufang.com",
+            "douyin.com", "b23.tv", "bilibili.com", "meishij.net", "douguo.com", "youtube.com", "youtu.be")
+            .stream().anyMatch(domain -> normalized.equals(domain) || normalized.endsWith("." + domain));
+        if (!allowed) throw new IOException("不支持自动抓取该站点，可手动填写标题");
+        for (java.net.InetAddress address : java.net.InetAddress.getAllByName(host)) {
+            byte[] bytes = address.getAddress();
+            if (address.isAnyLocalAddress() || address.isLoopbackAddress() || address.isLinkLocalAddress()
+                || address.isSiteLocalAddress() || address.isMulticastAddress()
+                || (bytes.length == 16 && (bytes[0] & 0xfe) == 0xfc)
+                || (bytes.length == 4 && ((bytes[0] & 255) == 0 || ((bytes[0] & 255) == 100 && (bytes[1] & 255) >= 64 && (bytes[1] & 255) <= 127))))
+                throw new IOException("禁止访问内部网络地址");
+        }
+    }
+
     private static final int TIMEOUT = 10000; // 10秒超时
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36";
     
@@ -59,13 +81,17 @@ public class WebScrapingService {
             log.info("开始抓取网页: {}", url);
             
             // 发起HTTP请求
-            Connection.Response response = Jsoup.connect(url)
-                    .userAgent(USER_AGENT)
-                    .timeout(TIMEOUT)
-                    .followRedirects(true)
-                    .ignoreHttpErrors(true)
-                    .execute();
-            
+            Connection.Response response = null;
+            for (int hop = 0; hop <= 3; hop++) {
+                validateTarget(url);
+                response = Jsoup.connect(url).userAgent(USER_AGENT).timeout(TIMEOUT)
+                    .maxBodySize(2 * 1024 * 1024).followRedirects(false).ignoreHttpErrors(true).execute();
+                if (response.statusCode() < 300 || response.statusCode() >= 400) break;
+                String location = response.header("Location");
+                if (location == null || hop == 3) throw new IOException("重定向次数过多或地址缺失");
+                url = java.net.URI.create(url).resolve(location).toString();
+            }
+
             int statusCode = response.statusCode();
             log.info("HTTP响应状态码: {}", statusCode);
             
@@ -248,29 +274,9 @@ public class WebScrapingService {
             return null;
         }
         
-        // 已经是绝对URL
-        if (url.startsWith("http://") || url.startsWith("https://")) {
-            return url;
-        }
-        
-        // 协议相对URL
-        if (url.startsWith("//")) {
-            return "https:" + url;
-        }
-        
-        // 路径相对URL，拼接base URL
         try {
-            if (baseUrl.endsWith("/") && url.startsWith("/")) {
-                return baseUrl + url.substring(1);
-            } else if (!baseUrl.endsWith("/") && !url.startsWith("/")) {
-                return baseUrl + "/" + url;
-            } else {
-                return baseUrl + url;
-            }
-        } catch (Exception e) {
-            log.warn("URL解析失败: {} + {}", baseUrl, url);
-            return url;
-        }
+            java.net.URI resolved = java.net.URI.create(baseUrl).resolve(url);
+            return java.util.List.of("http", "https").contains(resolved.getScheme()) ? resolved.toString() : null;
+        } catch (IllegalArgumentException e) { return null; }
     }
 }
-

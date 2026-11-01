@@ -29,7 +29,7 @@ public class ExternalLinkParser {
     }
     
     // 各平台URL模式
-    private static final Pattern XIAOHONGSHU_PATTERN = Pattern.compile("(https?://)?xhslink\\.com/[a-zA-Z0-9]+");
+    private static final Pattern XIAOHONGSHU_PATTERN = Pattern.compile("(https?://)?xhslink\\.com/[a-zA-Z0-9/]+");
     private static final Pattern XIACHUFANG_PATTERN = Pattern.compile("(https?://)?(?:www\\.)?xiachufang\\.com/recipe/\\d+/?");
     private static final Pattern DOUYIN_PATTERN = Pattern.compile("(https?://)?v\\.douyin\\.com/[a-zA-Z0-9]+/?");
     private static final Pattern BILIBILI_PATTERN = Pattern.compile("(https?://)?b23\\.tv/[a-zA-Z0-9]+");
@@ -80,6 +80,8 @@ public class ExternalLinkParser {
      * 从文本中提取URL
      */
     private static String extractUrl(String text) {
+        Matcher fullUrl = Pattern.compile("https?://[^\\s<>\"，。！？；（）]+").matcher(text);
+        if (fullUrl.find()) return ensureHttps(fullUrl.group().replaceAll("[.,!;:）)]+$", ""));
         // 按行分割，逐行查找URL
         String[] lines = text.split("\\n");
         

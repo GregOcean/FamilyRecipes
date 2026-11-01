@@ -18,7 +18,9 @@ object IngredientParser {
         val amount: String?,              // 数量
         val expiryDays: Int,              // 过期天数
         val storageLocation: String = com.familyrecipes.android.data.local.ConfigManager.getDefaultStorageLocation(), // 存储位置，从配置获取默认值
-        val notes: String                 // 完整备注
+        val notes: String,                // 完整备注
+        val ownerUserId: Long? = null,
+        val categoryId: Long? = null
     )
 
     /**

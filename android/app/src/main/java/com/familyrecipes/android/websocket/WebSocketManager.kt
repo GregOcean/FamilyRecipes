@@ -1,6 +1,8 @@
 package com.familyrecipes.android.websocket
 
 import android.util.Log
+import com.familyrecipes.android.data.local.PreferenceManager
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import com.familyrecipes.android.data.model.Message
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
@@ -29,12 +31,13 @@ class WebSocketManager private constructor() {
     private val _connectionState = MutableSharedFlow<ConnectionState>(replay = 1)
     val connectionState: SharedFlow<ConnectionState> = _connectionState
     
+    private var generation = 0
+    private var connected = false
     private var currentGroupId: Long? = null
     private var currentUserId: Long? = null
 
     companion object {
         private const val TAG = "WebSocketManager"
-        private const val WS_URL = "ws://10.0.2.2:8080/ws/chat" // Android模拟器访问本地 - Raw WebSocket端点
         
         @Volatile
         private var instance: WebSocketManager? = null
@@ -50,13 +53,14 @@ class WebSocketManager private constructor() {
      * 连接WebSocket
      */
     fun connect(groupId: Long, userId: Long) {
-        if (webSocket != null && currentGroupId == groupId) {
+        if (webSocket != null && currentGroupId == groupId && currentUserId == userId && connected) {
             Log.d(TAG, "WebSocket已连接到群组: $groupId")
             return
         }
 
         disconnect()
 
+        val attempt = generation
         currentGroupId = groupId
         currentUserId = userId
 
@@ -65,13 +69,22 @@ class WebSocketManager private constructor() {
             .readTimeout(0, TimeUnit.MINUTES) // 无限期读取
             .build()
 
+        val token = PreferenceManager.authToken ?: return
+        val base = PreferenceManager.baseUrl.toHttpUrl()
+        val endpoint = base.newBuilder().encodedPath("/ws/chat").query(null).build().toString()
+            .replaceFirst("https://", "wss://").replaceFirst("http://", "ws://")
         val request = Request.Builder()
-            .url(WS_URL)
+            .url(endpoint)
+            .header("Authorization", "Bearer $token")
             .build()
 
         webSocket = client.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
-                Log.d(TAG, "WebSocket连接成功")
+                if (attempt != generation) {
+                    webSocket.close(1000, "Stale connection")
+                    return
+                }
+                connected = true
                 scope.launch {
                     _connectionState.emit(ConnectionState.Connected)
                 }
@@ -80,11 +93,13 @@ class WebSocketManager private constructor() {
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
-                Log.d(TAG, "收到消息: $text")
-                handleMessage(text)
+
+                if (attempt == generation) handleMessage(text)
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                if (attempt != generation) return
+                connected = false
                 Log.e(TAG, "WebSocket连接失败", t)
                 scope.launch {
                     _connectionState.emit(ConnectionState.Disconnected(t.message))
@@ -97,7 +112,8 @@ class WebSocketManager private constructor() {
             }
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                Log.d(TAG, "WebSocket已关闭: $reason")
+                if (attempt != generation) return
+                connected = false
                 scope.launch {
                     _connectionState.emit(ConnectionState.Disconnected(reason))
                 }
@@ -121,20 +137,19 @@ class WebSocketManager private constructor() {
     /**
      * 发送消息
      */
-    fun sendMessage(groupId: Long, userId: Long, content: String) {
+    fun sendMessage(groupId: Long, userId: Long, content: String): Boolean {
+        if (!connected) return false
         val message = JSONObject().apply {
             put("command", "SEND")
             put("destination", "/app/chat.sendMessage")
             put("body", JSONObject().apply {
                 put("groupId", groupId)
-                put("senderId", userId)
                 put("content", content)
                 put("messageType", "text")
             })
         }
         
-        webSocket?.send(message.toString())
-        Log.d(TAG, "发送消息: $content")
+        return webSocket?.send(message.toString()) == true
     }
 
     /**
@@ -146,7 +161,7 @@ class WebSocketManager private constructor() {
             
             // 检查是否是消息体
             if (json.has("command") && json.getString("command") == "MESSAGE") {
-                val body = json.getString("body")
+                val body = json.getJSONObject("body").toString()
                 val message = gson.fromJson(body, Message::class.java)
                 
                 scope.launch {
@@ -162,6 +177,8 @@ class WebSocketManager private constructor() {
      * 断开连接
      */
     fun disconnect() {
+        generation++
+        connected = false
         webSocket?.close(1000, "Client disconnect")
         webSocket = null
         currentGroupId = null

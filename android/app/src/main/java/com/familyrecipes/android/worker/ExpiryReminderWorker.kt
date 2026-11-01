@@ -21,20 +21,40 @@ class ExpiryReminderWorker(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
+        if (!com.familyrecipes.android.data.local.PreferenceManager.isLoggedIn()) return Result.success()
+        val accountKey=com.familyrecipes.android.data.local.LocalStore.account
+        val accountId = com.familyrecipes.android.data.local.PreferenceManager.userId
         return try {
+            val setting = ApiClient.getService().getReminderSetting()
+            if (setting.code() == 401) return Result.success()
+            if (!setting.isSuccessful || setting.body()?.code != 200) return Result.retry()
+            if (setting.body()?.data?.enabled != true) return Result.success()
+            val now=java.util.Calendar.getInstance()
+            val configured=setting.body()?.data?.reminderTime ?: "17:00:00"
+            val day=java.text.SimpleDateFormat("yyyy-MM-dd",java.util.Locale.ROOT).format(now.time)
+            val dao=com.familyrecipes.android.data.local.LocalStore.instance.records()
+            if(!ReminderPolicy.due(true,configured,now.get(java.util.Calendar.HOUR_OF_DAY)*60+now.get(java.util.Calendar.MINUTE),
+                day,dao.get(accountKey,"notification","expiry")))return Result.success()
+            if(!androidx.core.app.NotificationManagerCompat.from(applicationContext).areNotificationsEnabled())return Result.success()
             // 获取即将过期的食材
             val response = ApiClient.getService().getExpiringItems()
             
+            if (response.code() == 401) return Result.success()
+            if (!response.isSuccessful || response.body()?.code != 200) return Result.retry()
+            if (accountId != com.familyrecipes.android.data.local.PreferenceManager.userId) return Result.success()
             if (response.isSuccessful) {
                 val items = response.body()?.data
                 
                 if (!items.isNullOrEmpty()) {
                     // 发送通知
                     sendNotification(items.size)
+                    dao.put(com.familyrecipes.android.data.local.LocalRecord(accountKey,"notification","expiry",day))
                 }
             }
             
             Result.success()
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             e.printStackTrace()
             Result.retry()
@@ -61,7 +81,7 @@ class ExpiryReminderWorker(
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("食材即将过期")
             .setContentText("您有 $count 个食材即将过期，请及时处理")
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .build()

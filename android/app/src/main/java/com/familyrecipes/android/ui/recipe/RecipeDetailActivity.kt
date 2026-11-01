@@ -43,6 +43,8 @@ class RecipeDetailActivity : AppCompatActivity() {
         }
     }
 
+    override fun onResume(){super.onResume();if(::binding.isInitialized && recipe!=null)loadRecipeDetail()}
+
     private fun setupToolbar() {
         // 简单设置返回按钮，不使用 ActionBar
         binding.toolbar.setNavigationOnClickListener {
@@ -102,31 +104,13 @@ class RecipeDetailActivity : AppCompatActivity() {
         val isLoggedIn = PreferenceManager.isLoggedIn()
         val authToken = PreferenceManager.authToken
         
-        android.util.Log.d("RecipeDetail", """
-            当前用户ID: $currentUserId
-            菜谱创建者ID: ${recipe.creatorId}
-            是否登录: $isLoggedIn
-            Token: ${authToken?.take(20)}...
-        """.trimIndent())
-        
-        // 暂时：如果是默认用户(id=1)创建的菜谱，也显示编辑按钮
-        if ((currentUserId > 0 && recipe.creatorId == currentUserId) || 
-            (recipe.creatorId == 1L && currentUserId == 0L)) {
-            binding.btnEdit.visibility = View.VISIBLE
-            binding.btnEdit.setOnClickListener {
-                // 跳转到编辑页面
-                val intent = android.content.Intent(this, EditRecipeActivity::class.java)
-                intent.putExtra("recipe_id", recipe.id)
-                startActivity(intent)
-            }
-        } else {
-            binding.btnEdit.visibility = View.GONE
-        }
-        
+        binding.btnEdit.visibility=if(currentUserId>0 && recipe.creatorId==currentUserId) View.VISIBLE else View.GONE
+        binding.btnEdit.setOnClickListener{startActivity(android.content.Intent(this,EditRecipeActivity::class.java).putExtra("recipe_id",recipe.id))}
         // 设置封面图片
         if (!recipe.coverImage.isNullOrEmpty()) {
             Glide.with(this)
-                .load(recipe.coverImage)
+                .load(com.familyrecipes.android.util.MediaImages.model(recipe.coverImage))
+                .signature(com.bumptech.glide.signature.ObjectKey(com.familyrecipes.android.data.local.PreferenceManager.userId))
                 .placeholder(R.drawable.placeholder_recipe)
                 .into(binding.ivCover)
             binding.ivCover.visibility = View.VISIBLE
@@ -169,6 +153,31 @@ class RecipeDetailActivity : AppCompatActivity() {
             binding.tvDescription.visibility = View.GONE
         }
         
+        binding.gallery.removeAllViews()
+        recipe.images.orEmpty().forEach { photo ->
+            val image=android.widget.ImageView(this).apply { adjustViewBounds=true }
+            binding.gallery.addView(image,android.widget.LinearLayout.LayoutParams(-1,-2))
+            com.bumptech.glide.Glide.with(this).load(com.familyrecipes.android.util.MediaImages.model(photo.url))
+                .signature(com.bumptech.glide.signature.ObjectKey(com.familyrecipes.android.data.local.PreferenceManager.userId)).into(image)
+            if(!photo.caption.isNullOrBlank()) binding.gallery.addView(android.widget.TextView(this).apply { text=photo.caption;setPadding(0,8,0,24) })
+        }
+        val ui=com.familyrecipes.android.ui.design.Ui
+        recipe.sourceRecipeName?.let{binding.gallery.addView(ui.text(this,"改编自：$it",15f))}
+        binding.gallery.addView(ui.text(this,"食材与用量",21f,true))
+        recipe.ingredients.orEmpty().forEach{binding.gallery.addView(ui.text(this,"${it.ingredient?.name.orEmpty()}  ${it.amount.orEmpty()}"))}
+        binding.gallery.addView(ui.text(this,"做法步骤",21f,true))
+        recipe.steps.orEmpty().forEach{step->binding.gallery.addView(ui.text(this,"${step.stepNumber}. ${step.description}"));step.image?.let{url->val image=android.widget.ImageView(this).apply{adjustViewBounds=true};binding.gallery.addView(image);Glide.with(this).load(com.familyrecipes.android.util.MediaImages.model(url)).into(image)}}
+        binding.gallery.addView(ui.button(this,"改成我的做法"){
+            lifecycleScope.launch{try{val kitchen=PreferenceManager.currentKitchenId?:error("请先选择厨房");val copy=ui.data(ApiClient.getService().adaptRecipe(recipeId,mapOf("kitchenId" to kitchen)));startActivity(android.content.Intent(this@RecipeDetailActivity,EditRecipeActivity::class.java).putExtra("recipe_id",copy.id))}catch(e:kotlinx.coroutines.CancellationException){throw e}catch(e:Exception){ui.toast(this@RecipeDetailActivity,e)}}
+        })
+        val known=recipe.cooks.orEmpty().any{it.id==currentUserId}
+        binding.gallery.addView(ui.button(this,if(known)"已标记我会做 · 取消" else "标记我会做"){
+            lifecycleScope.launch{try{ui.ok(ApiClient.getService().setKnown(recipeId,mapOf("known" to !known)));loadRecipeDetail()}catch(e:kotlinx.coroutines.CancellationException){throw e}catch(e:Exception){ui.toast(this@RecipeDetailActivity,e)}}
+        })
+        listOf("order" to "加入点菜","prep" to "加入备菜").forEach{(kind,label)->binding.gallery.addView(ui.button(this,label){startActivity(android.content.Intent(this,com.familyrecipes.android.ui.meal.MealEditorActivity::class.java).putExtra("kind",kind).putExtra("recipe_id",recipe.id).putExtra("recipe_name",recipe.name))})}
+        binding.gallery.addView(ui.button(this,"记录这次做菜"){startActivity(android.content.Intent(this,CookingRecordActivity::class.java).putExtra("recipe_id",recipe.id))})
+        val history=android.widget.LinearLayout(this).apply{orientation=android.widget.LinearLayout.VERTICAL};binding.gallery.addView(history)
+        lifecycleScope.launch{try{val records=ui.data(ApiClient.getService().cookingRecords(recipeId));history.addView(ui.text(this@RecipeDetailActivity,"我的做菜记录",21f,true));records.forEach{r->history.addView(ui.text(this@RecipeDetailActivity,"${r.cookedAt.take(10)}\n${r.notes}"));com.google.gson.Gson().fromJson(r.images,Array<String>::class.java).orEmpty().forEach{url->val image=android.widget.ImageView(this@RecipeDetailActivity).apply{adjustViewBounds=true};history.addView(image);Glide.with(this@RecipeDetailActivity).load(com.familyrecipes.android.util.MediaImages.model(url)).into(image)}}}catch(e:kotlinx.coroutines.CancellationException){throw e}catch(e:Exception){history.addView(ui.text(this@RecipeDetailActivity,"做菜记录加载失败，请重新打开重试"))}}
         // 设置统计信息
         binding.tvViewCount.text = "${recipe.viewCount ?: 0}"
         binding.tvFavoriteCount.text = "${recipe.favoriteCount ?: 0}"
@@ -465,7 +474,8 @@ class ExternalLinkDetailAdapter(
         // 加载缩略图
         if (!link.thumbnail.isNullOrEmpty()) {
             com.bumptech.glide.Glide.with(holder.itemView.context)
-                .load(link.thumbnail)
+                .load(com.familyrecipes.android.util.MediaImages.model(link.thumbnail))
+                .signature(com.bumptech.glide.signature.ObjectKey(com.familyrecipes.android.data.local.PreferenceManager.userId))
                 .placeholder(com.familyrecipes.android.R.drawable.placeholder_recipe)
                 .into(holder.ivThumbnail)
         } else {

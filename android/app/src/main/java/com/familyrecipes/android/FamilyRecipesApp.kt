@@ -49,6 +49,11 @@ class FamilyRecipesApp : Application() {
         
         // 启动定时检查任务
         scheduleExpiryCheck()
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork("ChatSync",ExistingPeriodicWorkPolicy.UPDATE,
+            PeriodicWorkRequestBuilder<com.familyrecipes.android.worker.ChatSyncWorker>(15,TimeUnit.MINUTES)
+                .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()).build())
+        if(Build.VERSION.SDK_INT>=26) getSystemService(NotificationManager::class.java).createNotificationChannel(
+            NotificationChannel("family_messages","家庭消息",NotificationManager.IMPORTANCE_DEFAULT))
     }
     
     /**
@@ -74,10 +79,10 @@ class FamilyRecipesApp : Application() {
             val channel = NotificationChannel(
                 NOTIFICATION_CHANNEL_ID,
                 NOTIFICATION_CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_HIGH
+                NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
                 description = "用于提醒冰箱中即将过期的食材"
-                enableVibration(true)
+                enableVibration(false)
             }
             
             val notificationManager = getSystemService(NotificationManager::class.java)
@@ -94,16 +99,15 @@ class FamilyRecipesApp : Application() {
             .build()
 
         val workRequest = PeriodicWorkRequestBuilder<ExpiryReminderWorker>(
-            1, TimeUnit.DAYS  // 每天检查一次
+            15, TimeUnit.MINUTES  // 到用户设定时间后，每天最多提醒一次
         )
             .setConstraints(constraints)
-            .setInitialDelay(1, TimeUnit.HOURS)  // 首次延迟1小时
             .build()
 
         WorkManager.getInstance(this)
             .enqueueUniquePeriodicWork(
                 "ExpiryReminderWork",
-                ExistingPeriodicWorkPolicy.KEEP,
+                ExistingPeriodicWorkPolicy.UPDATE,
                 workRequest
             )
     }

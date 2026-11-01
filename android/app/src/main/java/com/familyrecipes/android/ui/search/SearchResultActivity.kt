@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.familyrecipes.android.data.remote.ApiClient
 import com.familyrecipes.android.databinding.ActivitySearchResultBinding
@@ -17,6 +18,7 @@ import kotlinx.coroutines.launch
  */
 class SearchResultActivity : AppCompatActivity() {
 
+    private val model by lazy { androidx.lifecycle.ViewModelProvider(this)[SearchViewModel::class.java] }
     private lateinit var binding: ActivitySearchResultBinding
     private lateinit var searchResultAdapter: SearchResultAdapter
     private val searchItems = mutableListOf<com.familyrecipes.android.data.model.SearchItem>()
@@ -78,44 +80,17 @@ class SearchResultActivity : AppCompatActivity() {
     }
 
     private fun performSearch(keyword: String, priorityType: String) {
-        binding.swipeRefresh.isRefreshing = true
-
+        model.search(keyword,priorityType)
+        binding.swipeRefresh.setOnRefreshListener { model.search(keyword,priorityType,true) }
         lifecycleScope.launch {
-            try {
-                val response = ApiClient.getService().globalSearch(
-                    keyword = keyword,
-                    priorityType = priorityType
-                )
-
-                if (response.isSuccessful && response.body()?.code == 200) {
-                    val searchResult = response.body()?.data
-                    searchItems.clear()
-                    searchResult?.items?.let { searchItems.addAll(it) }
+            repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+                model.state.collect { state ->
+                    binding.swipeRefresh.isRefreshing=state.loading
+                    searchItems.clear();searchItems.addAll(state.result?.items.orEmpty())
                     searchResultAdapter.notifyDataSetChanged()
-
-                    // 更新统计信息
-                    val recipeCount = searchResult?.recipeCount ?: 0
-                    val ingredientCount = searchResult?.ingredientCount ?: 0
-                    binding.tvResultStats.text = "找到 ${recipeCount} 个菜谱, ${ingredientCount} 个食材"
-
-                    if (searchItems.isEmpty()) {
-                        Toast.makeText(this@SearchResultActivity, "没有找到相关结果", Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    Toast.makeText(this@SearchResultActivity, "搜索失败", Toast.LENGTH_SHORT).show()
+                    binding.tvResultStats.text=state.error ?: "找到 ${state.result?.recipeCount ?: 0} 个菜谱，${state.result?.ingredientCount ?: 0} 个食材"
                 }
-            } catch (e: Exception) {
-                Toast.makeText(this@SearchResultActivity, "网络错误: ${e.message}", Toast.LENGTH_SHORT).show()
-                e.printStackTrace()
-            } finally {
-                binding.swipeRefresh.isRefreshing = false
             }
-        }
-
-        // 下拉刷新
-        binding.swipeRefresh.setOnRefreshListener {
-            performSearch(keyword, priorityType)
         }
     }
 }
-

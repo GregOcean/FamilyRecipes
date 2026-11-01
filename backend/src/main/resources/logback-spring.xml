@@ -17,9 +17,9 @@
         </rollingPolicy>
     </appender>
 
-    <logger name="com.familyrecipes" level="DEBUG"/>
-    <logger name="org.springframework.web" level="DEBUG"/>
-    <logger name="com.familyrecipes.interceptor" level="DEBUG"/>
+    <logger name="com.familyrecipes" level="INFO"/>
+    <logger name="org.springframework.web" level="INFO"/>
+    <logger name="com.familyrecipes.interceptor" level="INFO"/>
 
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>

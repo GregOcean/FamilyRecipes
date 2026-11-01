@@ -14,6 +14,8 @@
         LEFT JOIN user_favorite uf ON r.id = uf.recipe_id
         LEFT JOIN recipe_cook rc ON r.id = rc.recipe_id
         <where>
+            <if test="kitchenId != null">AND r.kitchen_id = #{kitchenId}</if>
+            AND (r.visibility = 'public' OR r.creator_id = #{viewerId} OR (r.visibility = 'group' AND EXISTS (SELECT 1 FROM group_member gm WHERE gm.user_id = #{viewerId} AND (gm.group_id = r.owner_group_id OR JSON_CONTAINS(COALESCE(r.shared_group_ids, '[]'), CAST(gm.group_id AS JSON))))))
             <if test="keyword != null and keyword != ''">
                 AND (r.name LIKE CONCAT('%', #{keyword}, '%')
                 OR r.description LIKE CONCAT('%', #{keyword}, '%'))
@@ -59,16 +61,16 @@
         </where>
         <choose>
             <when test="orderBy == 'view_count'">
-                ORDER BY r.view_count DESC
+                ORDER BY r.view_count DESC, r.id DESC
             </when>
             <when test="orderBy == 'favorite_count'">
-                ORDER BY r.favorite_count DESC
+                ORDER BY r.favorite_count DESC, r.id DESC
             </when>
             <when test="orderBy == 'recently_cooked'">
-                ORDER BY r.recently_cooked_count DESC, r.last_cooked_at DESC
+                ORDER BY r.recently_cooked_count DESC, r.last_cooked_at DESC, r.id DESC
             </when>
             <otherwise>
-                ORDER BY r.created_at DESC
+                ORDER BY r.created_at DESC, r.id DESC
             </otherwise>
         </choose>
         <if test="offset != null and limit != null">
@@ -86,6 +88,8 @@
         LEFT JOIN user_favorite uf ON r.id = uf.recipe_id
         LEFT JOIN recipe_cook rc ON r.id = rc.recipe_id
         <where>
+            <if test="kitchenId != null">AND r.kitchen_id = #{kitchenId}</if>
+            AND (r.visibility = 'public' OR r.creator_id = #{viewerId} OR (r.visibility = 'group' AND EXISTS (SELECT 1 FROM group_member gm WHERE gm.user_id = #{viewerId} AND (gm.group_id = r.owner_group_id OR JSON_CONTAINS(COALESCE(r.shared_group_ids, '[]'), CAST(gm.group_id AS JSON))))))
             <if test="keyword != null and keyword != ''">
                 AND (r.name LIKE CONCAT('%', #{keyword}, '%')
                 OR r.description LIKE CONCAT('%', #{keyword}, '%'))

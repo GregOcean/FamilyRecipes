@@ -10,6 +10,10 @@ public class Ingredient {
     private Long id;
     private String name;
     private String category;
+    private Long categoryId;
+    private String aliases;
+    private String processingMethod;
+    private Long baseIngredientId;
     private String unit;  // 单位（如：个、瓶、克、袋等）
 }
 

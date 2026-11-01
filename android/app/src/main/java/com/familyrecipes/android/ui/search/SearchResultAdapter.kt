@@ -64,7 +64,8 @@ class SearchResultAdapter(
             // 加载封面图片
             if (!item.coverImageUrl.isNullOrEmpty()) {
                 Glide.with(binding.root.context)
-                    .load(item.coverImageUrl)
+                    .load(com.familyrecipes.android.util.MediaImages.model(item.coverImageUrl))
+                    .signature(com.bumptech.glide.signature.ObjectKey(com.familyrecipes.android.data.local.PreferenceManager.userId))
                     .placeholder(R.drawable.ic_recipe)
                     .error(R.drawable.ic_recipe)
                     .centerCrop()

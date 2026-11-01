@@ -6,6 +6,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
+import androidx.core.widget.doAfterTextChanged
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -32,6 +33,8 @@ import kotlinx.coroutines.launch
  */
 class FridgeFragment : Fragment(), SearchableFragment {
 
+    private var loadJob: kotlinx.coroutines.Job? = null
+    private var loadGeneration=0
     private var _binding: FragmentFridgeBinding? = null
     private val binding get() = _binding!!
     
@@ -88,6 +91,13 @@ class FridgeFragment : Fragment(), SearchableFragment {
      * 设置分类侧边栏
      */
     private fun setupCategorySidebar() {
+        binding.btnCategories.setOnClickListener {
+            val choices=categories.flatMap{listOf(it)+it.children.orEmpty()}
+            androidx.appcompat.app.AlertDialog.Builder(requireContext()).setTitle("选择分类").setItems((listOf("全部分类")+choices.map{"${it.icon.orEmpty()} ${it.name}"}).toTypedArray()){_,index->
+                val selected=choices.getOrNull(index-1);selectedCategoryId=selected?.id;binding.btnCategories.text=(selected?.name?:"全部分类")+" ▾";filterItemsByCategory()
+            }.show()
+        }
+        binding.etInventorySearch.doAfterTextChanged { filterItemsByCategory() }
         categoryAdapter = CategorySidebarAdapter { category, isExpanded ->
             // 点击分类时的回调
             selectedCategoryId = category?.id
@@ -104,7 +114,7 @@ class FridgeFragment : Fragment(), SearchableFragment {
      * 加载分类数据
      */
     private fun loadCategories() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val response = ApiClient.getService().getCategoryTree()
                 
@@ -113,7 +123,10 @@ class FridgeFragment : Fragment(), SearchableFragment {
                     categories.clear()
                     categories.addAll(categoryList)
                     categoryAdapter.submitList(categoryList)
+                    filterItemsByCategory()
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 android.util.Log.e("FridgeFragment", "加载分类失败", e)
             }
@@ -125,15 +138,19 @@ class FridgeFragment : Fragment(), SearchableFragment {
      */
     private fun filterItemsByCategory() {
         items.clear()
-        
-        if (selectedCategoryId == null) {
-            // 显示全部
-            items.addAll(allItems)
-        } else {
-            // 筛选指定分类
-            items.addAll(allItems.filter { it.ingredient?.categoryId == selectedCategoryId })
+        val query = binding.etInventorySearch.text.toString().trim()
+        val searched = allItems.filter { currentTab!=2 || it.status==FridgeItem.STATUS_EXPIRING || it.status==FridgeItem.STATUS_EXPIRED }.filter { query.isEmpty() || it.ingredient?.name?.contains(query, ignoreCase=true) == true || it.ingredient?.aliases?.contains(query, ignoreCase=true) == true }
+        val ids = selectedCategoryId?.let { com.familyrecipes.android.util.InventoryCategories.descendants(it, categories) }
+        items.addAll(searched.filter { ids == null || (it.categoryOverrideId ?: it.ingredient?.categoryId) in ids })
+        val counts = categories.associate { category ->
+            val descendants = com.familyrecipes.android.util.InventoryCategories.descendants(category.id, categories)
+            category.id to searched.count { (it.categoryOverrideId ?: it.ingredient?.categoryId) in descendants }
         }
-        
+        categoryAdapter.setCounts(counts, searched.size)
+        binding.tvInventoryEmpty.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
+        binding.tvInventoryEmpty.text = if (query.isNotEmpty()) "未找到匹配物品，可切换“全部”或修改搜索词"
+            else "这个分类还没有物品\n点击 + 添加，或查看其他分类"
+
         fridgeAdapter.notifyDataSetChanged()
         
         // 更新适配器选中状态
@@ -151,7 +168,8 @@ class FridgeFragment : Fragment(), SearchableFragment {
             onItemClick = { item ->
                 // 点击食材，跳转到相关菜谱列表
                 navigateToRecipesByIngredient(item)
-            }
+            },
+            onManage = { showItemActions(it) }
         )
         
         binding.recyclerView.apply {
@@ -166,7 +184,7 @@ class FridgeFragment : Fragment(), SearchableFragment {
     private fun setupSwipeGesture() {
         val itemTouchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(
             0,
-            ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT
+            ItemTouchHelper.RIGHT
         ) {
             override fun getMovementFlags(
                 recyclerView: RecyclerView,
@@ -175,10 +193,10 @@ class FridgeFragment : Fragment(), SearchableFragment {
                 // 根据当前tab决定允许的滑动方向
                 val swipeFlags = if (currentTab == TAB_CONSUMED) {
                     // 消耗历史：只允许左滑删除
-                    ItemTouchHelper.LEFT
+                    0
                 } else {
                     // 当前库存：允许左滑删除和右滑消耗
-                    ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT
+                    ItemTouchHelper.RIGHT
                 }
                 return makeMovementFlags(0, swipeFlags)
             }
@@ -191,7 +209,7 @@ class FridgeFragment : Fragment(), SearchableFragment {
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 val position = viewHolder.adapterPosition
-                val item = items[position]
+                val item = items.getOrNull(position) ?: return
                 
                 when (direction) {
                     ItemTouchHelper.LEFT -> {
@@ -200,7 +218,7 @@ class FridgeFragment : Fragment(), SearchableFragment {
                     }
                     ItemTouchHelper.RIGHT -> {
                         // 右滑标记为已消耗（仅在当前库存tab可用）
-                        if (currentTab == TAB_CURRENT) {
+                        if (currentTab != TAB_CONSUMED) {
                             markAsConsumed(item.id!!)
                         }
                     }
@@ -219,8 +237,8 @@ class FridgeFragment : Fragment(), SearchableFragment {
                 val itemView = viewHolder.itemView
                 val paint = Paint()
                 
-                // 只在当前库存tab显示右滑"已消耗"提示
-                if (dX > 0 && currentTab == TAB_CURRENT) {
+                // 只在当前库存tab显示右滑"已吃完"提示
+                if (dX > 0 && currentTab != TAB_CONSUMED) {
                     // 右滑 - 已消耗（绿色背景）
                     paint.color = Color.parseColor("#4CAF50")
                     val background = RectF(
@@ -236,7 +254,7 @@ class FridgeFragment : Fragment(), SearchableFragment {
                     paint.textSize = 48f
                     paint.textAlign = Paint.Align.LEFT
                     c.drawText(
-                        "已消耗",
+                        "已吃完",
                         itemView.left + 40f,
                         itemView.top + (itemView.height / 2f) + 15f,
                         paint
@@ -294,47 +312,87 @@ class FridgeFragment : Fragment(), SearchableFragment {
      * 即使食材ID不存在或没有关联菜谱，也应优雅处理
      */
     private fun navigateToRecipesByIngredient(item: FridgeItem) {
-        item.ingredient?.let { ingredient ->
-            android.util.Log.d("FridgeFragment", "点击食材: ${ingredient.name}, ID: ${ingredient.id}")
-            
-            // 跳转到主页的菜谱tab，并传递食材信息用于搜索
-            Toast.makeText(
-                context, 
-                "查看包含「${ingredient.name}」的菜谱（功能待实现）", 
-                Toast.LENGTH_SHORT
-            ).show()
-            
-            // TODO: 实际实现时的代码
-            // 方式1: 跳转到菜谱列表并按食材过滤
-            // val intent = Intent(requireContext(), RecipeListActivity::class.java)
-            // intent.putExtra("ingredient_id", ingredient.id)
-            // intent.putExtra("ingredient_name", ingredient.name)
-            // startActivity(intent)
-            
-            // 方式2: 切换到主页的菜谱tab并设置搜索关键词
-            // (parentFragment?.parentFragment as? MainActivity)?.switchToRecipeTabWithSearch(ingredient.name)
-            
-            // 注意：即使ingredient.id为null或后端没有关联的菜谱，
-            // 界面应该显示"暂无包含该食材的菜谱"而不是崩溃
-        } ?: run {
-            // ingredient为null的异常情况
-            android.util.Log.w("FridgeFragment", "点击的食材对象ingredient为null")
-            Toast.makeText(context, "食材信息缺失", Toast.LENGTH_SHORT).show()
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val account=com.familyrecipes.android.data.local.LocalStore.account
+                val dao=com.familyrecipes.android.data.local.LocalStore.instance.records()
+                val key="stock:${item.id}"
+                val draft=dao.get(account,"draft",key)?.let { com.google.gson.Gson().fromJson(it,FridgeItem::class.java) } ?: item
+                val kitchen=ApiClient.getService().getKitchens().body()?.data?.find { it.id==item.kitchenId } ?: return@launch
+                val members=ApiClient.getService().getGroupDetail(requireNotNull(kitchen.groupId)).body()?.data?.members.orEmpty()
+                val box=android.widget.LinearLayout(requireContext()).apply { orientation=android.widget.LinearLayout.VERTICAL;setPadding(32,16,32,16) }
+                fun field(label:String,value:String?)=android.widget.EditText(requireContext()).apply { hint=label;setText(value);box.addView(this) }
+                val amount=field("数量",draft.amount)
+                val expiry=field("到期日期 YYYY-MM-DD",draft.expiryDate)
+                val location=field("存放位置",draft.storageLocation)
+                val notes=field("备注",draft.notes)
+                val owner=android.widget.Spinner(requireContext()).apply {
+                    adapter=android.widget.ArrayAdapter(requireContext(),android.R.layout.simple_spinner_dropdown_item,
+                        listOf("全家共享（无预留）")+members.map { "预留给 ${it.user?.username ?: it.userId}" })
+                    setSelection(members.indexOfFirst { it.userId==draft.ownerUserId }+1)
+                }
+                box.addView(owner)
+                val categoriesResponse = ApiClient.getService().getAllCategories()
+                check(categoriesResponse.isSuccessful && categoriesResponse.body()?.code == 200)
+                val choices = categoriesResponse.body()?.data.orEmpty()
+                val categoryLabel = android.widget.TextView(requireContext()).apply { text="物品分类（仅修改这条库存）" }
+                box.addView(categoryLabel)
+                val classification = android.widget.Spinner(requireContext()).apply {
+                    adapter = android.widget.ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item,
+                        listOf("跟随食材库：${item.ingredient?.category.orEmpty()}") + choices.map { "${it.icon.orEmpty()} ${it.name}" })
+                    setSelection(choices.indexOfFirst { it.id == draft.categoryOverrideId } + 1)
+                }
+                box.addView(classification)
+
+                fun value()=item.copy(amount=amount.text.toString(),expiryDate=expiry.text.toString(),
+                    categoryOverrideId=choices.getOrNull(classification.selectedItemPosition-1)?.id,
+                    storageLocation=location.text.toString(),notes=notes.text.toString(),
+                    ownerUserId=if(owner.selectedItemPosition==0)null else members[owner.selectedItemPosition-1].userId)
+                fun saveDraft()=com.familyrecipes.android.data.local.DraftWrites.put(account,key,com.google.gson.Gson().toJson(value()))
+                listOf(amount,expiry,location,notes).forEach { it.doAfterTextChanged { saveDraft() } }
+                owner.onItemSelectedListener=object:android.widget.AdapterView.OnItemSelectedListener {
+                    override fun onItemSelected(parent:android.widget.AdapterView<*>?,view:View?,position:Int,id:Long) { saveDraft() }
+                    override fun onNothingSelected(parent:android.widget.AdapterView<*>?) { }
+                }
+                classification.onItemSelectedListener=object:android.widget.AdapterView.OnItemSelectedListener {
+                    override fun onItemSelected(parent:android.widget.AdapterView<*>?,view:View?,position:Int,id:Long) { saveDraft() }
+                    override fun onNothingSelected(parent:android.widget.AdapterView<*>?) { }
+                }
+                val scroll=android.widget.ScrollView(requireContext()).apply { addView(box) }
+                val dialog=androidx.appcompat.app.AlertDialog.Builder(requireContext()).setTitle("编辑 ${item.ingredient?.name ?: "库存"}")
+                    .setView(scroll).setPositiveButton("保存",null).setNegativeButton("取消",null).create()
+                dialog.show();dialog.getButton(-1).setOnClickListener {
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        try {
+                            val response=ApiClient.getService().updateFridgeItem(item.id!!,value())
+                            check(response.isSuccessful && response.body()?.code==200)
+                            com.familyrecipes.android.data.local.DraftWrites.clear(account,key)
+                            dialog.dismiss();loadData()
+                        } catch(e:kotlinx.coroutines.CancellationException) { throw e }
+                          catch(_:Exception) { expiry.error="保存失败，检查日期和网络后重试" }
+                    }
+                }
+            } catch(e:kotlinx.coroutines.CancellationException) { throw e }
+              catch(_:Exception) { Toast.makeText(context,"编辑信息加载失败，请重试",Toast.LENGTH_SHORT).show() }
         }
     }
-    
+
     private fun loadData() {
         when (currentTab) {
-            TAB_CURRENT -> loadFridgeItems()
+            TAB_CURRENT, 2 -> loadFridgeItems()
             TAB_CONSUMED -> loadConsumedItems()
         }
     }
 
     private fun loadFridgeItems(keyword: String? = null) {
-        lifecycleScope.launch {
+        val revision=++loadGeneration
+        val kitchen=com.familyrecipes.android.data.local.PreferenceManager.currentKitchenId
+        loadJob?.cancel()
+        loadJob=viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val response = ApiClient.getService().getFridgeItems()
                 
+                if(revision!=loadGeneration || kitchen!=com.familyrecipes.android.data.local.PreferenceManager.currentKitchenId)return@launch
                 if (response.isSuccessful && response.body()?.code == 200) {
                     allItems.clear()
                     allItems.addAll(response.body()?.data ?: emptyList())
@@ -359,24 +417,30 @@ class FridgeFragment : Fragment(), SearchableFragment {
                         }
                     } else {
                         // 检查即将过期的食材
-                        checkExpiringItems()
+                        // Expiry badges are shown in rows; reminders are rate limited by the worker.
                     }
                 } else {
                     Toast.makeText(context, "加载失败", Toast.LENGTH_SHORT).show()
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Toast.makeText(context, "网络错误: ${e.message}", Toast.LENGTH_SHORT).show()
             } finally {
-                binding.swipeRefresh.isRefreshing = false
+                if(revision==loadGeneration) _binding?.swipeRefresh?.isRefreshing = false
             }
         }
     }
     
     private fun loadConsumedItems(keyword: String? = null) {
-        lifecycleScope.launch {
+        val revision=++loadGeneration
+        val kitchen=com.familyrecipes.android.data.local.PreferenceManager.currentKitchenId
+        loadJob?.cancel()
+        loadJob=viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val response = ApiClient.getService().getConsumedItems()
                 
+                if(revision!=loadGeneration || kitchen!=com.familyrecipes.android.data.local.PreferenceManager.currentKitchenId)return@launch
                 if (response.isSuccessful && response.body()?.code == 200) {
                     allItems.clear()
                     allItems.addAll(response.body()?.data ?: emptyList())
@@ -405,10 +469,12 @@ class FridgeFragment : Fragment(), SearchableFragment {
                 } else {
                     Toast.makeText(context, "加载失败", Toast.LENGTH_SHORT).show()
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Toast.makeText(context, "网络错误: ${e.message}", Toast.LENGTH_SHORT).show()
             } finally {
-                binding.swipeRefresh.isRefreshing = false
+                if(revision==loadGeneration) _binding?.swipeRefresh?.isRefreshing = false
             }
         }
     }
@@ -426,65 +492,43 @@ class FridgeFragment : Fragment(), SearchableFragment {
         }
     }
 
-    private fun markAsConsumed(itemId: Long) {
-        // 检查登录状态
-        if (!com.familyrecipes.android.util.AuthUtil.requireLogin(requireContext(), "标记库存为已消耗")) {
-            // 恢复列表状态
-            fridgeAdapter.notifyDataSetChanged()
-            return
-        }
-        
-        lifecycleScope.launch {
-            try {
-                val response = ApiClient.getService().markAsConsumed(itemId)
-                
-                if (response.isSuccessful && response.body()?.code == 200) {
-                    Toast.makeText(context, "已标记为用完", Toast.LENGTH_SHORT).show()
-                    loadData()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(context, "操作失败", Toast.LENGTH_SHORT).show()
-            }
-        }
+    private fun showItemActions(item:FridgeItem) {
+        val consumed=item.status==FridgeItem.STATUS_CONSUMED
+        val labels=arrayOf(if(consumed)"恢复到库存" else "已吃完 / 用完","修改剩余数量","变质或丢弃","删除误录记录")
+        androidx.appcompat.app.AlertDialog.Builder(requireContext()).setTitle(item.ingredient?.name).setItems(labels){_,index->
+            when(index){0->changeStatus(item.id!!,if(consumed)"normal" else "consumed");1->navigateToRecipesByIngredient(item);2->changeStatus(item.id!!,"discarded");3->changeStatus(item.id!!,"deleted")}
+        }.show()
     }
+    private fun markAsConsumed(itemId:Long)=changeStatus(itemId,"consumed")
+    private fun deleteItem(itemId:Long)=changeStatus(itemId,"deleted")
+    private fun changeStatus(itemId:Long,status:String,undo:Boolean=false){
+        val previous=allItems.find{it.id==itemId}?.status?:"normal"
+        viewLifecycleOwner.lifecycleScope.launch{try{
+            com.familyrecipes.android.ui.design.Ui.ok(ApiClient.getService().changeStockStatus(itemId,mapOf("status" to status)))
+            loadData()
+            if(!undo)com.google.android.material.snackbar.Snackbar.make(binding.root,when(status){"consumed"->"已移到已吃完";"discarded"->"已标记丢弃";"deleted"->"已删除记录";else->"已恢复库存"},8000)
+                .setAction("撤销"){changeStatus(itemId,if(previous=="consumed")"consumed" else "normal",true)}.show()
+        }catch(e:kotlinx.coroutines.CancellationException){throw e}catch(e:Exception){fridgeAdapter.notifyDataSetChanged();com.familyrecipes.android.ui.design.Ui.toast(requireContext(),e)}}
+    }
+    override fun onHiddenChanged(hidden:Boolean){super.onHiddenChanged(hidden);if(!hidden && ::fridgeAdapter.isInitialized)loadData()}
 
-    private fun deleteItem(itemId: Long) {
-        // 检查登录状态
-        if (!com.familyrecipes.android.util.AuthUtil.requireLogin(requireContext(), "删除库存")) {
-            // 恢复列表状态
-            fridgeAdapter.notifyDataSetChanged()
-            return
-        }
-        
-        lifecycleScope.launch {
-            try {
-                val response = ApiClient.getService().deleteFridgeItem(itemId)
-                
-                if (response.isSuccessful && response.body()?.code == 200) {
-                    Toast.makeText(context, "已删除", Toast.LENGTH_SHORT).show()
-                    loadData()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(context, "操作失败", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-    
     override fun performSearch(keyword: String) {
         // 库存页面：只搜索用户自己的库存（本地过滤）
         binding.swipeRefresh.isRefreshing = true
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
                 // 重新加载数据
                 when (currentTab) {
-                    TAB_CURRENT -> loadFridgeItems(keyword)
+                    TAB_CURRENT, 2 -> loadFridgeItems(keyword)
                     TAB_CONSUMED -> loadConsumedItems(keyword)
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Toast.makeText(context, "搜索失败: ${e.message}", Toast.LENGTH_SHORT).show()
                 e.printStackTrace()
             } finally {
-                binding.swipeRefresh.isRefreshing = false
+                _binding?.swipeRefresh?.isRefreshing = false
             }
         }
     }

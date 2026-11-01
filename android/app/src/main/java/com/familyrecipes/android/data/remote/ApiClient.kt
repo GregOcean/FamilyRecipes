@@ -18,7 +18,8 @@ object ApiClient {
 
     fun init(context: Context) {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            level = if (com.familyrecipes.android.BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BASIC else HttpLoggingInterceptor.Level.NONE
+            redactHeader("Authorization")
         }
 
         val authInterceptor = Interceptor { chain ->

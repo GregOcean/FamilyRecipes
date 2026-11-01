@@ -20,7 +20,7 @@ public class GroupChat {
     private Long creatorId;
     private Long managerId;  // 群管理员ID（有且只有1个）
     private Integer memberCount;
-    private Integer maxMembers;  // 默认5，会员可扩展
+    private Integer maxMembers;  // 固定上限10人
     private String description;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

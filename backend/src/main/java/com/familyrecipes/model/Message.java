@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class Message {
     private Long id;
+    private String clientMessageId;
     private Long groupId;
     private Long senderId;
     private String content;
@@ -26,6 +27,7 @@ public class Message {
     
     public enum MessageType {
         text,    // 文本消息
+        sticker,
         image,   // 图片消息
         system   // 系统消息
     }

@@ -31,13 +31,13 @@ public class FriendshipService {
     public void addFriend(Long userId, Long friendId) {
         // 检查是否已经是好友
         if (friendshipMapper.isFriend(userId, friendId)) {
-            throw new RuntimeException("已经是好友关系");
+            throw new com.familyrecipes.common.ApiException(400, "已经是好友关系");
         }
         
         // 检查好友是否存在
         User friend = userMapper.findById(friendId);
         if (friend == null) {
-            throw new RuntimeException("用户不存在");
+            throw new com.familyrecipes.common.ApiException(400, "用户不存在");
         }
         
         // 创建双向好友关系

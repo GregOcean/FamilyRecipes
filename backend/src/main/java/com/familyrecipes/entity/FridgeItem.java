@@ -11,7 +11,10 @@ import java.time.LocalDateTime;
 public class FridgeItem {
     private Long id;
     private Long userId;
+    private Long kitchenId;
     private Long ingredientId;
+    private Long categoryOverrideId;
+    private String categoryOverrideName;
     private String amount;
     private LocalDate purchaseDate;
     private LocalDate expiryDate;
@@ -19,6 +22,9 @@ public class FridgeItem {
     private String status;  // normal, expiring, expired, consumed
     private LocalDateTime consumedAt;
     private String notes;
+    private Long ownerUserId;
+    private String ownerUsername;
+    private String imageUrl;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     

@@ -9,6 +9,20 @@ import retrofit2.http.*
  * API接口定义
  */
 interface ApiService {
+    @GET("/api/recipes/browse") suspend fun browseRecipes(@Query("kitchenId") kitchenId:Long?,@Query("scope") scope:String="discovery",@Query("origin") origin:String="all",@Query("keyword") keyword:String="",@Query("taste") taste:String="",@Query("minutes") minutes:Int?=null,@Query("missing") missing:Int?=null,@Query("known") known:Boolean=false,@Query("seed") seed:String="0",@Query("page") page:Int=1):Response<ApiResponse<PageResult<Recipe>>>
+    @POST("/api/recipes/{id}/adapt") suspend fun adaptRecipe(@Path("id") id:Long,@Body body:Map<String,Long>):Response<ApiResponse<Recipe>>
+    @PUT("/api/recipes/{id}/known") suspend fun setKnown(@Path("id") id:Long,@Body body:Map<String,Boolean>):Response<ApiResponse<Unit>>
+    @GET("/api/recipes/{id}/records") suspend fun cookingRecords(@Path("id") id:Long):Response<ApiResponse<List<CookingRecord>>>
+    @POST("/api/recipes/{id}/records") suspend fun saveCookingRecord(@Path("id") id:Long,@Body record:CookingRecord):Response<ApiResponse<Unit>>
+    @POST("/api/fridge/items/{id}/status") suspend fun changeStockStatus(@Path("id") id:Long,@Body body:Map<String,String>):Response<ApiResponse<Unit>>
+    @GET("/api/meals") suspend fun meals(@Query("kitchenId") kitchenId:Long):Response<ApiResponse<List<MealArrangement>>>
+    @GET("/api/meals/{id}") suspend fun meal(@Path("id") id:Long):Response<ApiResponse<MealArrangement>>
+    @POST("/api/meals") suspend fun saveMeal(@Body meal:MealArrangement):Response<ApiResponse<MealArrangement>>
+    @POST("/api/meals/{id}/share") suspend fun shareMeal(@Path("id") id:Long,@Body body:Map<String,Long>):Response<ApiResponse<Unit>>
+
+
+    @POST("/api/auth/registration-code")
+    suspend fun sendRegistrationCode(@Body request: Map<String,String>): Response<ApiResponse<Map<String,Int>>>
 
     // ========== 认证相关 ==========
     @POST("/api/auth/register")
@@ -54,6 +68,7 @@ interface ApiService {
 
     @GET("/api/recipes/search")
     suspend fun searchRecipes(
+        @Query("kitchenId") kitchenId: Long? = null,
         @Query("keyword") keyword: String? = null,
         @Query("tagType") tagType: String? = null,
         @Query("tagValue") tagValue: String? = null,
@@ -123,10 +138,10 @@ interface ApiService {
     suspend fun deleteFridgeItem(@Path("id") id: Long): Response<ApiResponse<Unit>>
 
     @GET("/api/fridge/items")
-    suspend fun getFridgeItems(): Response<ApiResponse<List<FridgeItem>>>
+    suspend fun getFridgeItems(@Query("kitchenId") kitchenId: Long? = com.familyrecipes.android.data.local.PreferenceManager.currentKitchenId): Response<ApiResponse<List<FridgeItem>>>
     
     @GET("/api/fridge/items/consumed")
-    suspend fun getConsumedItems(): Response<ApiResponse<List<FridgeItem>>>
+    suspend fun getConsumedItems(@Query("kitchenId") kitchenId: Long? = com.familyrecipes.android.data.local.PreferenceManager.currentKitchenId): Response<ApiResponse<List<FridgeItem>>>
 
     @GET("/api/fridge/items/expiring")
     suspend fun getExpiringItems(): Response<ApiResponse<List<FridgeItem>>>
@@ -140,6 +155,9 @@ interface ApiService {
     // ========== 食材相关 ==========
     @GET("/api/fridge/ingredients/search")
     suspend fun searchIngredients(@Query("keyword") keyword: String): Response<ApiResponse<List<Ingredient>>>
+
+    @GET("/api/fridge/ingredients/preview")
+    suspend fun previewIngredient(@Query("name") name: String): Response<ApiResponse<Ingredient>>
 
     @POST("/api/fridge/ingredients")
     suspend fun createIngredient(@Body ingredient: Ingredient): Response<ApiResponse<Ingredient>>
@@ -169,7 +187,7 @@ interface ApiService {
     // ========== 文件上传 ==========
     @Multipart
     @POST("/api/upload/image")
-    suspend fun uploadImage(@Part file: MultipartBody.Part): Response<ApiResponse<String>>
+    suspend fun uploadImage(@Part file: MultipartBody.Part, @Query("category") category: String = "other"): Response<ApiResponse<String>>
 
     @Multipart
     @POST("/api/upload/images")
@@ -247,6 +265,14 @@ interface ApiService {
 
     @GET("/api/messages/unread")
     suspend fun getUnreadCount(@Query("groupId") groupId: Long): Response<ApiResponse<Int>>
+
+    @GET("/api/kitchens") suspend fun getKitchens(): Response<ApiResponse<List<Kitchen>>>
+    @POST("/api/kitchens") suspend fun createKitchen(@Body kitchen: Kitchen): Response<ApiResponse<Kitchen>>
+    @PUT("/api/kitchens/{id}") suspend fun renameKitchen(@Path("id") id: Long, @Body kitchen: Kitchen): Response<ApiResponse<Kitchen>>
+    @GET("/api/messages/sync") suspend fun syncMessages(@Query("groupId") groupId: Long,
+        @Query("afterId") afterId: Long, @Query("limit") limit: Int = 200): Response<ApiResponse<List<Message>>>
+    @GET("/api/upload/trash") suspend fun getMediaTrash(): Response<ApiResponse<List<Map<String,Any?>>>>
+    @POST("/api/upload/files/{filename}/restore") suspend fun restoreMedia(@Path("filename") filename:String): Response<ApiResponse<Unit>>
+    @GET("/api/recipes/recommendations") suspend fun recommendations(@Query("mode") mode:String,
+        @Query("kitchenId") kitchenId:Long?,@Query("seed") seed:String): Response<ApiResponse<PageResult<Recipe>>>
 }
-
-

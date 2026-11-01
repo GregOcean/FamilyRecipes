@@ -27,6 +27,12 @@ public class GroupChatService {
     
     @Autowired
     private FriendshipService friendshipService;
+    @Autowired private KitchenService kitchens;
+
+    private void lockGroup(Long groupId) {
+        if (groupChatMapper.lockById(groupId) == null)
+            throw new com.familyrecipes.common.ApiException(404, "群组不存在");
+    }
     
     /**
      * 创建群组
@@ -34,10 +40,17 @@ public class GroupChatService {
     @Transactional
     public GroupChat createGroup(Long creatorId, String groupName, String description, 
                                   Integer maxMembers, List<Long> memberIds) {
+        if (groupName == null || groupName.isBlank() || groupName.length() > 100)
+            throw new com.familyrecipes.common.ApiException(400, "群名称须为1至100字符");
+        maxMembers = 10; // Single-instance personal edition: capacity is a server rule.
+        memberIds = memberIds == null ? List.of() : memberIds.stream().filter(java.util.Objects::nonNull)
+            .filter(id -> !id.equals(creatorId)).distinct().toList();
+        for (Long id : memberIds) if (!friendshipService.isFriend(creatorId, id))
+            throw new com.familyrecipes.common.ApiException(400, "只能邀请好友入群");
         // 检查成员数量（包括创建者）
         int totalMembers = memberIds.size() + 1;
         if (totalMembers > maxMembers) {
-            throw new RuntimeException("群组成员数量不能超过" + maxMembers + "人");
+            throw new com.familyrecipes.common.ApiException(400, "群组成员数量不能超过" + maxMembers + "人");
         }
         
         // 创建群组
@@ -72,6 +85,8 @@ public class GroupChatService {
             groupChatMapper.insertGroupMember(member);
         }
         
+        kitchens.create(group.getId(), "家里的厨房", creatorId);
+
         // 发送系统消息
         Message systemMessage = new Message();
         systemMessage.setGroupId(group.getId());
@@ -108,12 +123,12 @@ public class GroupChatService {
     public GroupChat getGroupDetail(Long groupId, Long userId) {
         // 检查用户是否在群中
         if (!groupChatMapper.isGroupMember(groupId, userId)) {
-            throw new RuntimeException("您不在该群组中");
+            throw new com.familyrecipes.common.ApiException(400, "您不在该群组中");
         }
         
         GroupChat group = groupChatMapper.getGroupById(groupId);
         if (group == null) {
-            throw new RuntimeException("群组不存在");
+            throw new com.familyrecipes.common.ApiException(400, "群组不存在");
         }
         
         // 获取群成员列表
@@ -128,20 +143,25 @@ public class GroupChatService {
      */
     @Transactional
     public void addGroupMember(Long groupId, Long operatorId, List<Long> userIds) {
+        lockGroup(groupId);
         // 检查操作者权限（只有管理员可以添加）
         GroupMember operator = groupChatMapper.getGroupMember(groupId, operatorId);
         if (operator == null) {
-            throw new RuntimeException("您不在该群组中");
+            throw new com.familyrecipes.common.ApiException(400, "您不在该群组中");
         }
         if (operator.getRole() != GroupMember.MemberRole.manager) {
-            throw new RuntimeException("只有群管理员可以添加成员");
+            throw new com.familyrecipes.common.ApiException(400, "只有群管理员可以添加成员");
         }
         
+        userIds = userIds == null ? List.of() : userIds.stream().filter(java.util.Objects::nonNull)
+            .distinct().filter(id -> !groupChatMapper.isGroupMember(groupId, id)).toList();
+        for (Long id : userIds) if (!friendshipService.isFriend(operatorId, id))
+            throw new com.familyrecipes.common.ApiException(400, "只能邀请好友入群");
         // 检查群成员数量
         int currentCount = groupChatMapper.getMemberCount(groupId);
         GroupChat group = groupChatMapper.getGroupById(groupId);
         if (currentCount + userIds.size() > group.getMaxMembers()) {
-            throw new RuntimeException("群成员已达上限（" + group.getMaxMembers() + "人）");
+            throw new com.familyrecipes.common.ApiException(400, "群成员已达上限（" + group.getMaxMembers() + "人）");
         }
         
         // 添加成员
@@ -176,19 +196,20 @@ public class GroupChatService {
      */
     @Transactional
     public void removeGroupMember(Long groupId, Long operatorId, Long userId) {
+        lockGroup(groupId);
         // 检查操作者权限（只有管理员可以移除）
         GroupMember operator = groupChatMapper.getGroupMember(groupId, operatorId);
         if (operator == null) {
-            throw new RuntimeException("您不在该群组中");
+            throw new com.familyrecipes.common.ApiException(400, "您不在该群组中");
         }
         if (operator.getRole() != GroupMember.MemberRole.manager) {
-            throw new RuntimeException("只有群管理员可以移除成员");
+            throw new com.familyrecipes.common.ApiException(400, "只有群管理员可以移除成员");
         }
         
         // 不能移除管理员自己
         GroupMember target = groupChatMapper.getGroupMember(groupId, userId);
         if (target != null && target.getRole() == GroupMember.MemberRole.manager) {
-            throw new RuntimeException("不能移除群管理员");
+            throw new com.familyrecipes.common.ApiException(400, "不能移除群管理员");
         }
         
         // 移除成员
@@ -198,6 +219,8 @@ public class GroupChatService {
         int newCount = groupChatMapper.getMemberCount(groupId);
         groupChatMapper.updateMemberCount(groupId, newCount);
         
+
+
         // 发送系统消息
         Message systemMessage = new Message();
         systemMessage.setGroupId(groupId);
@@ -214,14 +237,15 @@ public class GroupChatService {
      */
     @Transactional
     public void leaveGroup(Long groupId, Long userId) {
+        lockGroup(groupId);
         GroupMember member = groupChatMapper.getGroupMember(groupId, userId);
         if (member == null) {
-            throw new RuntimeException("您不在该群组中");
+            throw new com.familyrecipes.common.ApiException(400, "您不在该群组中");
         }
         
         // 如果是群管理员，不能直接退出，需要先转让或解散群组
         if (member.getRole() == GroupMember.MemberRole.manager) {
-            throw new RuntimeException("群管理员不能退出群组，请先转让管理员权限或解散群组");
+            throw new com.familyrecipes.common.ApiException(400, "群管理员不能退出群组，请先转让管理员权限或解散群组");
         }
         
         // 退出群组
@@ -239,13 +263,14 @@ public class GroupChatService {
      */
     @Transactional
     public void updateGroup(Long groupId, Long operatorId, String name, String description) {
+        lockGroup(groupId);
         // 检查操作者权限（只有管理员可以修改）
         GroupMember operator = groupChatMapper.getGroupMember(groupId, operatorId);
         if (operator == null) {
-            throw new RuntimeException("您不在该群组中");
+            throw new com.familyrecipes.common.ApiException(400, "您不在该群组中");
         }
         if (operator.getRole() != GroupMember.MemberRole.manager) {
-            throw new RuntimeException("只有群管理员可以修改群组信息");
+            throw new com.familyrecipes.common.ApiException(400, "只有群管理员可以修改群组信息");
         }
         
         GroupChat group = new GroupChat();
@@ -262,10 +287,11 @@ public class GroupChatService {
      */
     @Transactional
     public void dismissGroup(Long groupId, Long operatorId) {
+        lockGroup(groupId);
         // 检查操作者权限（只有管理员可以解散）
         GroupMember operator = groupChatMapper.getGroupMember(groupId, operatorId);
         if (operator == null || operator.getRole() != GroupMember.MemberRole.manager) {
-            throw new RuntimeException("只有群管理员可以解散群组");
+            throw new com.familyrecipes.common.ApiException(400, "只有群管理员可以解散群组");
         }
         
         // 删除群组（会级联删除成员和消息）

@@ -254,6 +254,9 @@
                         android:textColor="@color/text_primary"
                         android:textSize="14sp"
                         tools:text="这是一道经典的川菜，鸡肉鲜嫩，花生酥脆，酸甜微辣，非常下饭。" />
+                <LinearLayout android:id="@+id/gallery" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:orientation="vertical" />
+
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

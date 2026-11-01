@@ -10,6 +10,8 @@ import java.util.List;
 @Data
 public class Recipe {
     private Long id;
+    private Long sourceRecipeId;
+    private String sourceRecipeName;
     private String name;
     private String description;
     private String coverImage;
@@ -28,6 +30,8 @@ public class Recipe {
     // 权限相关
     private String visibility; // public-公开, private-仅自己, group-群组
     private String sharedGroupIds; // 分享的群组ID列表（JSON数组）
+    private Long kitchenId;
+    private List<RecipeImage> images;
     private Long ownerGroupId; // 所属群组ID
     
     // 关联数据（不存数据库，用于返回）

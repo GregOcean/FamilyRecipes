@@ -33,12 +33,12 @@ public class SearchController {
             @RequestParam String keyword,
             @RequestParam(defaultValue = "relevance") String priorityType,
             @RequestParam(defaultValue = "1") Integer pageNum,
-            @RequestParam(defaultValue = "20") Integer pageSize) {
+            @RequestParam(defaultValue = "20") Integer pageSize, jakarta.servlet.http.HttpServletRequest request) {
         
         log.info("全局搜索 - 关键词: {}, 类型: {}", keyword, priorityType);
         
         Map<String, Object> result = searchService.globalSearch(
-            keyword, priorityType, pageNum, pageSize
+            keyword, priorityType, pageNum, pageSize, (Long) request.getAttribute("userId")
         );
         
         log.info("搜索结果 - 总数: {}, 菜谱: {}, 食材: {}", 

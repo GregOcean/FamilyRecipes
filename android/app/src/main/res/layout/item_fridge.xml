@@ -1,131 +1,16 @@
-<?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_marginStart="8dp"
-    android:layout_marginEnd="8dp"
-    android:layout_marginTop="4dp"
-    android:layout_marginBottom="4dp"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="2dp">
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="8dp">
-
-        <!-- 左侧缩略图 -->
-        <ImageView
-            android:id="@+id/iv_icon"
-            android:layout_width="60dp"
-            android:layout_height="60dp"
-            android:scaleType="centerInside"
-            android:contentDescription="食材图标"
-            android:src="@drawable/ic_food_white"
-            android:background="@drawable/circle_background_success"
-            android:padding="14dp" />
-
-        <!-- 中间信息区 -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:orientation="vertical"
-            android:layout_gravity="center_vertical">
-
-            <!-- 食材名称 -->
-            <TextView
-                android:id="@+id/tv_name"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/black"
-                android:textSize="15sp"
-                android:textStyle="bold"
-                android:maxLines="1"
-                android:ellipsize="end"
-                tools:text="胡萝卜" />
-
-            <!-- 第二行：位置 · 数量 -->
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="位置："
-                    android:textColor="@color/gray"
-                    android:textSize="11sp" />
-
-                <TextView
-                    android:id="@+id/tv_storage"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/gray"
-                    android:textSize="11sp"
-                    tools:text="冷藏" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text=" · 数量："
-                    android:textColor="@color/gray"
-                    android:textSize="11sp" />
-
-                <TextView
-                    android:id="@+id/tv_amount"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/gray"
-                    android:textSize="11sp"
-                    tools:text="500g" />
-            </LinearLayout>
-
-            <!-- 第三行：过期时间 -->
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="过期时间："
-                    android:textColor="@color/gray"
-                    android:textSize="11sp" />
-
-                <TextView
-                    android:id="@+id/tv_expiry_date"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/gray"
-                    android:textSize="11sp"
-                    tools:text="2024-12-31" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- 右侧状态标签 -->
-        <TextView
-            android:id="@+id/tv_status"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
-            android:layout_marginStart="8dp"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            android:paddingTop="4dp"
-            android:paddingBottom="4dp"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            tools:text="正常" />
-    </LinearLayout>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="10dp" app:cardCornerRadius="18dp" app:cardElevation="0dp" app:cardBackgroundColor="#FFFFFF" app:strokeWidth="0dp">
+ <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="14dp">
+  <ImageView android:id="@+id/iv_icon" android:layout_width="48dp" android:layout_height="48dp" android:src="@drawable/ic_ui_produce" android:background="@drawable/search_background" android:padding="10dp" android:contentDescription="食材"/>
+  <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginStart="12dp">
+   <TextView android:id="@+id/tv_name" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="19sp" android:textStyle="bold" android:textColor="@color/text_primary"/>
+   <TextView android:id="@+id/tv_amount" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:textSize="15sp" android:textColor="@color/text_secondary"/>
+   <TextView android:id="@+id/tv_category" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:textSize="14sp" android:textColor="@color/text_secondary"/>
+   <TextView android:id="@+id/tv_storage" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone"/>
+   <TextView android:id="@+id/tv_expiry_date" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:textSize="14sp" android:textColor="@color/text_secondary"/>
+  </LinearLayout>
+  <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="end">
+   <TextView android:id="@+id/tv_status" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="14sp" android:textStyle="bold"/>
+   <Button android:id="@+id/btn_more" style="@style/Widget.MaterialComponents.Button.TextButton" android:layout_width="64dp" android:layout_height="48dp" android:minWidth="48dp" android:padding="0dp" android:text="更多" android:textSize="15sp"/>
+  </LinearLayout>
+ </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
-

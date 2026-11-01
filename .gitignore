@@ -50,3 +50,8 @@ uploads/
 *.keystore
 *.jks
 keystore.properties
+
+# Local environment secrets
+.env
+.env.*
+!.env.example

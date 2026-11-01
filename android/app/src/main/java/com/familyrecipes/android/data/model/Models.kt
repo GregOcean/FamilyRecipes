@@ -46,6 +46,8 @@ data class LoginResponse(
  * 菜谱
  */
 data class Recipe(
+    @SerializedName("source_recipe_id") val sourceRecipeId: Long? = null,
+    @SerializedName("source_recipe_name") val sourceRecipeName: String? = null,
     val id: Long?,
     val name: String,
     val description: String?,
@@ -64,6 +66,8 @@ data class Recipe(
     val visibility: String? = "group", // public, private, group
     @SerializedName("shared_group_ids") val sharedGroupIds: String? = null, // JSON数组
     @SerializedName("owner_group_id") val ownerGroupId: Long? = null,
+    @SerializedName("kitchen_id") val kitchenId: Long? = null,
+    val images: List<RecipeImage>? = null,
     
     // 关联数据
     val creator: User?,
@@ -115,7 +119,8 @@ data class Ingredient(
     val name: String,
     val category: String?,
     val unit: String? = null,
-    @SerializedName("category_id") val categoryId: Long? = null // 库存分类ID
+    @SerializedName("category_id") val categoryId: Long? = null, // 库存分类ID
+    val aliases: String? = null
 )
 
 /**
@@ -160,6 +165,7 @@ data class ExternalRecipe(
  * 冰箱食材
  */
 data class FridgeItem(
+    @SerializedName("kitchen_id") val kitchenId: Long? = null,
     val id: Long?,
     @SerializedName("user_id") val userId: Long?,
     @SerializedName("ingredient_id") val ingredientId: Long?,
@@ -169,7 +175,12 @@ data class FridgeItem(
     @SerializedName("storage_location") val storageLocation: String?,
     val status: String?,
     val notes: String?,
-    val ingredient: Ingredient?
+    val ingredient: Ingredient?,
+    @SerializedName("owner_username") val ownerUsername: String? = null,
+    @SerializedName("owner_user_id") val ownerUserId: Long? = null,
+    @SerializedName("image_url") val imageUrl: String? = null,
+    @SerializedName("category_override_id") val categoryOverrideId: Long? = null,
+    @SerializedName("category_override_name") val categoryOverrideName: String? = null
 ) {
     companion object {
         const val STATUS_NORMAL = "normal"
@@ -226,6 +237,7 @@ data class Friendship(
  * 群组
  */
 data class GroupChat(
+    @SerializedName("manager_id") val managerId: Long? = null,
     val id: Long?,
     val name: String,
     val avatar: String?,
@@ -246,8 +258,8 @@ data class GroupChat(
 data class CreateGroupRequest(
     val name: String,
     val description: String?,
-    @SerializedName("maxMembers") val maxMembers: Int?,
-    @SerializedName("memberIds") val memberIds: List<Long>?
+    @SerializedName("max_members") val maxMembers: Int?,
+    @SerializedName("member_ids") val memberIds: List<Long>?
 )
 
 /**
@@ -272,6 +284,7 @@ data class GroupMember(
  * 消息
  */
 data class Message(
+    @SerializedName("client_message_id") val clientMessageId: String? = null,
     val id: Long?,
     @SerializedName("group_id") val groupId: Long?,
     @SerializedName("sender_id") val senderId: Long?,
@@ -287,3 +300,16 @@ data class Message(
     }
 }
 
+
+data class Kitchen(val id: Long? = null, @SerializedName("group_id") val groupId: Long? = null,
+    val name: String, @SerializedName("group_name") val groupName: String? = null)
+data class RecipeImage(val url: String, val category: String = "screenshot", val caption: String? = null, val position: Int = 0)
+
+data class MealDish(@SerializedName("recipe_id") val recipeId:Long?=null,val name:String)
+data class ShoppingItem(val name:String,val done:Boolean=false)
+data class MealArrangement(val id:Long?=null,@SerializedName("owner_id") val ownerId:Long?=null,
+ @SerializedName("kitchen_id") val kitchenId:Long?,val kind:String="order",val title:String="",
+ @SerializedName("meal_date") val mealDate:String?=null,val meal:String?=null,
+ val dishes:List<MealDish> = emptyList(),val shopping:List<ShoppingItem> = emptyList(),
+ @SerializedName("source_id") val sourceId:Long?=null,val revision:Int?=null)
+data class CookingRecord(val id:Long?=null,@SerializedName("cooked_at") val cookedAt:String,val notes:String,val images:String="[]")

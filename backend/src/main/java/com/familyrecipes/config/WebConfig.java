@@ -21,16 +21,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(authInterceptor)
                 .addPathPatterns("/api/**")  // 拦截所有API请求
-                .excludePathPatterns(
-                        "/api/auth/login",    // 排除登录
-                        "/api/auth/register", // 排除注册
-                        "/api/auth/refresh",  // 排除刷新token
-                        "/api/upload/**",     // 排除文件上传（如果需要）
-                        "/api/search/global", // 排除全局搜索
-                        "/api/recipes/list",  // 排除菜谱列表
-                        "/api/recipes/*/detail", // 排除菜谱详情
-                        "/api/config/**"      // 排除配置接口
-                );
+                .excludePathPatterns("/api/auth/login", "/api/auth/register", "/api/auth/registration-code");
     }
 
     @Override

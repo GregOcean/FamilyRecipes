@@ -22,6 +22,9 @@ import kotlinx.coroutines.launch
  */
 class RecommendFragment : Fragment(), SearchableFragment {
 
+    private var mode="discovery"
+    private var loadJob:kotlinx.coroutines.Job?=null
+    private var generation=0
     private var _binding: FragmentRecommendBinding? = null
     private val binding get() = _binding!!
     
@@ -76,7 +79,12 @@ class RecommendFragment : Fragment(), SearchableFragment {
     
     private fun setupListeners() {
         binding.btnRandomRecommend.setOnClickListener {
-            loadRecommendations()
+            androidx.appcompat.app.AlertDialog.Builder(requireContext()).setTitle("推荐方式")
+                .setItems(arrayOf("发现：按偏好换一批","当前厨房：现有食材 + 家人会做")) { _,index ->
+                    mode=if(index==0) "discovery" else "inventory"
+                    binding.btnRandomRecommend.text=if(index==0) "发现 · 换一批" else "库存 + 会做 · 换一批"
+                    loadRecommendations()
+                }.show()
         }
         
         binding.swipeRefresh.setOnRefreshListener {
@@ -85,11 +93,13 @@ class RecommendFragment : Fragment(), SearchableFragment {
     }
     
     private fun loadRecommendations(keyword: String? = null) {
-        lifecycleScope.launch {
+        val revision=++generation
+        loadJob?.cancel()
+        loadJob=viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val response = if (keyword.isNullOrEmpty()) {
                     // 推荐页面按浏览量或收藏量排序
-                    ApiClient.getService().searchRecipes(orderBy = "view_count")
+                    ApiClient.getService().recommendations(mode,com.familyrecipes.android.data.local.PreferenceManager.currentKitchenId,java.util.UUID.randomUUID().toString())
                 } else {
                     // 使用全局搜索，按相关性排序
                     ApiClient.getService().globalSearch(
@@ -98,6 +108,7 @@ class RecommendFragment : Fragment(), SearchableFragment {
                     )
                 }
                 
+                if(revision!=generation)return@launch
                 if (response.isSuccessful && response.body()?.code == 200) {
                     recipes.clear()
                     
@@ -169,11 +180,13 @@ class RecommendFragment : Fragment(), SearchableFragment {
                 } else {
                     Toast.makeText(context, "加载失败", Toast.LENGTH_SHORT).show()
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Toast.makeText(context, "网络错误: ${e.message}", Toast.LENGTH_SHORT).show()
                 e.printStackTrace()
             } finally {
-                binding.swipeRefresh.isRefreshing = false
+                if(revision==generation) _binding?.swipeRefresh?.isRefreshing = false
             }
         }
     }

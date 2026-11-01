@@ -24,17 +24,19 @@ public class AuthController {
      * 用户注册
      */
     @PostMapping("/register")
-    public Result<User> register(@RequestBody RegisterRequest request) {
+    public Result<User> register(@jakarta.validation.Valid @RequestBody RegisterRequest request) {
         try {
             User user = userService.register(
                 request.getEmail(),
                 request.getPassword(),
-                request.getUsername()
+                request.getUsername(), request.getCode()
             );
             user.setPassword(null);
             return Result.success(user);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
 
@@ -42,7 +44,7 @@ public class AuthController {
      * 用户登录
      */
     @PostMapping("/login")
-    public Result<LoginResponse> login(@RequestBody LoginRequest request) {
+    public Result<LoginResponse> login(@jakarta.validation.Valid @RequestBody LoginRequest request) {
         try {
             String token = userService.login(request.getEmail(), request.getPassword());
             User user = userService.getUserByEmail(request.getEmail());
@@ -52,8 +54,10 @@ public class AuthController {
             response.setToken(token);
             response.setUser(user);
             return Result.success(response);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
-            return Result.error(e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
 
@@ -67,25 +71,46 @@ public class AuthController {
         return Result.success(user);
     }
 
+    @Autowired private com.familyrecipes.service.EmailVerificationService emailCodes;
+    @PostMapping("/registration-code")
+    public Result<java.util.Map<String,Integer>> sendRegistrationCode(@jakarta.validation.Valid @RequestBody CodeRequest request,
+            HttpServletRequest httpRequest) {
+        emailCodes.sendRegistrationCode(request.getEmail(), httpRequest.getRemoteAddr());
+        return Result.success(java.util.Map.of("expires_in",600,"retry_after",60));
+    }
+    @Data
+    static class CodeRequest {
+        @NotBlank(message="邮箱不能为空") @Email(message="邮箱格式不正确")
+        @jakarta.validation.constraints.Size(max=100,message="邮箱最多100个字符")
+        private String email;
+    }
     @Data
     static class RegisterRequest {
+        @NotBlank(message="请输入邮箱验证码")
+        @jakarta.validation.constraints.Pattern(regexp="[0-9]{6}",message="验证码须为6位数字")
+        private String code;
         @NotBlank(message = "邮箱不能为空")
         @Email(message = "邮箱格式不正确")
+        @jakarta.validation.constraints.Size(max = 100)
         private String email;
 
         @NotBlank(message = "密码不能为空")
+        @jakarta.validation.constraints.Size(min = 8, max = 72, message="密码至少8位，最多72个字符")
         private String password;
 
         @NotBlank(message = "用户名不能为空")
+        @jakarta.validation.constraints.Size(max = 50)
         private String username;
     }
 
     @Data
     static class LoginRequest {
         @NotBlank(message = "邮箱不能为空")
+        @jakarta.validation.constraints.Size(max = 100)
         private String email;
 
         @NotBlank(message = "密码不能为空")
+        @jakarta.validation.constraints.Size(min = 8, max = 72, message="密码至少8位，最多72个字符")
         private String password;
     }
 

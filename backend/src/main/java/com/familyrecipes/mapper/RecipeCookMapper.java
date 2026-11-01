@@ -9,6 +9,8 @@ import java.util.List;
  */
 @Mapper
 public interface RecipeCookMapper {
+    @Delete("DELETE FROM recipe_cook WHERE recipe_id=#{recipeId}")
+    int deleteByRecipeId(Long recipeId);
 
     @Select("SELECT u.* FROM user u " +
             "INNER JOIN recipe_cook rc ON u.id = rc.user_id " +

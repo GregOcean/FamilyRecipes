@@ -11,6 +11,9 @@ import java.util.List;
  */
 @Mapper
 public interface GroupChatMapper {
+    @Select("SELECT * FROM group_chat WHERE id=#{groupId} FOR UPDATE")
+    GroupChat lockById(Long groupId);
+
     
     /**
      * 创建群组

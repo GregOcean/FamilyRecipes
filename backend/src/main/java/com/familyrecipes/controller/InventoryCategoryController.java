@@ -28,9 +28,11 @@ public class InventoryCategoryController {
         try {
             List<InventoryCategory> tree = categoryService.getCategoryTree();
             return Result.success(tree);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
             log.error("获取分类树失败", e);
-            return Result.error("获取分类树失败: " + e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
     
@@ -42,9 +44,11 @@ public class InventoryCategoryController {
         try {
             List<InventoryCategory> categories = categoryService.getAllCategories();
             return Result.success(categories);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
             log.error("获取所有分类失败", e);
-            return Result.error("获取所有分类失败: " + e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
     
@@ -59,9 +63,11 @@ public class InventoryCategoryController {
                 return Result.error("分类不存在");
             }
             return Result.success(category);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
             log.error("获取分类详情失败", e);
-            return Result.error("获取分类详情失败: " + e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
     
@@ -73,53 +79,12 @@ public class InventoryCategoryController {
         try {
             Long categoryId = categoryService.smartMatchCategory(itemName);
             return Result.success(categoryId);
+        } catch (com.familyrecipes.common.ApiException e) {
+            throw e;
         } catch (Exception e) {
             log.error("智能匹配分类失败", e);
-            return Result.error("智能匹配分类失败: " + e.getMessage());
+            throw new com.familyrecipes.common.ApiException(500, "请求处理失败", e);
         }
     }
     
-    /**
-     * 创建分类（仅管理员）
-     */
-    @PostMapping
-    public Result<InventoryCategory> createCategory(@RequestBody InventoryCategory category) {
-        try {
-            InventoryCategory created = categoryService.createCategory(category);
-            return Result.success(created);
-        } catch (Exception e) {
-            log.error("创建分类失败", e);
-            return Result.error("创建分类失败: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * 更新分类（仅管理员）
-     */
-    @PutMapping("/{id}")
-    public Result<Void> updateCategory(@PathVariable Long id, @RequestBody InventoryCategory category) {
-        try {
-            category.setId(id);
-            categoryService.updateCategory(category);
-            return Result.success();
-        } catch (Exception e) {
-            log.error("更新分类失败", e);
-            return Result.error("更新分类失败: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * 删除分类（仅管理员）
-     */
-    @DeleteMapping("/{id}")
-    public Result<Void> deleteCategory(@PathVariable Long id) {
-        try {
-            categoryService.deleteCategory(id);
-            return Result.success();
-        } catch (Exception e) {
-            log.error("删除分类失败", e);
-            return Result.error("删除分类失败: " + e.getMessage());
-        }
-    }
 }
-

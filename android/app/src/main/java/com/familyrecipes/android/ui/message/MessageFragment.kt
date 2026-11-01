@@ -2,108 +2,83 @@ package com.familyrecipes.android.ui.message
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
+import android.widget.*
+import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.familyrecipes.android.data.model.GroupChat
 import com.familyrecipes.android.data.remote.ApiClient
-import com.familyrecipes.android.databinding.FragmentMessageBinding
-import com.familyrecipes.android.ui.social.GroupsListActivity
-import kotlinx.coroutines.launch
+import com.familyrecipes.android.ui.design.Ui
+import com.familyrecipes.android.ui.social.*
+import kotlinx.coroutines.*
 
-/**
- * 消息Fragment - 显示群组列表和系统通知
- */
 class MessageFragment : Fragment() {
+    private lateinit var list: LinearLayout
+    private lateinit var search: EditText
+    private var groups = listOf<GroupChat>()
+    private var job: Job? = null
 
-    private var _binding: FragmentMessageBinding? = null
-    private val binding get() = _binding!!
-    private val groups = mutableListOf<GroupChat>()
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        _binding = FragmentMessageBinding.inflate(inflater, container, false)
-        return binding.root
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        
-        setupListeners()
-        setupRecyclerView()
-        loadGroups()
-    }
-
-    private fun setupListeners() {
-        // 即将过期
-        binding.layoutExpiring.setOnClickListener {
-            // TODO: 跳转到即将过期食材页面
-            android.widget.Toast.makeText(context, "即将过期功能开发中", android.widget.Toast.LENGTH_SHORT).show()
-        }
-
-        // 家人呼唤
-        binding.layoutNeeded.setOnClickListener {
-            // TODO: 跳转到家人呼唤页面
-            android.widget.Toast.makeText(context, "家人呼唤功能开发中", android.widget.Toast.LENGTH_SHORT).show()
-        }
-
-        // 爱心点赞
-        binding.layoutLikes.setOnClickListener {
-            // TODO: 跳转到爱心点赞页面
-            android.widget.Toast.makeText(context, "爱心点赞功能开发中", android.widget.Toast.LENGTH_SHORT).show()
-        }
-
-        // 查看所有群组
-        binding.tvViewAll.setOnClickListener {
-            val intent = Intent(requireContext(), GroupsListActivity::class.java)
-            startActivity(intent)
-        }
-
-        // 刷新
-        binding.swipeRefresh.setOnRefreshListener {
-            loadGroups()
-        }
-    }
-
-    private fun setupRecyclerView() {
-        binding.recyclerView.layoutManager = LinearLayoutManager(context)
-        // TODO: 设置群组adapter
-    }
-
-    private fun loadGroups() {
-        lifecycleScope.launch {
-            try {
-                binding.swipeRefresh.isRefreshing = true
-                val response = ApiClient.getService().getGroupsList()
-
-                if (response.isSuccessful && response.body()?.code == 200) {
-                    groups.clear()
-                    response.body()?.data?.let { groups.addAll(it) }
-                    // TODO: 通知adapter刷新
-                    android.util.Log.d("MessageFragment", "加载成功，共${groups.size}个群组")
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("MessageFragment", "加载群组失败", e)
-            } finally {
-                binding.swipeRefresh.isRefreshing = false
-            }
-        }
+    override fun onCreateView(i: LayoutInflater, c: ViewGroup?, b: Bundle?): View {
+        val root = Ui.box(requireContext())
+        search = Ui.field(requireContext(), "搜索群聊")
+        root.addView(search)
+        val heading=Ui.row(requireContext())
+        heading.addView(Ui.text(requireContext(),"消息",23f,true),LinearLayout.LayoutParams(0,-2,1f))
+        heading.addView(Ui.button(requireContext(),"发起群聊"){startActivity(Intent(requireContext(),CreateGroupActivity::class.java))})
+        root.addView(heading)
+        list = Ui.box(requireContext(), 0)
+        root.addView(Ui.scroll(requireContext(), list), LinearLayout.LayoutParams(-1, 0, 1f))
+        search.doAfterTextChanged { draw() }
+        return root
     }
 
     override fun onResume() {
         super.onResume()
-        loadGroups()
+        load()
+    }
+
+    override fun onHiddenChanged(hidden: Boolean) {
+        super.onHiddenChanged(hidden)
+        if (!hidden) load()
+    }
+
+    private fun load() {
+        if (!::list.isInitialized) return
+        job?.cancel()
+        job =
+            viewLifecycleOwner.lifecycleScope.launch {
+                try {
+                    groups = Ui.data(ApiClient.getService().getGroupsList())
+                    draw()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    list.removeAllViews()
+                    list.addView(Ui.button(requireContext(), "${e.message} · 重试") { load() })
+                }
+            }
+    }
+
+    private fun draw() {
+        list.removeAllViews()
+        groups
+            .filter { it.name.contains(search.text.toString(), true) }
+            .forEach { g ->
+                val card=Ui.entry(requireContext(),g.name,
+                    (if((g.unreadCount?:0)>0) "${g.unreadCount} 条未读 · " else "")+(g.lastMessage?.content ?: "${g.memberCount?:1} 位成员 · 一起讨论吃什么"),com.familyrecipes.android.R.drawable.ic_ui_users) {
+                    startActivity(Intent(requireContext(),GroupChatActivity::class.java).putExtra("group_id",g.id).putExtra("group_name",g.name).putExtra("member_count",g.memberCount?:1))
+                }
+                list.addView(card)
+            }
+        if (list.childCount == 0)
+            list.addView(Ui.text(requireContext(), "暂时没有群聊消息。一个人也能使用厨房、点菜和备菜。"))
+        list.addView(Ui.entry(requireContext(),"食材提醒","查看临期食材，及时安排",com.familyrecipes.android.R.drawable.ic_clock_filled){(activity as? com.familyrecipes.android.ui.MainActivity)?.showPage("stock")})
+
     }
 
     override fun onDestroyView() {
+        job?.cancel()
         super.onDestroyView()
-        _binding = null
     }
 }
-
