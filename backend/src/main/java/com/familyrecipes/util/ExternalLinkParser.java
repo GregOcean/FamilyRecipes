@@ -157,51 +157,37 @@ public class ExternalLinkParser {
     /**
      * 识别平台来源
      */
-    private static String identifySource(String url, String text) {
-        if (url == null) {
-            return "未知";
-        }
-        
-        // URL特征匹配
-        if (url.contains("xhslink.com") || url.contains("xiaohongshu.com")) {
-            return "小红书";
-        }
-        if (url.contains("xiachufang.com")) {
-            return "下厨房";
-        }
-        if (url.contains("douyin.com")) {
-            return "抖音";
-        }
-        if (url.contains("bilibili.com") || url.contains("b23.tv")) {
-            return "哔哩哔哩";
-        }
-        if (url.contains("meishij.net")) {
-            return "美食杰";
-        }
-        if (url.contains("douguo.com")) {
-            return "豆果美食";
-        }
-        if (url.contains("youtube.com") || url.contains("youtu.be")) {
-            return "YouTube";
-        }
-        
-        // 文本特征匹配
-        if (text.contains("小红书") || text.contains("【小红书】")) {
-            return "小红书";
-        }
-        if (text.contains("下厨房")) {
-            return "下厨房";
-        }
-        if (text.contains("抖音") || text.contains("【抖音】")) {
-            return "抖音";
-        }
-        if (text.contains("哔哩哔哩") || text.contains("bilibili") || text.contains("-哔哩哔哩】")) {
-            return "哔哩哔哩";
-        }
-        
+    public static String sourceForUrl(String url) {
+        String host;
+        try {
+            java.net.URI uri = java.net.URI.create(url);
+            if (!java.util.List.of("https", "http").contains(uri.getScheme()) || uri.getUserInfo()!=null) return "网络";
+            host = uri.getHost();
+            if (host == null) return "网络";
+            host = host.toLowerCase(java.util.Locale.ROOT);
+        } catch (Exception e) { return "网络"; }
+        String[][] platforms = {
+            {"微信视频号","channels.weixin.qq.com","finder.video.qq.com"},
+            {"微信公众号","mp.weixin.qq.com"},
+            {"微信","weixin.qq.com"},
+            {"抖音","douyin.com","iesdouyin.com"},
+            {"小红书","xiaohongshu.com","xhslink.com"},
+            {"下厨房","xiachufang.com"},
+            {"YouTube","youtube.com","youtu.be"},
+            {"Instagram","instagram.com","instagr.am"},
+            {"Facebook","facebook.com","fb.watch","fb.com"},
+            {"哔哩哔哩","bilibili.com","b23.tv"},
+            {"美食杰","meishij.net"}, {"豆果美食","douguo.com"}
+        };
+        for (String[] platform : platforms) for (int i=1;i<platform.length;i++)
+            if (host.equals(platform[i]) || host.endsWith("."+platform[i])) return platform[0];
         return "网络";
     }
-    
+
+    private static String identifySource(String url, String text) {
+        return sourceForUrl(url);
+    }
+
     /**
      * 从文本中提取标题
      */

@@ -1,5 +1,6 @@
 package com.familyrecipes.android.ui.social
 
+import com.familyrecipes.android.ui.design.UiStrings
 import android.Manifest
 import android.content.ContentValues
 import android.content.pm.PackageManager
@@ -38,20 +39,22 @@ class MyQRCodeActivity : AppCompatActivity() {
     }
 
     private fun setupToolbar() {
+        binding.toolbar.setNavigationIcon(com.familyrecipes.android.R.drawable.ic_arrow_back)
+        binding.toolbar.navigationContentDescription=UiStrings.s(com.familyrecipes.android.R.string.ui_5f411223ca)
         binding.toolbar.setNavigationOnClickListener {
             finish()
         }
     }
 
     private fun loadUserInfo() {
-        binding.tvUsername.text = PreferenceManager.userName ?: "家肴用户"
+        binding.tvUsername.text = PreferenceManager.userName ?: UiStrings.s(com.familyrecipes.android.R.string.ui_2878420820)
         binding.tvUserId.text = "ID: ${PreferenceManager.userId}"
     }
 
     private fun generateQRCode() {
         val userId = PreferenceManager.userId
         if (userId == null) {
-            Toast.makeText(this, "用户信息错误", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, UiStrings.s(com.familyrecipes.android.R.string.ui_70189fcd83), Toast.LENGTH_SHORT).show()
             finish()
             return
         }
@@ -62,7 +65,7 @@ class MyQRCodeActivity : AppCompatActivity() {
         if (qrCodeBitmap != null) {
             binding.ivQrCode.setImageBitmap(qrCodeBitmap)
         } else {
-            Toast.makeText(this, "生成二维码失败", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, UiStrings.s(com.familyrecipes.android.R.string.ui_60cb8f1898), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -77,6 +80,7 @@ class MyQRCodeActivity : AppCompatActivity() {
     }
 
     private fun checkStoragePermission(): Boolean {
+        if(android.os.Build.VERSION.SDK_INT>=29)return true
         return ContextCompat.checkSelfPermission(
             this,
             Manifest.permission.WRITE_EXTERNAL_STORAGE
@@ -101,7 +105,7 @@ class MyQRCodeActivity : AppCompatActivity() {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 saveQRCodeToGallery()
             } else {
-                Toast.makeText(this, "需要存储权限才能保存二维码", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, UiStrings.s(com.familyrecipes.android.R.string.ui_524fc5fded), Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -109,7 +113,7 @@ class MyQRCodeActivity : AppCompatActivity() {
     private fun saveQRCodeToGallery() {
         val bitmap = qrCodeBitmap
         if (bitmap == null) {
-            Toast.makeText(this, "二维码不存在", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, UiStrings.s(com.familyrecipes.android.R.string.ui_dfac8f84fe), Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -117,7 +121,7 @@ class MyQRCodeActivity : AppCompatActivity() {
             val contentValues = ContentValues().apply {
                 put(MediaStore.Images.Media.DISPLAY_NAME, "家肴_名片码_${System.currentTimeMillis()}.jpg")
                 put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-                put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/FamilyRecipes")
+                if(android.os.Build.VERSION.SDK_INT>=29)put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/FamilyRecipes")
             }
 
             val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
@@ -125,9 +129,9 @@ class MyQRCodeActivity : AppCompatActivity() {
                 contentResolver.openOutputStream(uri)?.use { outputStream ->
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 90, outputStream)
                 }
-                Toast.makeText(this, "二维码已保存到相册", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, UiStrings.s(com.familyrecipes.android.R.string.ui_04cd1d0438), Toast.LENGTH_SHORT).show()
             } else {
-                Toast.makeText(this, "保存失败", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, UiStrings.s(com.familyrecipes.android.R.string.ui_6de920b4e4), Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
             e.printStackTrace()

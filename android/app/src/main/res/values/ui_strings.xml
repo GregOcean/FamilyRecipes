@@ -1,0 +1,464 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  <string name="ui_d2ff29c1f6" formatted="false">没有可用厨房</string>
+  <string name="ui_a6b4953271" formatted="false">菜谱ID无效</string>
+  <string name="ui_866b795eae" formatted="false">加载失败</string>
+  <string name="ui_1a576128dc" formatted="false">您还没有加入任何群组</string>
+  <string name="ui_fa2393258d" formatted="false"> · 加载中…</string>
+  <string name="ui_0c7e7ae95f" formatted="false">无法从输入中识别出食材名称。\n\n请确保至少输入食材名称，例如：\n• 鸡蛋\n• 牛奶一瓶\n• 草莓7天内吃完</string>
+  <string name="ui_26eb926612" formatted="false">今天过期，设置为1天</string>
+  <string name="ui_6346129bb0" formatted="false">❌ 无法识别食材</string>
+  <string name="ui_c5437f5fb7" formatted="false">识别中...</string>
+  <string name="ui_9762b17785" formatted="false">这个分类还没有物品\n点击 + 添加，或查看其他分类</string>
+  <string name="ui_beb90b7b63" formatted="false">暂无群组\n点击右下角创建群组</string>
+  <string name="ui_f754888421" formatted="false">添加内容</string>
+  <string name="ui_9c172df65e" formatted="false">当前群聊最多支持 20 人</string>
+  <string name="ui_eb0bd897b7" formatted="false">💡 使用提示</string>
+  <string name="ui_6874c6b801" formatted="false">• 食材名称是必填项，识别失败将无法录入\n• 支持自动识别数量和保质期信息\n• 可使用输入法语音录入，方便快速记录\n• 可添加照片方便查找</string>
+  <string name="ui_6a809b48a8" formatted="false">示例：\n• 鸡肉\n• 牛奶两周后过期\n• 草莓7天内要吃完\n• 酸奶两袋，还有5天过期</string>
+  <string name="ui_d0289db553" formatted="false">📷 添加照片</string>
+  <string name="ui_fd7ea1aa8e" formatted="false">✅ 识别结果</string>
+  <string name="ui_c40d28e26f" formatted="false">保质期较短，请尽快食用！</string>
+  <string name="ui_9c5c5cdbc5" formatted="false">浏览</string>
+  <string name="ui_ebd0e06460" formatted="false">食材提醒设置</string>
+  <string name="ui_632b1a665a" formatted="false">3人</string>
+  <string name="ui_09352bd428" formatted="false">分类: 蔬菜</string>
+  <string name="ui_39d387d67a" formatted="false">切换厨房</string>
+  <string name="ui_c1fa468a43" formatted="false">家人呼唤</string>
+  <string name="ui_5a9d1715a6" formatted="false">难度: 简单</string>
+  <string name="ui_751a79afde" formatted="false">30分钟</string>
+  <string name="ui_469511b82e" formatted="false">分享你的下厨心得：替代食材、调料搭配、火候窍门，或这道菜背后的生活小故事...</string>
+  <string name="ui_7899c78f75" formatted="false"># 标签</string>
+  <string name="ui_687b10a956" formatted="false">输入标签，用#开头，空格分隔（如：#午餐 #家常菜 #快手）</string>
+  <string name="ui_6f3664cf20" formatted="false">厨房初始化失败，请点击顶部厨房入口重试</string>
+  <string name="ui_6610d96cd4" formatted="false">厨房加载失败，请登录后重试</string>
+  <string name="ui_c32eedbf88" formatted="false">个人头像，进入我的</string>
+  <string name="ui_a9e2bd537b" formatted="false">打开工具栏</string>
+  <string name="ui_d46695d56e" formatted="false">厨房管理</string>
+  <string name="ui_47fdc41702" formatted="false">群组管理</string>
+  <string name="ui_3e90c5117d" formatted="false">常用工具</string>
+  <string name="ui_056b3fdd26" formatted="false">我的厨房</string>
+  <string name="ui_09a97f905e" formatted="false">继续草稿</string>
+  <string name="ui_402b79ad66" formatted="false">扫一扫</string>
+  <string name="ui_e366ccf155" formatted="false">设置</string>
+  <string name="ui_ad237159d7" formatted="false">菜谱</string>
+  <string name="ui_0eac8802de" formatted="false">库存</string>
+  <string name="ui_769ef5ab61" formatted="false">安排</string>
+  <string name="ui_ff692f04ac" formatted="false">消息</string>
+  <string name="ui_26bb841878" formatted="false">新建</string>
+  <string name="ui_43589f00eb" formatted="false">食材</string>
+  <string name="ui_d85522beda" formatted="false">点菜</string>
+  <string name="ui_90e2746c75" formatted="false">备菜</string>
+  <string name="ui_9e20cc1715" formatted="false">每天最多汇总提醒一次，省电模式下可能稍有延迟。</string>
+  <string name="ui_47267ab387" formatted="false">只切换应用界面语言，菜谱和聊天内容保留原文。</string>
+  <string name="ui_0054ea0793" formatted="false">应用会跟随系统字体大小。</string>
+  <string name="ui_3d1fffd959" formatted="false">打开系统字体与显示设置</string>
+  <string name="ui_6983955277" formatted="false">请输入 0–365</string>
+  <string name="ui_729a79fdf0" formatted="false">加载失败 · 重试</string>
+  <string name="ui_0439b015f3" formatted="false">系统通知权限</string>
+  <string name="ui_12f0a5812e" formatted="false">启用食材提醒</string>
+  <string name="ui_229e171f87" formatted="false">提前几天提醒</string>
+  <string name="ui_bfa9c9ba82" formatted="false">保存提醒设置</string>
+  <string name="ui_974d3e30d5" formatted="false">字体与显示</string>
+  <string name="ui_c9fb762fc5" formatted="false">通知与提醒</string>
+  <string name="ui_669e3a20e8" formatted="false">设置已保存</string>
+  <string name="ui_688e2fa33f" formatted="false">应用语言</string>
+  <string name="ui_fb4ca1cf1b" formatted="false">加载中…</string>
+  <string name="ui_5f411223ca" formatted="false">返回</string>
+  <string name="ui_117723f7be" formatted="false">群组负责成员与聊天，一个群组可以拥有多个厨房。</string>
+  <string name="ui_3392783de7" formatted="false">厨房区分不同地点的库存；成员权限来自所属群组。</string>
+  <string name="ui_ea2b020b9e" formatted="false">请先创建一个群组；单人群组也可以拥有厨房。</string>
+  <string name="ui_464069bf95" formatted="false">请输入厨房名称</string>
+  <string name="ui_88fdfcc249" formatted="false">＋ 创建群聊</string>
+  <string name="ui_36d00ad97b" formatted="false">＋ 新增厨房</string>
+  <string name="ui_932666cb18" formatted="false">编辑厨房名称</string>
+  <string name="ui_bde123ec96" formatted="false">切换到此厨房</string>
+  <string name="ui_a804fa0231" formatted="false"> · 管理员</string>
+  <string name="ui_64ca9bab92" formatted="false">重新加载</string>
+  <string name="ui_528c6bb352" formatted="false">创建群聊</string>
+  <string name="ui_d670379f49" formatted="false">新增厨房</string>
+  <string name="ui_7890ec1dfa" formatted="false">编辑厨房</string>
+  <string name="ui_280da9de8d" formatted="false">厨房名称</string>
+  <string name="ui_33f8952802" formatted="false">当前厨房</string>
+  <string name="ui_2c6ff6f1da" formatted="false">所属群组</string>
+  <string name="ui_acb4c1a177" formatted="false">群组名称</string>
+  <string name="ui_160f1630cb" formatted="false">保存名称</string>
+  <string name="ui_270de4e4d2" formatted="false">打开群聊</string>
+  <string name="ui_cf4324dcbc" formatted="false">关联厨房</string>
+  <string name="ui_be5fbbe34c" formatted="false">保存</string>
+  <string name="ui_ab5dea2979" formatted="false">成员</string>
+  <string name="ui_3f9810121c" formatted="false">推荐</string>
+  <string name="ui_915593a1d4" formatted="false">操作失败，请重试</string>
+  <string name="ui_eb719e385c" formatted="false">服务器未返回数据</string>
+  <string name="ui_9a8544afbf" formatted="false">当前厨房：现有食材 + 家人会做</string>
+  <string name="ui_a64965a7fc" formatted="false">库存 + 会做 · 换一批</string>
+  <string name="ui_f9352c8c09" formatted="false">发现：按偏好换一批</string>
+  <string name="ui_11548282f0" formatted="false">没有找到相关结果</string>
+  <string name="ui_74127479b9" formatted="false">发现 · 换一批</string>
+  <string name="ui_14254561ee" formatted="false">未找到结果</string>
+  <string name="ui_9c9495d8a1" formatted="false">推荐方式</string>
+  <string name="ui_a9a1271c8c" formatted="false">每篇收藏保留一个来源，请先移除原链接，或新建另一篇收藏</string>
+  <string name="ui_93b21972a4" formatted="false">每行：食材名称 | 用量，例如 鸡蛋 | 2个</string>
+  <string name="ui_64eafb8239" formatted="false">口味（酸、辣、清淡、鲜香等，用顿号分隔）</string>
+  <string name="ui_c2c9ef4b52" formatted="false">请填写每一步的做法，或删除空步骤</string>
+  <string name="ui_aab38be60f" formatted="false">图片上传失败，菜谱尚未保存</string>
+  <string name="ui_f94651d354" formatted="false">请输入1至10080分钟</string>
+  <string name="ui_7b3a4d421f" formatted="false">图片读取失败，请重新选择</string>
+  <string name="ui_cea52e2a12" formatted="false">图片说明 / 步骤文字</string>
+  <string name="ui_64088b2054" formatted="false">请粘贴分享链接或网址</string>
+  <string name="ui_15152fee56" formatted="false">解析失败，请检查链接</string>
+  <string name="ui_1c0e1e271a" formatted="false">耗时（分钟，可选）</string>
+  <string name="ui_87531402ee" formatted="false">简介与笔记（可选）</string>
+  <string name="ui_0e5444c7ee" formatted="false">正在解析链接...</string>
+  <string name="ui_6b939b6382" formatted="false">写下这一步的做法</string>
+  <string name="ui_8194d1e012" formatted="false">选择要分享的群组</string>
+  <string name="ui_7ec65389b4" formatted="false">网络错误，请重试</string>
+  <string name="ui_6020ca1779" formatted="false">获取群组列表失败</string>
+  <string name="ui_04eefad0c1" formatted="false">图片分类与说明</string>
+  <string name="ui_dd24a90cd5" formatted="false">＋ 添加步骤</string>
+  <string name="ui_69f5326297" formatted="false">添加步骤图片</string>
+  <string name="ui_0e8168f0dd" formatted="false">更换步骤图片</string>
+  <string name="ui_674593ff88" formatted="false">草稿读取失败</string>
+  <string name="ui_95aa68d84d" formatted="false">添加外部链接</string>
+  <string name="ui_c0b80e2244" formatted="false">当前厨房可见</string>
+  <string name="ui_b38754def3" formatted="false">加载菜谱失败</string>
+  <string name="ui_2a33020e5b" formatted="false">保存中...</string>
+  <string name="ui_27d8a2fa6b" formatted="false">发布中...</string>
+  <string name="ui_c45c4747bb" formatted="false">食材与用量</string>
+  <string name="ui_9b90f55e19" formatted="false">请输入菜名</string>
+  <string name="ui_4d4d119aab" formatted="false">仅自己可见</string>
+  <string name="ui_012b318667" formatted="false">分享给群组</string>
+  <string name="ui_fbd2495eab" formatted="false">保存成功！</string>
+  <string name="ui_6c6eb30524" formatted="false">发布成功！</string>
+  <string name="ui_65a5713f64" formatted="false">保存菜谱</string>
+  <string name="ui_fea10d57e2" formatted="false">做法步骤</string>
+  <string name="ui_407fd4f2fb" formatted="false">删除步骤</string>
+  <string name="ui_a334f6e2d9" formatted="false">教程截图</string>
+  <string name="ui_b107c6ae6b" formatted="false">烹饪记录</string>
+  <string name="ui_f964950720" formatted="false">可见范围</string>
+  <string name="ui_034929bf43" formatted="false">公开可见</string>
+  <string name="ui_55a6506c29" formatted="false">编辑收藏</string>
+  <string name="ui_5348dcac29" formatted="false">解析失败</string>
+  <string name="ui_0d5635dea1" formatted="false">步骤图</string>
+  <string name="ui_625fb26b4b" formatted="false">取消</string>
+  <string name="ui_38cf16f220" formatted="false">确定</string>
+  <string name="ui_b58c7549c0" formatted="false">添加</string>
+  <string name="ui_315eacd193" formatted="false">上移</string>
+  <string name="ui_412310615b" formatted="false">封面</string>
+  <string name="ui_7ddbe15c84" formatted="false">网络</string>
+  <string name="ui_ff190ad89e" formatted="false">返回菜单</string>
+  <string name="ui_705ea281fb" formatted="false">没有匹配的菜谱，试试放宽条件。</string>
+  <string name="ui_2df6c46856" formatted="false">上次的搜索结果 · 正在刷新</string>
+  <string name="ui_5981cc43fb" formatted="false">搜菜名、食材、口味</string>
+  <string name="ui_57bcca8c05" formatted="false">（保留上次结果）</string>
+  <string name="ui_0402920ca9" formatted="false">最多缺两样</string>
+  <string name="ui_a996573fd0" formatted="false">15分钟内</string>
+  <string name="ui_1826fa4a7b" formatted="false">30分钟内</string>
+  <string name="ui_752589b25d" formatted="false">共享给我的</string>
+  <string name="ui_37dc7bfce2" formatted="false">正在加载…</string>
+  <string name="ui_2f8ba39ad4" formatted="false">我的菜谱</string>
+  <string name="ui_99b7a390f3" formatted="false">全部来源</string>
+  <string name="ui_568d968eee" formatted="false">口味不限</string>
+  <string name="ui_1c6a1a8b39" formatted="false">耗时不限</string>
+  <string name="ui_2722a62702" formatted="false">食材不限</string>
+  <string name="ui_f92d315989" formatted="false">食材齐全</string>
+  <string name="ui_1b7ffa2f43" formatted="false">我创建的</string>
+  <string name="ui_47b582adb2" formatted="false">我收藏的</string>
+  <string name="ui_7728154995" formatted="false">加载更多</string>
+  <string name="ui_d3617a614a" formatted="false">我会做</string>
+  <string name="ui_0e0b0ddfeb" formatted="false">换一批</string>
+  <string name="ui_934ebd87e6" formatted="false">已收藏</string>
+  <string name="ui_fc4d75f6cb" formatted="false">发现</string>
+  <string name="ui_153fa67a7f" formatted="false">选择</string>
+  <string name="ui_7bb3e48630" formatted="false">返回我的</string>
+  <string name="ui_f24e502e92" formatted="false">做菜记录加载失败，请重新打开重试</string>
+  <string name="ui_c07569f86e" formatted="false">已标记我会做 · 取消</string>
+  <string name="ui_deb26c26fb" formatted="false">链接已复制到剪贴板</string>
+  <string name="ui_16407ac216" formatted="false">选择浏览器打开</string>
+  <string name="ui_6d02714217" formatted="false">已标记为不喜欢</string>
+  <string name="ui_eb006cd6f1" formatted="false">请先选择厨房</string>
+  <string name="ui_ad1a148b7b" formatted="false">改成我的做法</string>
+  <string name="ui_00f9d79879" formatted="false">记录这次做菜</string>
+  <string name="ui_a40e588383" formatted="false">我的做菜记录</string>
+  <string name="ui_72c1c093e4" formatted="false">打开链接失败</string>
+  <string name="ui_3a906c714a" formatted="false">已取消收藏</string>
+  <string name="ui_0191cf83a3" formatted="false">标记我会做</string>
+  <string name="ui_bf709ae4c8" formatted="false">已取消标记</string>
+  <string name="ui_fbb7e7ea47" formatted="false">菜谱详情</string>
+  <string name="ui_b26b310008" formatted="false">加入点菜</string>
+  <string name="ui_7a73e91a1d" formatted="false">加入备菜</string>
+  <string name="ui_42ca66bafb" formatted="false">外部链接</string>
+  <string name="ui_0bffc62bb3" formatted="false">网络错误</string>
+  <string name="ui_5fa802bef5" formatted="false">操作失败</string>
+  <string name="ui_ae336cd047" formatted="false">收藏</string>
+  <string name="ui_e62fbccc78" formatted="false">差评</string>
+  <string name="ui_1622dc9b6b" formatted="false">未知</string>
+  <string name="ui_8637840d3d" formatted="false">仅此账号在本机打开过的菜谱，最多保留 200 条。</string>
+  <string name="ui_8cc3c5dbab" formatted="false">清空本机的菜谱浏览记录？不会删除菜谱或收藏。</string>
+  <string name="ui_cfcddb772c" formatted="false">还没有浏览记录</string>
+  <string name="ui_e44745f241" formatted="false">清空浏览记录</string>
+  <string name="ui_5ac95e3cdd" formatted="false">浏览记录</string>
+  <string name="ui_288f0c404c" formatted="false">清空</string>
+  <string name="ui_1986f96841" formatted="false">日期格式 YYYY-MM-DD</string>
+  <string name="ui_a24fefda6e" formatted="false">做菜日期 YYYY-MM-DD</string>
+  <string name="ui_930ee7d242" formatted="false">过程、用量调整和下次的心得</string>
+  <string name="ui_df7b52aa75" formatted="false">添加过程 / 成品照片</string>
+  <string name="ui_5960795a3e" formatted="false">返回 · 保留草稿</string>
+  <string name="ui_7d0c2258af" formatted="false">请写一点心得</string>
+  <string name="ui_c76ca04b2c" formatted="false">保存记录</string>
+  <string name="ui_6328552cc5" formatted="false">移除照片</string>
+  <string name="ui_315e99b47a" formatted="false">暂时没有群聊消息。一个人也能使用厨房、点菜和备菜。</string>
+  <string name="ui_7bd7075cda" formatted="false">查看临期食材，及时安排</string>
+  <string name="ui_634926c4ca" formatted="false">管理群组</string>
+  <string name="ui_da6878f718" formatted="false">搜索群聊</string>
+  <string name="ui_19268a99cb" formatted="false">食材提醒</string>
+  <string name="ui_ac148b4c87" formatted="false">即将过期</string>
+  <string name="ui_5ab356bba3" formatted="false">未知食材</string>
+  <string name="ui_d813eea6b6" formatted="false">已吃完</string>
+  <string name="ui_4d5ccd0118" formatted="false">已过期</string>
+  <string name="ui_4b123f5f93" formatted="false">数量：</string>
+  <string name="ui_5c6881399f" formatted="false">未填写</string>
+  <string name="ui_fe2d26a257" formatted="false">未设置</string>
+  <string name="ui_fd6e80f1e0" formatted="false">正常</string>
+  <string name="ui_487fcd5d2e" formatted="false">搜索失败，已保留结果，下拉重试</string>
+  <string name="ui_8c3ec9dfd5" formatted="false">暂无描述</string>
+  <string name="ui_1f2d6b1b2c" formatted="false">暂无简介</string>
+  <string name="ui_77c507528d" formatted="false">需要相机权限才能扫码</string>
+  <string name="ui_4b88cfb089" formatted="false">扫描好友二维码</string>
+  <string name="ui_224b61b7a1" formatted="false">无效的二维码</string>
+  <string name="ui_415109cfac" formatted="false">添加好友成功</string>
+  <string name="ui_f45a3d8a26" formatted="false">添加好友失败</string>
+  <string name="ui_5087367b47" formatted="false">取消扫码</string>
+  <string name="ui_524fc5fded" formatted="false">需要存储权限才能保存二维码</string>
+  <string name="ui_04cd1d0438" formatted="false">二维码已保存到相册</string>
+  <string name="ui_60cb8f1898" formatted="false">生成二维码失败</string>
+  <string name="ui_dfac8f84fe" formatted="false">二维码不存在</string>
+  <string name="ui_70189fcd83" formatted="false">用户信息错误</string>
+  <string name="ui_6de920b4e4" formatted="false">保存失败</string>
+  <string name="ui_2878420820" formatted="false">家肴用户</string>
+  <string name="ui_059d992c84" formatted="false">我创建的群</string>
+  <string name="ui_dc216b65a4" formatted="false">消息已保留，联网后重试</string>
+  <string name="ui_8e0afea435" formatted="false">表情包未发送，请重试</string>
+  <string name="ui_ff8fb5ccff" formatted="false">[表情包] 待发送</string>
+  <string name="ui_8b83910b36" formatted="false">允许后台消息通知</string>
+  <string name="ui_469ecd589d" formatted="false">重试待发送消息</string>
+  <string name="ui_1c2d3afd8b" formatted="false">未知用户</string>
+  <string name="ui_47c75f2e6b" formatted="false">我加入的群</string>
+  <string name="ui_5b6af8959a" formatted="false">请输入群名称</string>
+  <string name="ui_0156231b04" formatted="false">请输入群介绍</string>
+  <string name="ui_b26107b6c5" formatted="false">创建中...</string>
+  <string name="ui_730321fcf0" formatted="false">群聊创建成功</string>
+  <string name="ui_9fd0002489" formatted="false">立即创建</string>
+  <string name="ui_a889286a51" formatted="false">创建失败</string>
+  <string name="ui_39783e6ff7" formatted="false">默认提醒未来3天到期的食材。时间按本机时区；系统省电可能延后提醒。</string>
+  <string name="ui_34053f01aa" formatted="false">恢复这张图片？恢复后可用原图片地址重新关联。</string>
+  <string name="ui_a3b3be2af2" formatted="false">推荐你使用「家肴」App，记录美味生活！</string>
+  <string name="ui_c08c2f36d2" formatted="false">验证码发送失败，请检查网络后重试</string>
+  <string name="ui_a568feaf47" formatted="false">验证码已发送，10分钟内有效</string>
+  <string name="ui_d6dfc7028c" formatted="false">保存失败，内容已保留，请重试</string>
+  <string name="ui_3aa47b363c" formatted="false">图片垃圾箱（30天后清理）</string>
+  <string name="ui_8ac9af261b" formatted="false">请输入邮件中的6位验证码</string>
+  <string name="ui_784c4de2e4" formatted="false">注册成功，正在登录...</string>
+  <string name="ui_867f270c2e" formatted="false">厨房加载失败 · 重试</string>
+  <string name="ui_d2d6ba5b26" formatted="false">当前厨房 · 查看库存</string>
+  <string name="ui_c018eeb2d2" formatted="false">共同使用 · 切换厨房</string>
+  <string name="ui_2f43109392" formatted="false">启用提醒，每天最多一次</string>
+  <string name="ui_97c99a86fb" formatted="false">提前几天（0–365）</string>
+  <string name="ui_8b4169e947" formatted="false">向其他人展示我的名片</string>
+  <string name="ui_a1d036fe76" formatted="false">查看和恢复已删除图片</string>
+  <string name="ui_d8f9fa703c" formatted="false">还没有账号？立即注册</string>
+  <string name="ui_b45b4ed55a" formatted="false">请输入有效的邮箱地址</string>
+  <string name="ui_8a56d0cff6" formatted="false">用户名最多50个字符</string>
+  <string name="ui_7c1277e4fd" formatted="false">已有账号？立即登录</string>
+  <string name="ui_8bf65747a2" formatted="false">请输入0–365</string>
+  <string name="ui_e22e0575cb" formatted="false">暂无可访问的厨房</string>
+  <string name="ui_c86435dc69" formatted="false">语言、字体与通知</string>
+  <string name="ui_fe142a5429" formatted="false">请输入邮箱和密码</string>
+  <string name="ui_f3a4f9ea11" formatted="false">最近看过的菜谱</string>
+  <string name="ui_eddeaaf2ee" formatted="false">我有权限的厨房</string>
+  <string name="ui_152bbcb262" formatted="false">验证码发送失败</string>
+  <string name="ui_227cc473cf" formatted="false">垃圾箱加载失败</string>
+  <string name="ui_8e8b4dd2f9" formatted="false">设置加载失败</string>
+  <string name="ui_4a86cd505e" formatted="false">我的二维码</string>
+  <string name="ui_11d0c6e5bc" formatted="false">分享给我的</string>
+  <string name="ui_3138b7d701" formatted="false">点菜与备菜</string>
+  <string name="ui_4fa105b9e2" formatted="false">账户与工具</string>
+  <string name="ui_c3af9f8f1d" formatted="false">图片垃圾箱</string>
+  <string name="ui_d369f43aac" formatted="false">获取验证码</string>
+  <string name="ui_a690f4d30e" formatted="false">我的点菜</string>
+  <string name="ui_2869f51718" formatted="false">我的备菜</string>
+  <string name="ui_7f649e7630" formatted="false">共享菜谱</string>
+  <string name="ui_44efd179aa" formatted="false">退出登录</string>
+  <string name="ui_975ff67ee1" formatted="false">我的收藏</string>
+  <string name="ui_0881570719" formatted="false">发送中…</string>
+  <string name="ui_b6076a055f" formatted="false">登录失败</string>
+  <string name="ui_1c56d8c5aa" formatted="false">注册失败</string>
+  <string name="ui_2e827d23cb" formatted="false">恢复失败</string>
+  <string name="ui_ba330b9fe4" formatted="false">草稿箱</string>
+  <string name="ui_74c11dae2c" formatted="false">分享到</string>
+  <string name="ui_b15d91274e" formatted="false">关闭</string>
+  <string name="ui_132c5cdcce" formatted="false">重试</string>
+  <string name="ui_402d19e50f" formatted="false">登录</string>
+  <string name="ui_fe0e8bf768" formatted="false">注册</string>
+  <string name="ui_c7db6d4f1a" formatted="false">恢复</string>
+  <string name="ui_f0f2a7ce59" formatted="false">日期（可选，YYYY-MM-DD）</string>
+  <string name="ui_24ea6b09e1" formatted="false">按缺少的食材种类补充，请核对用量</string>
+  <string name="ui_17f50e0655" formatted="false">日期格式为 YYYY-MM-DD</string>
+  <string name="ui_d4cb5f6575" formatted="false">返回 · 草稿自动保存</string>
+  <string name="ui_6d58daf417" formatted="false">根据菜谱补充采购清单</string>
+  <string name="ui_be850c21d5" formatted="false">采购清单：每行一项</string>
+  <string name="ui_e4cfb95fab" formatted="false">菜名，用顿号分隔</string>
+  <string name="ui_72d32d3460" formatted="false">保存并分享到群聊</string>
+  <string name="ui_954408d0e5" formatted="false">据此创建我的备菜</string>
+  <string name="ui_805cb9cde8" formatted="false">＋ 从菜谱中选</string>
+  <string name="ui_856d0df5f2" formatted="false">请填写名称</string>
+  <string name="ui_c809061b3c" formatted="false">分享给群聊</string>
+  <string name="ui_7dc2d8a222" formatted="false">时间未定</string>
+  <string name="ui_8ee9f276a6" formatted="false">菜单名称</string>
+  <string name="ui_84e2805b5c" formatted="false">暂不分享</string>
+  <string name="ui_ca89d33725" formatted="false">需要采购</string>
+  <string name="ui_f8dfedcd8a" formatted="false">已保存</string>
+  <string name="ui_54bba45c94" formatted="false">已分享</string>
+  <string name="ui_0b67983743" formatted="false">还没有草稿，编辑时会自动保存。</string>
+  <string name="ui_f9616f9a11" formatted="false">＋ 新建备菜</string>
+  <string name="ui_880468380a" formatted="false">＋ 新建点菜</string>
+  <string name="ui_e92d29c51a" formatted="false">准备做的菜</string>
+  <string name="ui_3368ec1127" formatted="false">想吃的菜单</string>
+  <string name="ui_82bb31b616" formatted="false">随时接着写</string>
+  <string name="ui_91b34afa6c" formatted="false">未命名草稿</string>
+  <string name="ui_22b4334f91" formatted="false">草稿</string>
+  <string name="ui_c58dc542ee" formatted="false">新物品：请确认分类；不确定可选“待分类”</string>
+  <string name="ui_2bc418d3e3" formatted="false">食材库加载失败，点此重试（已保留输入）</string>
+  <string name="ui_13e858b0eb" formatted="false">保质期不能超过10年（3650天）</string>
+  <string name="ui_6cec1849f4" formatted="false">预留给谁（不影响编辑权限）</string>
+  <string name="ui_40e3aba8c8" formatted="false">图片上传失败，库存尚未保存</string>
+  <string name="ui_5caf5e3a24" formatted="false">保质期必须是大于0的整数</string>
+  <string name="ui_47bfe84b0c" formatted="false">用户未登录，请先登录</string>
+  <string name="ui_53a656c5e7" formatted="false">过期日期不能早于今天</string>
+  <string name="ui_e0d982c2fd" formatted="false">全家共享（无预留）</string>
+  <string name="ui_6ba5301b0b" formatted="false">正在查询食材库…</string>
+  <string name="ui_9923b97d63" formatted="false">请输入食材信息</string>
+  <string name="ui_2fbc875882" formatted="false">请输入食材名称</string>
+  <string name="ui_715a3f2df4" formatted="false">图片读取失败</string>
+  <string name="ui_d27ba70966" formatted="false">成员加载失败</string>
+  <string name="ui_67d5682523" formatted="false">选择图片来源</string>
+  <string name="ui_b44d2867ab" formatted="false">选择过期日期</string>
+  <string name="ui_421b4b18d2" formatted="false">请输入保质期</string>
+  <string name="ui_1e1b18a33f" formatted="false">食材保存失败</string>
+  <string name="ui_83c39abd16" formatted="false">从相册选择</string>
+  <string name="ui_d730bee903" formatted="false">添加成功！</string>
+  <string name="ui_6452a05591" formatted="false">添加失败</string>
+  <string name="ui_8347a927c0" formatted="false">修改</string>
+  <string name="ui_bed9ec1e84" formatted="false">拍照</string>
+  <string name="ui_4a04af28b2" formatted="false">未找到匹配物品，可切换“全部”或修改搜索词</string>
+  <string name="ui_add39f45f2" formatted="false">保存失败，检查日期和网络后重试</string>
+  <string name="ui_507692eb1b" formatted="false">到期日期 YYYY-MM-DD</string>
+  <string name="ui_e19581a0b5" formatted="false">物品分类（仅修改这条库存）</string>
+  <string name="ui_5cb892ec39" formatted="false">编辑信息加载失败，请重试</string>
+  <string name="ui_49eff504a4" formatted="false">库存功能需要登录后使用</string>
+  <string name="ui_4665781935" formatted="false">已吃完 / 用完</string>
+  <string name="ui_51417b630e" formatted="false">没有找到相关库存</string>
+  <string name="ui_ff62d758ff" formatted="false">修改剩余数量</string>
+  <string name="ui_a87bc7d464" formatted="false">删除误录记录</string>
+  <string name="ui_339575cc1a" formatted="false">已移到已吃完</string>
+  <string name="ui_87b0ac09f2" formatted="false">加载分类失败</string>
+  <string name="ui_31639b9c4a" formatted="false">暂无消耗记录</string>
+  <string name="ui_9dea8b88dd" formatted="false">恢复到库存</string>
+  <string name="ui_b2e3b9fa47" formatted="false">变质或丢弃</string>
+  <string name="ui_19277580db" formatted="false">已恢复库存</string>
+  <string name="ui_14f66fc55d" formatted="false">已标记丢弃</string>
+  <string name="ui_56c9087a99" formatted="false">已删除记录</string>
+  <string name="ui_1a75030502" formatted="false">全部分类</string>
+  <string name="ui_5fcb1e4d94" formatted="false">选择分类</string>
+  <string name="ui_bea7aa0b1b" formatted="false">存放位置</string>
+  <string name="ui_2f4aaddde3" formatted="false">删除</string>
+  <string name="ui_0bf60b32f9" formatted="false">数量</string>
+  <string name="ui_bd9fcf46b4" formatted="false">撤销</string>
+  <string name="ui_2432b57515" formatted="false">备注</string>
+  <string name="ui_b87b77561e" formatted="false">消息内容</string>
+  <string name="ui_4c50eef3bd" formatted="false">头像</string>
+  <string name="ui_844fef3505" formatted="false">我的群组</string>
+  <string name="ui_679c4032ce" formatted="false">创建群组</string>
+  <string name="ui_69724359e2" formatted="false">作品</string>
+  <string name="ui_4ccbdc5301" formatted="false">菜单</string>
+  <string name="ui_0aebdb41cd" formatted="false">群名称</string>
+  <string name="ui_ac58c0fd79" formatted="false">群介绍</string>
+  <string name="ui_640e7313cf" formatted="false">简单说说你想在群内讨论的话题、以及希望哪些人加入群聊</string>
+  <string name="ui_02d9819dda" formatted="false">提示</string>
+  <string name="ui_f16ca0bc64" formatted="false">🎲 随机推荐</string>
+  <string name="ui_bec13f19cb" formatted="false">添加食材</string>
+  <string name="ui_f128a11b4c" formatted="false">食材信息</string>
+  <string name="ui_cef4782236" formatted="false">食材照片（可选）</string>
+  <string name="ui_ccfa4ec20f" formatted="false">添加照片方便家人快速找到食材</string>
+  <string name="ui_2dca6419b0" formatted="false">食材照片预览</string>
+  <string name="ui_3875ccae23" formatted="false">删除图片</string>
+  <string name="ui_c91155ba37" formatted="false">搜索中...</string>
+  <string name="ui_6d5dac1a9b" formatted="false">请确认或修改识别结果：</string>
+  <string name="ui_24fd1e30af" formatted="false">食材名称 *</string>
+  <string name="ui_d50a9ad504" formatted="false">物品分类</string>
+  <string name="ui_a9ccfc1042" formatted="false">数量（可选）</string>
+  <string name="ui_990151ac20" formatted="false">保质期（天）*</string>
+  <string name="ui_34afe96a1d" formatted="false">存储位置（可选）</string>
+  <string name="ui_7820722608" formatted="false">返回修改</string>
+  <string name="ui_babc8fe739" formatted="false">确认保存</string>
+  <string name="ui_e5f71fc31e" formatted="false">搜索</string>
+  <string name="ui_89f5251319" formatted="false">群设置</string>
+  <string name="ui_4705843b2b" formatted="false">发送表情包</string>
+  <string name="ui_17e8e26968" formatted="false">发消息...</string>
+  <string name="ui_1535fcfa4c" formatted="false">发送</string>
+  <string name="ui_2ba22d9710" formatted="false">历史记录图标</string>
+  <string name="ui_9049e90515" formatted="false">佳肴</string>
+  <string name="ui_3c46bf18ab" formatted="false">记录家的味道</string>
+  <string name="ui_55c94dbeb8" formatted="false">粘贴完整的分享内容或网址，将自动解析</string>
+  <string name="ui_9f8ff7515d" formatted="false">粘贴分享内容（支持小红书、下厨房、抖音、B站等）</string>
+  <string name="ui_93e4998872" formatted="false">搜索库存里的物品</string>
+  <string name="ui_a8b0c20416" formatted="false">全部</string>
+  <string name="ui_2cae0566ad" formatted="false">临期</string>
+  <string name="ui_7e450d2325" formatted="false">全部分类 ▾</string>
+  <string name="ui_7aa52f0c9e" formatted="false">右滑吃完 · 长按或点更多管理</string>
+  <string name="ui_cbfbee715c" formatted="false">这里还没有物品</string>
+  <string name="ui_6555ef98b5" formatted="false">我的好友</string>
+  <string name="ui_a640204afd" formatted="false">外部链接标题</string>
+  <string name="ui_26ca20b161" formatted="false">来源</string>
+  <string name="ui_4183a88537" formatted="false">我的名片码</string>
+  <string name="ui_22b03c024d" formatted="false">二维码</string>
+  <string name="ui_f57bd367c4" formatted="false">扫描二维码，添加我为好友</string>
+  <string name="ui_cd4fbcefd3" formatted="false">保存二维码</string>
+  <string name="ui_dd245fe8ab" formatted="false">我的作品</string>
+  <string name="ui_8e89707af7" formatted="false">还没有上传任何菜谱</string>
+  <string name="ui_e16cfeb281" formatted="false">快去分享你的拿手菜吧~</string>
+  <string name="ui_95b351c862" formatted="false">编辑</string>
+  <string name="ui_b3c87b5389" formatted="false">菜谱封面</string>
+  <string name="ui_545d6d33e4" formatted="false">烹饪时间</string>
+  <string name="ui_3bdd08adab" formatted="false">描述</string>
+  <string name="ui_b2cea874e0" formatted="false">外部做法链接</string>
+  <string name="ui_3bc5e602b2" formatted="false">邮箱</string>
+  <string name="ui_268b1e2ba8" formatted="false">邮箱验证码（6位）</string>
+  <string name="ui_ae2246a838" formatted="false">用户名（可选，留空自动生成）</string>
+  <string name="ui_08b94b8c0f" formatted="false">密码（至少8位）</string>
+  <string name="ui_17cd044e7c" formatted="false">编辑资料</string>
+  <string name="ui_c31f48f84e" formatted="false">分享</string>
+  <string name="ui_2c70d9a949" formatted="false">群头像</string>
+  <string name="ui_41b792a4b1" formatted="false">群简介</string>
+  <string name="ui_0ec9eaf9c3" formatted="false">更多</string>
+  <string name="ui_8993734a3e" formatted="false">还没有收藏任何菜谱</string>
+  <string name="ui_0d9473600d" formatted="false">快去发现喜欢的菜谱吧~</string>
+  <string name="ui_ecdff96a5a" formatted="false">食材图标</string>
+  <string name="ui_60f31120ac" formatted="false">食材名称</string>
+  <string name="ui_3df483e73a" formatted="false">搜索菜名、食材、用户...</string>
+  <string name="ui_e9c38f8837" formatted="false">搜索历史</string>
+  <string name="ui_7f19d9aff3" formatted="false">爱心点赞</string>
+  <string name="ui_0ed7595032" formatted="false">查看全部 &gt;</string>
+  <string name="ui_eb964695a2" formatted="false">菜谱名称</string>
+  <string name="ui_633df47823" formatted="false">菜谱描述</string>
+  <string name="ui_18ce9a5fd3" formatted="false">外部链接缩略图</string>
+  <string name="ui_879058ce06" formatted="false">复制链接</string>
+  <string name="ui_d0ed01d1ce" formatted="false">打开链接</string>
+  <string name="ui_819767ada1" formatted="false">用户名</string>
+  <string name="ui_a3944a9bc4" formatted="false">添加菜谱</string>
+  <string name="ui_83611abd5f" formatted="false">发布</string>
+  <string name="ui_76eb8e6731" formatted="false">菜名</string>
+  <string name="ui_88d24f25df" formatted="false">添加外部做法链接</string>
+  <string name="ui_ba6e91fa9e" formatted="false">权限</string>
+  <string name="ui_e2edde5adb" formatted="false">展开</string>
+</resources>

@@ -44,18 +44,16 @@ public class RecipeWorkflowService {
     if (missing != null && kitchen == null) throw new ApiException(400, "请先选择厨房");
     List<Object> args = new ArrayList<>();
     String where = " WHERE " + RecipeMapper.VISIBLE.replace("#{viewerId}", "?");
-    args.add(user);
-    args.add(user);
-    args.add(user);
+    for (int i=0; i<RecipeMapper.VISIBLE.split("#\\{viewerId\\}", -1).length-1; i++) args.add(user);
     String mine =
         "(r.creator_id=? OR EXISTS(SELECT 1 FROM user_favorite f WHERE f.recipe_id=r.id AND"
             + " f.user_id=?) OR EXISTS(SELECT 1 FROM recipe_cook c WHERE c.recipe_id=r.id AND"
             + " c.user_id=?) OR ((r.visibility='group' OR "
-            + RecipeMapper.MEAL_SHARED.replace("#{viewerId}", "?")
+            + ("(" + RecipeMapper.MEAL_SHARED + " OR " + RecipeMapper.CHAT_SHARED + ")").replace("#{viewerId}", "?")
             + ") AND r.creator_id<>?))";
     if (scope.equals("mine")) {
       where += " AND " + mine;
-      Collections.addAll(args, user, user, user, user, user);
+      Collections.addAll(args, user, user, user, user, user, user);
     }
     if (origin.equals("created")) {
       where += " AND r.creator_id=?";
@@ -66,8 +64,9 @@ public class RecipeWorkflowService {
     } else if (origin.equals("shared")) {
       where +=
           " AND (r.visibility='group' OR "
-              + RecipeMapper.MEAL_SHARED.replace("#{viewerId}", "?")
+              + ("(" + RecipeMapper.MEAL_SHARED + " OR " + RecipeMapper.CHAT_SHARED + ")").replace("#{viewerId}", "?")
               + ") AND r.creator_id<>?";
+      args.add(user);
       args.add(user);
       args.add(user);
     }

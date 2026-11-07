@@ -14,6 +14,8 @@ public class ExternalRecipe {
     private String url;
     private String source;
     private String thumbnail;  // 缩略图URL
+    private String notes;
+    private Integer sortOrder;
     private Long addedBy;
     private LocalDateTime createdAt;
     

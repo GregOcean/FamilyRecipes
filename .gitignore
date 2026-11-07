@@ -55,3 +55,22 @@ keystore.properties
 .env
 .env.*
 !.env.example
+
+# Local release artifacts and runtime databases
+*.apk
+*.aab
+*.hprof
+*.db
+*.db-shm
+*.db-wal
+
+# Deployment secrets and backups (keep schema/migration SQL tracked)
+*.pem
+*.key
+backend.env
+/backups/
+/backend/backups/
+/familyrecipes-backup-*/
+/backend/familyrecipes-backup-*/
+/familyrecipes-release/
+/backend/familyrecipes-release/

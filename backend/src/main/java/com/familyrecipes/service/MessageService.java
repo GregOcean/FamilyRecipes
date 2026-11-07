@@ -56,6 +56,16 @@ public class MessageService {
             throw new com.familyrecipes.common.ApiException(400, "消息长度须为1至4000字符");
         if (messageType != null && messageType != Message.MessageType.text && messageType != Message.MessageType.sticker)
             throw new com.familyrecipes.common.ApiException(400, "仅支持文字、链接和表情包");
+        if (messageType == null || messageType == Message.MessageType.text) {
+            var mentions = java.util.regex.Pattern.compile("@\\[[^\\]\\r\\n]{1,80}\\]\\(familyrecipes://user/([1-9][0-9]*)\\)").matcher(content);
+            while (mentions.find()) {
+                Long mentioned;
+                try { mentioned = Long.valueOf(mentions.group(1)); }
+                catch (NumberFormatException e) { throw new com.familyrecipes.common.ApiException(400, "提及成员不合法"); }
+                if (!groupChatMapper.isGroupMember(groupId, mentioned))
+                    throw new com.familyrecipes.common.ApiException(400, "被提及的成员已不在群中，请编辑后重发");
+            }
+        }
         if(messageType==Message.MessageType.sticker) media.requireSticker(content,senderId);
         Message message = new Message();
         message.setClientMessageId(clientId);
@@ -72,6 +82,17 @@ public class MessageService {
         return saved;
     }
     
+    /** Retry a share without duplicating messages, even if the source was later edited. */
+    public Message findSharedMessage(Long user, String clientId, Long group, String link) {
+        if (clientId == null) return null;
+        Long id = messageMapper.findClient(user, clientId);
+        if (id == null) return null;
+        Message prior = messageMapper.findById(id);
+        if (!group.equals(prior.getGroupId()) || !prior.getContent().endsWith("\n" + link))
+            throw new com.familyrecipes.common.ApiException(409, "消息编号已用于其他内容");
+        return prior;
+    }
+
     public List<Message> catchUp(Long groupId,Long userId,Long afterId,int limit) {
         if(!groupChatMapper.isGroupMember(groupId,userId)) throw new com.familyrecipes.common.ApiException(404,"群组不存在或不可访问");
         if(afterId<0 || limit<1 || limit>200) throw new com.familyrecipes.common.ApiException(400,"游标参数不合法");

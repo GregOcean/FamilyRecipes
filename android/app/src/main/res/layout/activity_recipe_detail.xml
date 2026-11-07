@@ -7,12 +7,12 @@
     android:orientation="vertical">
 
     <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar"
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"        android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="@color/primary"
+        android:background="@color/toolbar_background"
         app:navigationIcon="@drawable/ic_back"
-        app:title="菜谱详情"
+        app:title="@string/ui_fbb7e7ea47"
         app:titleTextColor="@color/white">
         
         <!-- 编辑按钮 -->
@@ -22,7 +22,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="end"
             android:layout_marginEnd="16dp"
-            android:text="编辑"
+            android:text="@string/ui_95b351c862"
             android:textColor="@color/white"
             android:textSize="16sp"
             android:padding="8dp"
@@ -64,7 +64,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="250dp"
                 android:scaleType="centerCrop"
-                android:contentDescription="菜谱封面"
+                android:contentDescription="@string/ui_b3c87b5389"
                 tools:src="@drawable/placeholder_recipe" />
 
             <!-- Recipe Info Card -->
@@ -135,7 +135,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="浏览"
+                                android:text="@string/ui_9c5c5cdbc5"
                                 android:textColor="@color/text_secondary"
                                 android:textSize="12sp" />
                         </LinearLayout>
@@ -159,7 +159,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="收藏"
+                                android:text="@string/ui_ae336cd047"
                                 android:textColor="@color/text_secondary"
                                 android:textSize="12sp" />
                         </LinearLayout>
@@ -183,7 +183,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="烹饪时间"
+                                android:text="@string/ui_545d6d33e4"
                                 android:textColor="@color/text_secondary"
                                 android:textSize="12sp" />
                         </LinearLayout>
@@ -240,7 +240,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="描述"
+                        android:text="@string/ui_3bdd08adab"
                         android:textColor="@color/text_primary"
                         android:textSize="18sp"
                         android:textStyle="bold" />
@@ -282,7 +282,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="外部做法链接"
+                        android:text="@string/ui_b2cea874e0"
                         android:textColor="@color/text_primary"
                         android:textSize="18sp"
                         android:textStyle="bold" />
@@ -317,7 +317,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginEnd="8dp"
-            android:text="收藏"
+            android:text="@string/ui_ae336cd047"
             app:icon="@drawable/ic_favorite_border"
             app:iconGravity="textStart" />
 

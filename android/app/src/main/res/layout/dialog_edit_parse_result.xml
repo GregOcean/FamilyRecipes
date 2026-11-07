@@ -9,7 +9,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="✅ 识别结果"
+        android:text="@string/ui_fd7ea1aa8e"
         android:textSize="20sp"
         android:textStyle="bold"
         android:textColor="@color/text_primary"
@@ -18,7 +18,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="请确认或修改识别结果："
+        android:text="@string/ui_6d5dac1a9b"
         android:textSize="14sp"
         android:textColor="@color/text_secondary"
         android:layout_marginBottom="16dp" />
@@ -28,13 +28,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="12dp"
-        android:hint="食材名称 *"
+        android:hint="@string/ui_24fd1e30af"
         app:boxBackgroundMode="outline"
         app:startIconDrawable="@drawable/ic_food"
         app:startIconTint="@color/primary">
 
         <com.google.android.material.textfield.MaterialAutoCompleteTextView
-            android:id="@+id/et_ingredient_name"
+        android:fontFamily="sans-serif-medium"        android:textColorHint="@color/text_hint"        android:textColor="@color/text_primary"            android:id="@+id/et_ingredient_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="text"
@@ -48,32 +48,32 @@
         android:id="@+id/tv_ingredient_match"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="正在查询食材库…"
+        android:text="@string/ui_6ba5301b0b"
         android:textColor="@color/text_secondary"
         android:layout_marginBottom="8dp" />
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="物品分类" />
+        android:text="@string/ui_d50a9ad504" />
     <Spinner
         android:id="@+id/spinner_category"
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:layout_marginBottom="12dp"
-        android:contentDescription="物品分类" />
+        android:contentDescription="@string/ui_d50a9ad504" />
 
     <!-- 数量 -->
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="12dp"
-        android:hint="数量（可选）"
+        android:hint="@string/ui_a9ccfc1042"
         app:boxBackgroundMode="outline"
         app:startIconDrawable="@drawable/ic_numbers"
         app:startIconTint="@color/primary">
 
         <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/et_amount"
+        android:fontFamily="sans-serif-medium"        android:textColorHint="@color/text_hint"        android:textColor="@color/text_primary"            android:id="@+id/et_amount"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="text"
@@ -87,7 +87,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="12dp"
-        android:hint="保质期（天）*"
+        android:hint="@string/ui_990151ac20"
         app:boxBackgroundMode="outline"
         app:startIconDrawable="@drawable/ic_calendar"
         app:startIconTint="@color/primary"
@@ -97,7 +97,7 @@
         app:helperText="点击右侧📅选择过期日期，或直接输入天数">
 
         <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/et_expiry_days"
+        android:fontFamily="sans-serif-medium"        android:textColorHint="@color/text_hint"        android:textColor="@color/text_primary"            android:id="@+id/et_expiry_days"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="number"
@@ -110,14 +110,14 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="12dp"
-        android:hint="存储位置（可选）"
+        android:hint="@string/ui_34afe96a1d"
         app:boxBackgroundMode="outline"
         app:startIconDrawable="@drawable/ic_storage"
         app:startIconTint="@color/primary"
         app:helperText="选择或输入存储位置">
 
         <com.google.android.material.textfield.MaterialAutoCompleteTextView
-            android:id="@+id/et_storage_location"
+        android:fontFamily="sans-serif-medium"        android:textColorHint="@color/text_hint"        android:textColor="@color/text_primary"            android:id="@+id/et_storage_location"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="text"
@@ -151,7 +151,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="保质期较短，请尽快食用！"
+            android:text="@string/ui_c40d28e26f"
             android:textSize="13sp"
             android:textColor="@color/warning" />
     </LinearLayout>
@@ -168,7 +168,7 @@
             android:id="@+id/btn_cancel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="返回修改"
+            android:text="@string/ui_7820722608"
             android:textSize="15sp"
             android:layout_marginEnd="8dp"
             style="@style/Widget.Material3.Button.TextButton" />
@@ -177,7 +177,7 @@
             android:id="@+id/btn_save"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="确认保存"
+            android:text="@string/ui_babc8fe739"
             android:textSize="15sp"
             android:minWidth="120dp" />
     </LinearLayout>

@@ -1,0 +1,30 @@
+<resources>
+    <color name="primary">#78D3F2</color>
+    <color name="primary_dark">#78D3F2</color>
+    <color name="primary_light">#203D4C</color>
+    <color name="accent">#78D3F2</color>
+    <color name="background">#101B24</color>
+    <color name="background_light">#172731</color>
+    <color name="surface">#1B2C38</color>
+    <color name="text_primary">#EDF5FA</color>
+    <color name="text_secondary">#BCCED9</color>
+    <color name="text_hint">#BCCED9</color>
+    <color name="text_dark">#EDF5FA</color>
+    <color name="gray">#BCCED9</color>
+    <color name="gray_light">#9BAFBC</color>
+    <color name="gray_bg">#172731</color>
+    <color name="light_gray">#536C7C</color>
+    <color name="outline">#8CA4B4</color>
+    <color name="on_primary">#092E3C</color>
+    <color name="toolbar_background">#173847</color>
+    <color name="category_sidebar_bg">#172731</color>
+    <color name="category_parent_bg">#172731</color>
+    <color name="category_parent_selected_bg">#294E61</color>
+    <color name="category_child_bg">#101B24</color>
+    <color name="category_child_selected_bg">#294E61</color>
+    <color name="category_text_normal">#BCCED9</color>
+    <color name="category_text_selected">#A7E7FC</color>
+    <color name="warm_surface">#453B24</color>
+    <color name="green_surface">#233D32</color>
+    <color name="purple_surface">#33304B</color>
+</resources>

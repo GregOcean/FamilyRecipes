@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chat_members">Members</string>
+    <string name="chat_mention">@ Mention</string>
+    <string name="chat_emoji">Emoji</string>
+    <string name="chat_share">Share</string>
+    <string name="chat_group_count">%1$s · %2$d members</string>
+    <string name="chat_member_hint">Tap a member to mention them, or type @ in the message</string>
+    <string name="chat_no_members">No other members to mention</string>
+    <string name="chat_refresh">Reconnect</string>
+    <string name="chat_connecting">Syncing messages…</string>
+    <string name="chat_offline">Connection failed. Messages retained · Tap to retry</string>
+    <string name="chat_pending">Pending</string>
+    <string name="chat_retry">Failed · Tap to retry</string>
+    <string name="chat_retry_action">Retry sending</string>
+    <string name="chat_remove_pending">Cancel this pending message</string>
+    <string name="chat_edit_pending">Move back to composer</string>
+    <string name="chat_mentioned">You were mentioned</string>
+    <string name="chat_emoji_title">Cute emoji</string>
+    <string name="chat_upload_sticker">Send a sticker from photos</string>
+    <string name="chat_share_order">Share an order</string>
+    <string name="chat_share_prep">Share a prep plan</string>
+    <string name="chat_share_recipe">Share a recipe</string>
+    <string name="chat_choose_meal">Choose a saved menu</string>
+    <string name="chat_no_meals">No saved menus yet. Create and save one in Plans first.</string>
+    <string name="chat_share_hint">Send to this group. Members receive read-only access to the shared content.</string>
+    <string name="chat_send_confirm">Send to this group?</string>
+    <string name="chat_open">Tap to open ›</string>
+    <string name="chat_recipe">Recipe</string>
+    <string name="chat_order">Order</string>
+    <string name="chat_prep">Prep</string>
+    <string name="chat_member_fallback">Member %1$d</string>
+    <string name="chat_notification">%1$d new messages</string>
+    <string name="chat_length">Messages can contain up to 4000 characters</string>
+    <string name="chat_loading">Loading…</string>
+    <string name="chat_failed_load">Could not load. Tap to retry</string>
+    <string name="chat_cancel">Cancel</string>
+    <string name="chat_send">Send</string>
+    <string name="chat_empty_draft">Send or clear the current draft first</string>
+    <string name="chat_sticker">[Sticker]</string>
+    <string name="chat_menu">Chat tools</string>
+    <string name="chat_you">Me</string>
+</resources>

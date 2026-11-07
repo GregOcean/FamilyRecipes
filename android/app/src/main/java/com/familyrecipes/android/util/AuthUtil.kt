@@ -37,6 +37,10 @@ object AuthUtil {
      * 跳转到"我的"页面（包含登录功能）
      */
     fun navigateToProfile(context: Context) {
+        if (context is MainActivity) {
+            context.showPage("profile")
+            return
+        }
         val intent = Intent(context, MainActivity::class.java)
         intent.putExtra("navigate_to", "profile")
         intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP

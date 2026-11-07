@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="8dp"
-    app:cardBackgroundColor="@color/white"
+    app:cardBackgroundColor="@color/surface"
     app:cardCornerRadius="8dp"
     app:cardElevation="2dp">
 
@@ -40,7 +40,7 @@
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
                 android:maxLines="2"
-                android:text="外部链接标题"
+                android:text="@string/ui_a640204afd"
                 android:textColor="@color/text_primary"
                 android:textSize="14sp"
                 android:textStyle="bold" />
@@ -50,7 +50,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="来源"
+                android:text="@string/ui_26ca20b161"
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp" />
 

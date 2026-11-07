@@ -32,7 +32,7 @@ class ChatSyncWorker(context:Context,params:WorkerParameters):CoroutineWorker(co
                 val pending=PendingIntent.getActivity(applicationContext,id.toInt(),intent,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
                 manager.notify(id.toInt()+2000,NotificationCompat.Builder(applicationContext,"family_messages")
                     .setSmallIcon(com.familyrecipes.android.R.drawable.ic_notification).setContentTitle(group.name)
-                    .setContentText("${messages.size} 条新消息").setAutoCancel(true).setContentIntent(pending).build())
+                    .setContentText(if(messages.any { com.familyrecipes.android.data.model.ChatContent.mentions(it.content,userId) }) com.familyrecipes.android.ui.design.UiStrings.s(com.familyrecipes.android.R.string.chat_mentioned) else com.familyrecipes.android.ui.design.UiStrings.f(com.familyrecipes.android.R.string.chat_notification,messages.size)).setAutoCancel(true).setContentIntent(pending).build())
             }
             return Result.success()
         } catch(e:CancellationException) { throw e }

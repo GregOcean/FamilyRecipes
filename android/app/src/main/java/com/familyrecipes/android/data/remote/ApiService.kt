@@ -18,7 +18,7 @@ interface ApiService {
     @GET("/api/meals") suspend fun meals(@Query("kitchenId") kitchenId:Long):Response<ApiResponse<List<MealArrangement>>>
     @GET("/api/meals/{id}") suspend fun meal(@Path("id") id:Long):Response<ApiResponse<MealArrangement>>
     @POST("/api/meals") suspend fun saveMeal(@Body meal:MealArrangement):Response<ApiResponse<MealArrangement>>
-    @POST("/api/meals/{id}/share") suspend fun shareMeal(@Path("id") id:Long,@Body body:Map<String,Long>):Response<ApiResponse<Unit>>
+    @POST("/api/meals/{id}/share") suspend fun shareMeal(@Path("id") id:Long,@Body body:ChatShareRequest):Response<ApiResponse<Message>>
 
 
     @POST("/api/auth/registration-code")
@@ -249,9 +249,11 @@ interface ApiService {
     @DELETE("/api/groups/{groupId}")
     suspend fun dismissGroup(@Path("groupId") groupId: Long): Response<ApiResponse<Unit>>
 
+    @POST("/api/recipes/{id}/share-chat") suspend fun shareRecipeChat(@Path("id") id: Long, @Body body: ChatShareRequest): Response<ApiResponse<Message>>
+
     // ========== 消息相关 ==========
     @POST("/api/messages/send")
-    suspend fun sendMessage(@Body request: Map<String, Any>): Response<ApiResponse<Message>>
+    suspend fun sendMessage(@Body request: SendMessageRequest): Response<ApiResponse<Message>>
 
     @GET("/api/messages/list")
     suspend fun getMessages(

@@ -48,7 +48,7 @@ public class MediaService {
     public Path read(String filename, Long viewerId) {
         if (!filename.matches("[a-f0-9-]{36}\\.png")) throw new ApiException(404, "图片不存在");
         Long owner = mapper.owner(filename);
-        if (owner == null || (!owner.equals(viewerId) && mapper.visibleReferences(baseUrl + filename, viewerId) + mapper.fridgeReferences(baseUrl + filename, viewerId) + mapper.stickerReferences(baseUrl + filename, viewerId) == 0))
+        if (owner == null || (!owner.equals(viewerId) && mapper.visibleReferences(baseUrl + filename, viewerId) + mapper.fridgeReferences(baseUrl + filename, viewerId) + mapper.stickerReferences(baseUrl + filename, viewerId) + mapper.avatarReferences(baseUrl + filename, viewerId) == 0))
             throw new ApiException(404, "图片不存在或不可访问");
         Path path = Path.of(directory).toAbsolutePath().normalize().resolve(filename);
         if (!Files.isRegularFile(path)) throw new ApiException(404, "图片不存在");

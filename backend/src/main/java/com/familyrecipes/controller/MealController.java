@@ -29,9 +29,8 @@ public class MealController {
   }
 
   @PostMapping("/{id}/share")
-  public Result<Void> share(
-      @PathVariable Long id, @RequestBody Map<String, Long> body, HttpServletRequest r) {
-    service.share(id, body.get("groupId"), (Long) r.getAttribute("userId"));
-    return Result.success();
+  public Result<com.familyrecipes.model.Message> share(
+      @PathVariable Long id, @RequestBody com.familyrecipes.model.ChatShareRequest body, HttpServletRequest r) {
+    return Result.success(service.share(id, body.getGroupId(), (Long) r.getAttribute("userId"), body.getClientMessageId()));
   }
 }

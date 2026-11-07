@@ -93,6 +93,8 @@ CREATE TABLE `external_recipe` (
     `title` VARCHAR(200) NOT NULL COMMENT '外链标题',
     `url` VARCHAR(500) NOT NULL COMMENT '外链URL',
     `thumbnail` VARCHAR(1000),
+    `notes` VARCHAR(2000),
+    `sort_order` INT NOT NULL DEFAULT 0,
     `source` VARCHAR(50) COMMENT '来源（如：下厨房、豆果）',
     `added_by` BIGINT NOT NULL COMMENT '添加者ID',
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -417,4 +419,13 @@ CREATE TABLE meal_arrangement (
 CREATE TABLE meal_share (
  meal_id BIGINT NOT NULL, group_id BIGINT NOT NULL,
  PRIMARY KEY(meal_id,group_id)
+);
+-- Additive table for explicit chat sharing. No changes to existing recipe ownership.
+CREATE TABLE IF NOT EXISTS recipe_chat_share (
+  recipe_id BIGINT NOT NULL,
+  group_id BIGINT NOT NULL,
+  shared_by BIGINT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (recipe_id, group_id),
+  INDEX idx_recipe_chat_group (group_id)
 );

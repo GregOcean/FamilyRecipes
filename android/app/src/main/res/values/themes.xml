@@ -4,9 +4,23 @@
     <style name="Base.Theme.FamilyRecipes" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/primary</item>
         <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="android:forceDarkAllowed">false</item>
+        <item name="android:windowBackground">@color/background</item>
+        <item name="android:colorBackground">@color/background</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="colorOnBackground">@color/text_primary</item>
+        <item name="colorOnPrimary">@color/on_primary</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:textColorHint">@color/text_hint</item>
+        <item name="editTextStyle">@style/ReadableEditText</item>
+        <item name="android:editTextStyle">@style/ReadableEditText</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
         <item name="colorAccent">@color/accent</item>
-        <item name="android:statusBarColor">@color/primary</item>
-        <item name="android:navigationBarColor">@color/white</item>
+        <item name="android:statusBarColor">@color/toolbar_background</item>
+        <item name="android:navigationBarColor">@color/background</item>
     </style>
 
     <style name="Theme.FamilyRecipes" parent="Base.Theme.FamilyRecipes" />
@@ -14,7 +28,7 @@
     <!-- Splash Screen Theme -->
     <style name="Theme.FamilyRecipes.Splash" parent="Theme.FamilyRecipes">
         <item name="android:windowBackground">@drawable/splash_gradient_background</item>
-        <item name="android:statusBarColor">@color/primary</item>
+        <item name="android:statusBarColor">@color/toolbar_background</item>
         <item name="android:navigationBarColor">@color/primary</item>
         <item name="android:windowFullscreen">true</item>
     </style>

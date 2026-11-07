@@ -23,7 +23,7 @@
             android:layout_height="60dp"
             android:scaleType="centerCrop"
             android:background="@color/gray_light"
-            android:contentDescription="外部链接缩略图" />
+            android:contentDescription="@string/ui_18ce9a5fd3" />
 
         <!-- 文字信息 -->
         <LinearLayout
@@ -37,7 +37,7 @@
                 android:id="@+id/tv_title"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="外部链接标题"
+                android:text="@string/ui_a640204afd"
                 android:textColor="@color/text_primary"
                 android:textSize="14sp"
                 android:textStyle="bold"
@@ -49,10 +49,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="来源"
+                android:text="@string/ui_26ca20b161"
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp" />
 
+            <TextView android:id="@+id/tv_link_notes" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:textColor="@color/text_primary" android:textSize="16sp" />
         </LinearLayout>
 
         <!-- 操作按钮 -->
@@ -71,7 +72,7 @@
                 android:padding="4dp"
                 android:src="@drawable/ic_copy"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="复制链接" />
+                android:contentDescription="@string/ui_879058ce06" />
 
             <!-- 打开图标 -->
             <ImageView
@@ -82,7 +83,7 @@
                 android:layout_marginStart="4dp"
                 android:src="@drawable/ic_arrow_right"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="打开链接" />
+                android:contentDescription="@string/ui_d0ed01d1ce" />
 
         </LinearLayout>
 

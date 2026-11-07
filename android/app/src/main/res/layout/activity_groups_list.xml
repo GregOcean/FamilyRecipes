@@ -14,10 +14,10 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@color/white"
+            android:background="@color/surface"
             android:elevation="4dp"
             app:navigationIcon="@drawable/ic_arrow_back"
-            app:title="我的群组"
+            app:title="@string/ui_844fef3505"
             app:titleTextColor="@color/black" />
 
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
@@ -40,7 +40,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:text="暂无群组\n点击右下角创建群组"
+                    android:text="@string/ui_beb90b7b63"
                     android:textColor="@color/text_secondary"
                     android:textSize="16sp"
                     android:gravity="center"
@@ -58,7 +58,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
-        android:contentDescription="创建群组"
+        android:contentDescription="@string/ui_679c4032ce"
         app:srcCompat="@android:drawable/ic_input_add" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

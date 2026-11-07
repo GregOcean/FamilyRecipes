@@ -10,10 +10,10 @@
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="@color/white"
+        android:background="@color/surface"
         android:elevation="4dp"
         app:navigationIcon="@drawable/ic_arrow_back"
-        app:title="我的好友"
+        app:title="@string/ui_6555ef98b5"
         app:titleTextColor="@color/black" />
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout

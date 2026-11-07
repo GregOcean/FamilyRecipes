@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chat_members">群成员</string>
+    <string name="chat_mention">@成员</string>
+    <string name="chat_emoji">表情</string>
+    <string name="chat_share">分享</string>
+    <string name="chat_group_count">%1$s · %2$d人</string>
+    <string name="chat_member_hint">点选成员来 @ TA，也可以在输入框输入 @</string>
+    <string name="chat_no_members">暂无可提及的其他成员</string>
+    <string name="chat_refresh">重新连接</string>
+    <string name="chat_connecting">正在同步消息…</string>
+    <string name="chat_offline">连接失败，消息已保留 · 点击重试</string>
+    <string name="chat_pending">待发送</string>
+    <string name="chat_retry">发送失败 · 点此重试</string>
+    <string name="chat_retry_action">重试发送</string>
+    <string name="chat_remove_pending">取消这条待发送消息</string>
+    <string name="chat_edit_pending">放回输入框编辑</string>
+    <string name="chat_mentioned">有人 @ 我</string>
+    <string name="chat_emoji_title">可爱表情</string>
+    <string name="chat_upload_sticker">从相册发送表情包</string>
+    <string name="chat_share_order">发送点菜</string>
+    <string name="chat_share_prep">发送备菜</string>
+    <string name="chat_share_recipe">发送菜谱</string>
+    <string name="chat_choose_meal">选择已保存的菜单</string>
+    <string name="chat_no_meals">暂无已保存的菜单，先到“安排”中创建并保存。</string>
+    <string name="chat_share_hint">选择后会发到当前群，群成员可只读查看分享内容。</string>
+    <string name="chat_send_confirm">发送到当前群？</string>
+    <string name="chat_open">点击查看 ›</string>
+    <string name="chat_recipe">菜谱</string>
+    <string name="chat_order">点菜</string>
+    <string name="chat_prep">备菜</string>
+    <string name="chat_member_fallback">成员 %1$d</string>
+    <string name="chat_notification">%1$d 条新消息</string>
+    <string name="chat_length">消息最多 4000 字，请缩短后重试</string>
+    <string name="chat_loading">正在加载…</string>
+    <string name="chat_failed_load">加载失败，点击重试</string>
+    <string name="chat_cancel">取消</string>
+    <string name="chat_send">发送</string>
+    <string name="chat_empty_draft">请先发送或清空当前输入框内容</string>
+    <string name="chat_sticker">[表情包]</string>
+    <string name="chat_menu">聊天工具</string>
+    <string name="chat_you">我</string>
+</resources>

@@ -1,5 +1,6 @@
 package com.familyrecipes.android.ui.social
 
+import com.familyrecipes.android.ui.design.UiStrings
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -51,10 +52,10 @@ class FriendsListActivity : AppCompatActivity() {
                     // TODO: 通知adapter刷新
                     Toast.makeText(this@FriendsListActivity, "加载成功，共${friends.size}个好友", Toast.LENGTH_SHORT).show()
                 } else {
-                    Toast.makeText(this@FriendsListActivity, "加载失败", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@FriendsListActivity, UiStrings.s(com.familyrecipes.android.R.string.ui_866b795eae), Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                Toast.makeText(this@FriendsListActivity, "网络错误: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@FriendsListActivity, UiStrings.f(com.familyrecipes.android.R.string.network_error_value, e.message), Toast.LENGTH_SHORT).show()
                 e.printStackTrace()
             } finally {
                 binding.swipeRefresh.isRefreshing = false

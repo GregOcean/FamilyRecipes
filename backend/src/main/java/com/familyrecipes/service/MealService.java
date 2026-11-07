@@ -145,27 +145,37 @@ public class MealService {
   }
 
   @Transactional
-  public void share(Long id, Long group, Long user) {
+  public Message share(Long id, Long group, Long user) {
+    return share(id, group, user, null);
+  }
+
+  @Transactional
+  public Message share(Long id, Long group, Long user, String clientId) {
     var m = get(id, user);
     if (!user.equals(m.getOwnerId())) throw new ApiException(403, "只有创建者可以分享菜单");
-    if (!groups.isGroupMember(group, user)) throw new ApiException(404, "群组不存在");
+    if (group == null || groups.lockById(group) == null || !groups.isGroupMember(group, user)) throw new ApiException(404, "群组不存在");
+    var previous = messages.findSharedMessage(user, clientId, group, "familyrecipes://meal/" + id);
+    if (previous != null) return previous;
     for (var dish : m.getDishes()) {
       if (dish.getRecipeId() != null) recipes.requireRead(dish.getRecipeId(), user);
     }
     db.update("INSERT IGNORE INTO meal_share(meal_id,group_id) VALUES(?,?)", id, group);
-    messages.sendMessage(
+    return messages.sendMessage(
         group,
         user,
         (m.getKind().equals("order") ? "点菜" : "备菜")
             + "："
             + m.getTitle()
             + "\n"
-            + m.getDishes().stream()
+            + (m.getMealDate() == null ? "" : m.getMealDate() + " ")
+            + Objects.toString(m.getMeal(), "")
+            + "\n"
+            + m.getDishes().stream().limit(10)
                 .map(MealArrangement.Dish::getName)
                 .reduce((a, b) -> a + "、" + b)
                 .orElse("")
             + "\nfamilyrecipes://meal/"
             + id,
-        Message.MessageType.text);
+        Message.MessageType.text, clientId);
   }
 }

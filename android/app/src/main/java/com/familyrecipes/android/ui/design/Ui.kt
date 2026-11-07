@@ -1,5 +1,6 @@
 package com.familyrecipes.android.ui.design
 
+import com.familyrecipes.android.ui.design.UiStrings
 import android.content.Context
 import android.graphics.Color
 import android.graphics.Typeface
@@ -12,11 +13,29 @@ import com.google.android.material.button.MaterialButton
 import retrofit2.Response
 
 object Ui {
-    const val blue = 0xff007ca9.toInt()
-    const val ink = 0xff153344.toInt()
-    const val muted = 0xff516b7b.toInt()
-    const val bg = 0xfff3f8fb.toInt()
-    const val pale = 0xffe2f5fc.toInt()
+    private fun color(id: Int): Int {
+        val app = com.familyrecipes.android.FamilyRecipesApp.instance
+        val config = android.content.res.Configuration(app.resources.configuration)
+        val mode = androidx.appcompat.app.AppCompatDelegate.getDefaultNightMode()
+        val night = when(mode) {
+            androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES -> android.content.res.Configuration.UI_MODE_NIGHT_YES
+            androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO -> android.content.res.Configuration.UI_MODE_NIGHT_NO
+            else -> config.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+        }
+        config.uiMode = (config.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK.inv()) or night
+        return app.createConfigurationContext(config).getColor(id)
+    }
+    val blue get() = color(com.familyrecipes.android.R.color.primary)
+    val ink get() = color(com.familyrecipes.android.R.color.text_primary)
+    val muted get() = color(com.familyrecipes.android.R.color.text_secondary)
+    val bg get() = color(com.familyrecipes.android.R.color.background)
+    val pale get() = color(com.familyrecipes.android.R.color.primary_light)
+    val surface get() = color(com.familyrecipes.android.R.color.surface)
+    val outline get() = color(com.familyrecipes.android.R.color.outline)
+    val onBlue get() = color(com.familyrecipes.android.R.color.on_primary)
+    val warm get() = color(com.familyrecipes.android.R.color.warm_surface)
+    val green get() = color(com.familyrecipes.android.R.color.green_surface)
+    val purple get() = color(com.familyrecipes.android.R.color.purple_surface)
 
     fun Context.dp(n: Int) = (resources.displayMetrics.density * n).toInt()
 
@@ -49,9 +68,25 @@ object Ui {
             isAllCaps = false
             minHeight = c.dp(48)
             cornerRadius = c.dp(14)
-            setTextColor(if (primary) Color.WHITE else blue)
+            setTextColor(if (primary) onBlue else blue)
             backgroundTintList =
                 android.content.res.ColorStateList.valueOf(if (primary) blue else pale)
+            setOnClickListener { action() }
+        }
+
+    /** Compact visual arrow with a full accessible touch target. */
+    fun back(c: Context, action: () -> Unit) =
+        androidx.appcompat.widget.AppCompatImageButton(c).apply {
+            setImageResource(com.familyrecipes.android.R.drawable.ic_arrow_back)
+            imageTintList = android.content.res.ColorStateList.valueOf(blue)
+            contentDescription = UiStrings.s(com.familyrecipes.android.R.string.ui_5f411223ca)
+            setPadding(c.dp(12), c.dp(12), c.dp(12), c.dp(12))
+            val value = android.util.TypedValue()
+            c.theme.resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, value, true)
+            setBackgroundResource(value.resourceId)
+            layoutParams = LinearLayout.LayoutParams(c.dp(48), c.dp(48)).apply {
+                gravity = android.view.Gravity.START
+            }
             setOnClickListener { action() }
         }
 
@@ -63,6 +98,7 @@ object Ui {
             minHeight = c.dp(54)
             setTextColor(ink)
             setHintTextColor(muted)
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
             inputType =
                 if (multi)
                     android.text.InputType.TYPE_CLASS_TEXT or
@@ -76,9 +112,9 @@ object Ui {
             setPadding(c.dp(12), c.dp(12), c.dp(12), c.dp(12))
             background =
                 GradientDrawable().apply {
-                    setColor(Color.WHITE)
+                    setColor(surface)
                     cornerRadius = c.dp(12).toFloat()
-                    setStroke(c.dp(1), 0xffdfebf1.toInt())
+                    setStroke(c.dp(1), outline)
                 }
             layoutParams = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = c.dp(12) }
         }
@@ -118,7 +154,7 @@ object Ui {
         box(c).apply {
             background =
                 GradientDrawable().apply {
-                    setColor(Color.WHITE)
+                    setColor(surface)
                     cornerRadius = c.dp(18).toFloat()
                 }
             layoutParams = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = c.dp(12) }
@@ -145,7 +181,7 @@ object Ui {
     fun entry(c: Context, title: String, subtitle: String, icon: Int, action: () -> Unit): LinearLayout =
         row(c).apply {
             setPadding(c.dp(14),c.dp(12),c.dp(14),c.dp(12)); minimumHeight=c.dp(80)
-            background=GradientDrawable().apply{setColor(Color.WHITE);cornerRadius=c.dp(18).toFloat()}
+            background=GradientDrawable().apply{setColor(surface);cornerRadius=c.dp(18).toFloat()}
             val art=ImageView(c).apply {setImageResource(icon);imageTintList=android.content.res.ColorStateList.valueOf(blue);setPadding(c.dp(10),c.dp(10),c.dp(10),c.dp(10));background=GradientDrawable().apply{setColor(pale);cornerRadius=c.dp(14).toFloat()}}
             addView(art,LinearLayout.LayoutParams(c.dp(48),c.dp(48)))
             val words=box(c,0).apply {setBackgroundColor(Color.TRANSPARENT);setPadding(c.dp(12),0,c.dp(8),0)}
@@ -157,14 +193,14 @@ object Ui {
         }
 
     fun toast(c: Context, error: Throwable) =
-        Toast.makeText(c, error.message ?: "操作失败，请重试", Toast.LENGTH_LONG).show()
+        Toast.makeText(c, error.message ?: UiStrings.s(com.familyrecipes.android.R.string.ui_915593a1d4), Toast.LENGTH_LONG).show()
 
     fun <T> data(r: Response<ApiResponse<T>>): T {
-        check(r.isSuccessful && r.body()?.code == 200) { ApiErrors.message(r, "操作失败，请重试") }
-        return requireNotNull(r.body()?.data) { "服务器未返回数据" }
+        check(r.isSuccessful && r.body()?.code == 200) { ApiErrors.message(r, UiStrings.s(com.familyrecipes.android.R.string.ui_915593a1d4)) }
+        return requireNotNull(r.body()?.data) { UiStrings.s(com.familyrecipes.android.R.string.ui_eb719e385c) }
     }
 
     fun ok(r: Response<out ApiResponse<*>>) {
-        check(r.isSuccessful && r.body()?.code == 200) { ApiErrors.message(r, "操作失败，请重试") }
+        check(r.isSuccessful && r.body()?.code == 200) { ApiErrors.message(r, UiStrings.s(com.familyrecipes.android.R.string.ui_915593a1d4)) }
     }
 }

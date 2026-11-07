@@ -1,5 +1,6 @@
 package com.familyrecipes.android.ui.social
 
+import com.familyrecipes.android.ui.design.UiStrings
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
@@ -13,7 +14,6 @@ import androidx.lifecycle.lifecycleScope
 import com.familyrecipes.android.data.remote.ApiClient
 import com.familyrecipes.android.util.QRCodeUtil
 import com.google.zxing.integration.android.IntentIntegrator
-import com.journeyapps.barcodescanner.CaptureActivity
 import kotlinx.coroutines.launch
 
 /**
@@ -28,6 +28,8 @@ class ScanQRActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
+        // Restored instances already have a scanner/permission request in progress.
+        if (savedInstanceState != null) return
         if (checkCameraPermission()) {
             startScan()
         } else {
@@ -60,7 +62,7 @@ class ScanQRActivity : AppCompatActivity() {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 startScan()
             } else {
-                Toast.makeText(this, "需要相机权限才能扫码", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, UiStrings.s(com.familyrecipes.android.R.string.ui_77c507528d), Toast.LENGTH_SHORT).show()
                 finish()
             }
         }
@@ -69,11 +71,11 @@ class ScanQRActivity : AppCompatActivity() {
     private fun startScan() {
         val integrator = IntentIntegrator(this)
         integrator.setDesiredBarcodeFormats(IntentIntegrator.QR_CODE)
-        integrator.setPrompt("扫描好友二维码")
+        integrator.setPrompt(UiStrings.s(com.familyrecipes.android.R.string.ui_4b88cfb089))
         integrator.setCameraId(0)
         integrator.setBeepEnabled(true)
         integrator.setBarcodeImageEnabled(false)
-        integrator.captureActivity = CaptureActivity::class.java
+        integrator.captureActivity = QRScannerActivity::class.java
         integrator.initiateScan()
     }
 
@@ -81,7 +83,7 @@ class ScanQRActivity : AppCompatActivity() {
         val result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data)
         if (result != null) {
             if (result.contents == null) {
-                Toast.makeText(this, "取消扫码", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, UiStrings.s(com.familyrecipes.android.R.string.ui_5087367b47), Toast.LENGTH_SHORT).show()
                 finish()
             } else {
                 handleQRCodeResult(result.contents)
@@ -94,7 +96,7 @@ class ScanQRActivity : AppCompatActivity() {
     private fun handleQRCodeResult(content: String) {
         val friendId = QRCodeUtil.parseUserCardContent(content)
         if (friendId == null) {
-            Toast.makeText(this, "无效的二维码", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, UiStrings.s(com.familyrecipes.android.R.string.ui_224b61b7a1), Toast.LENGTH_SHORT).show()
             finish()
             return
         }
@@ -110,19 +112,19 @@ class ScanQRActivity : AppCompatActivity() {
                 val response = ApiClient.getService().addFriend(request)
 
                 if (response.isSuccessful && response.body()?.code == 200) {
-                    Toast.makeText(this@ScanQRActivity, "添加好友成功", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@ScanQRActivity, UiStrings.s(com.familyrecipes.android.R.string.ui_415109cfac), Toast.LENGTH_SHORT).show()
                     setResult(Activity.RESULT_OK)
                     finish()
                 } else {
                     Toast.makeText(
                         this@ScanQRActivity,
-                        response.body()?.message ?: "添加好友失败",
+                        response.body()?.message ?: UiStrings.s(com.familyrecipes.android.R.string.ui_f45a3d8a26),
                         Toast.LENGTH_SHORT
                     ).show()
                     finish()
                 }
             } catch (e: Exception) {
-                Toast.makeText(this@ScanQRActivity, "网络错误: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@ScanQRActivity, UiStrings.f(com.familyrecipes.android.R.string.network_error_value, e.message), Toast.LENGTH_SHORT).show()
                 e.printStackTrace()
                 finish()
             }

@@ -33,6 +33,10 @@ class FamilyRecipesApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // Restore the user preference before creating activities.
+        androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(
+            getSharedPreferences("appearance", MODE_PRIVATE).getInt("mode",
+                androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM))
         instance = this
         
         // 初始化SharedPreferences

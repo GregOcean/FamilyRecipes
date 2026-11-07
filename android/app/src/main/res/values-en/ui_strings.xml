@@ -1,0 +1,490 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  <string name="app_name" formatted="false">Jiayao</string>
+  <string name="ok" formatted="false">OK</string>
+  <string name="cancel" formatted="false">Cancel</string>
+  <string name="delete" formatted="false">Delete</string>
+  <string name="edit" formatted="false">Edit</string>
+  <string name="save" formatted="false">Save</string>
+  <string name="search" formatted="false">Search</string>
+  <string name="loading" formatted="false">Loading…</string>
+  <string name="login" formatted="false">Sign in</string>
+  <string name="register" formatted="false">Register</string>
+  <string name="email" formatted="false">Email</string>
+  <string name="password" formatted="false">Password</string>
+  <string name="username" formatted="false">Username</string>
+  <string name="nav_recipes" formatted="false">Recipes</string>
+  <string name="nav_recommend" formatted="false">Recommendations</string>
+  <string name="nav_fridge" formatted="false">Ingredient</string>
+  <string name="nav_profile" formatted="false">Profile</string>
+  <string name="recipe_name" formatted="false">Dish name</string>
+  <string name="recipe_description" formatted="false">Description</string>
+  <string name="add_recipe" formatted="false">Add recipe</string>
+  <string name="add_ingredient" formatted="false">Add ingredient</string>
+  <string name="expiry_date" formatted="false">Expiry date</string>
+  <string name="mark_consumed" formatted="false">Mark used up</string>
+  <string name="logout" formatted="false">Sign out</string>
+  <string name="my_recipes" formatted="false">My recipes</string>
+  <string name="my_favorites" formatted="false">Favorites</string>
+  <string name="ui_d2ff29c1f6" formatted="false">No available kitchen</string>
+  <string name="ui_a6b4953271" formatted="false">Invalid recipe ID</string>
+  <string name="ui_866b795eae" formatted="false">Unable to load</string>
+  <string name="ui_1a576128dc" formatted="false">You have not joined any groups</string>
+  <string name="ui_fa2393258d" formatted="false"> · Loading…</string>
+  <string name="ui_0c7e7ae95f" formatted="false">No ingredient recognized. Enter an ingredient name; the current parser supports Chinese names, e.g. 鸡蛋 or 牛奶.</string>
+  <string name="ui_26eb926612" formatted="false">Expires today; set to 1 day</string>
+  <string name="ui_6346129bb0" formatted="false">Unable to recognize ingredient</string>
+  <string name="ui_c5437f5fb7" formatted="false">Recognizing…</string>
+  <string name="ui_9762b17785" formatted="false">No items in this category\nTap + to add one or choose another category</string>
+  <string name="ui_beb90b7b63" formatted="false">No groups yet\nTap + to create a group</string>
+  <string name="ui_f754888421" formatted="false">Add content</string>
+  <string name="ui_9c172df65e" formatted="false">Groups support up to 10 people</string>
+  <string name="ui_eb0bd897b7" formatted="false">💡 Tips</string>
+  <string name="ui_6874c6b801" formatted="false">• An ingredient name is required\n• Amount and expiry can be recognized\n• Keyboard voice input is supported\n• Add a photo to help find the item</string>
+  <string name="ui_6a809b48a8" formatted="false">Examples (Chinese recognition):\n• 鸡肉\n• 牛奶两周后过期\nYou can edit the recognized fields before saving.</string>
+  <string name="ui_d0289db553" formatted="false">📷 Add photo</string>
+  <string name="ui_fd7ea1aa8e" formatted="false">Recognized details</string>
+  <string name="ui_c40d28e26f" formatted="false">Short shelf life. Use soon!</string>
+  <string name="ui_9c5c5cdbc5" formatted="false">View</string>
+  <string name="ui_ebd0e06460" formatted="false">Food reminder settings</string>
+  <string name="ui_632b1a665a" formatted="false">3 servings</string>
+  <string name="ui_09352bd428" formatted="false">Category: Vegetables</string>
+  <string name="ui_39d387d67a" formatted="false">Switch kitchen</string>
+  <string name="ui_c1fa468a43" formatted="false">Group activity</string>
+  <string name="ui_5a9d1715a6" formatted="false">Difficulty: Easy</string>
+  <string name="ui_751a79afde" formatted="false">30 min</string>
+  <string name="ui_469511b82e" formatted="false">Share ingredient swaps, seasoning, heat control, or the story behind this dish…</string>
+  <string name="ui_7899c78f75" formatted="false"># Tags</string>
+  <string name="ui_687b10a956" formatted="false">Tags separated by spaces (e.g. #lunch #homemade #quick)</string>
+  <string name="ui_6f3664cf20" formatted="false">Unable to load kitchens. Tap the kitchen selector to retry.</string>
+  <string name="ui_6610d96cd4" formatted="false">Unable to load kitchens. Sign in and retry.</string>
+  <string name="ui_c32eedbf88" formatted="false">Open my profile</string>
+  <string name="ui_a9e2bd537b" formatted="false">Open tools</string>
+  <string name="ui_d46695d56e" formatted="false">Kitchen management</string>
+  <string name="ui_47fdc41702" formatted="false">Group management</string>
+  <string name="ui_3e90c5117d" formatted="false">Tools</string>
+  <string name="ui_056b3fdd26" formatted="false">My kitchen</string>
+  <string name="ui_09a97f905e" formatted="false">Continue a draft</string>
+  <string name="ui_402b79ad66" formatted="false">Scan</string>
+  <string name="ui_e366ccf155" formatted="false">Settings</string>
+  <string name="ui_ad237159d7" formatted="false">Recipes</string>
+  <string name="ui_0eac8802de" formatted="false">Stock</string>
+  <string name="ui_769ef5ab61" formatted="false">Plans</string>
+  <string name="ui_ff692f04ac" formatted="false">Messages</string>
+  <string name="ui_26bb841878" formatted="false">Create</string>
+  <string name="ui_43589f00eb" formatted="false">Ingredient</string>
+  <string name="ui_d85522beda" formatted="false">Requests</string>
+  <string name="ui_90e2746c75" formatted="false">Prep</string>
+  <string name="ui_9e20cc1715" formatted="false">One combined reminder per day. Battery saving may delay delivery.</string>
+  <string name="ui_47267ab387" formatted="false">Changes the interface language. Recipes and messages stay in their original language.</string>
+  <string name="ui_0054ea0793" formatted="false">The app follows your system font size.</string>
+  <string name="ui_3d1fffd959" formatted="false">Open system display settings</string>
+  <string name="ui_6983955277" formatted="false">Enter a number from 0 to 365</string>
+  <string name="ui_729a79fdf0" formatted="false">Unable to load · Retry</string>
+  <string name="ui_0439b015f3" formatted="false">System notification permissions</string>
+  <string name="ui_12f0a5812e" formatted="false">Enable food reminders</string>
+  <string name="ui_229e171f87" formatted="false">Days before expiry</string>
+  <string name="ui_bfa9c9ba82" formatted="false">Save reminder settings</string>
+  <string name="ui_974d3e30d5" formatted="false">Text and display</string>
+  <string name="ui_c9fb762fc5" formatted="false">Notifications and reminders</string>
+  <string name="ui_669e3a20e8" formatted="false">Settings saved</string>
+  <string name="ui_688e2fa33f" formatted="false">App language</string>
+  <string name="ui_fb4ca1cf1b" formatted="false">Loading…</string>
+  <string name="ui_5f411223ca" formatted="false">Back</string>
+  <string name="ui_117723f7be" formatted="false">Groups organize people and chat. Each group can have several kitchens.</string>
+  <string name="ui_3392783de7" formatted="false">Kitchens keep stock for different locations. Access comes from their group.</string>
+  <string name="ui_ea2b020b9e" formatted="false">Create a group first. A group of one can have kitchens too.</string>
+  <string name="ui_464069bf95" formatted="false">Enter a kitchen name</string>
+  <string name="ui_88fdfcc249" formatted="false">＋ New group</string>
+  <string name="ui_36d00ad97b" formatted="false">＋ New kitchen</string>
+  <string name="ui_932666cb18" formatted="false">Rename kitchen</string>
+  <string name="ui_bde123ec96" formatted="false">Switch to this kitchen</string>
+  <string name="ui_a804fa0231" formatted="false"> · Admin</string>
+  <string name="ui_64ca9bab92" formatted="false">Reload</string>
+  <string name="ui_528c6bb352" formatted="false">Create group</string>
+  <string name="ui_d670379f49" formatted="false">New kitchen</string>
+  <string name="ui_7890ec1dfa" formatted="false">Edit kitchen</string>
+  <string name="ui_280da9de8d" formatted="false">Kitchen name</string>
+  <string name="ui_33f8952802" formatted="false">Current kitchen</string>
+  <string name="ui_2c6ff6f1da" formatted="false">Group</string>
+  <string name="ui_acb4c1a177" formatted="false">Group name</string>
+  <string name="ui_160f1630cb" formatted="false">Save name</string>
+  <string name="ui_270de4e4d2" formatted="false">Open chat</string>
+  <string name="ui_cf4324dcbc" formatted="false">Linked kitchens</string>
+  <string name="ui_be5fbbe34c" formatted="false">Save</string>
+  <string name="ui_ab5dea2979" formatted="false">Members</string>
+  <string name="ui_3f9810121c" formatted="false">Recommendations</string>
+  <string name="ui_915593a1d4" formatted="false">Action failed. Please retry.</string>
+  <string name="ui_eb719e385c" formatted="false">No data returned</string>
+  <string name="ui_9a8544afbf" formatted="false">Current kitchen: available ingredients + cooking skills</string>
+  <string name="ui_a64965a7fc" formatted="false">Stock + Can cook · Shuffle</string>
+  <string name="ui_f9352c8c09" formatted="false">Discover: shuffle by preferences</string>
+  <string name="ui_11548282f0" formatted="false">No matching results</string>
+  <string name="ui_74127479b9" formatted="false">Discover · Shuffle</string>
+  <string name="ui_14254561ee" formatted="false">No results</string>
+  <string name="ui_9c9495d8a1" formatted="false">Recommendation mode</string>
+  <string name="ui_a9a1271c8c" formatted="false">Each saved tutorial has one source. Remove the existing link or create another entry.</string>
+  <string name="ui_93b21972a4" formatted="false">One per line: ingredient | amount, e.g. egg | 2</string>
+  <string name="ui_64eafb8239" formatted="false">Tastes (e.g. sour, spicy, mild), separated by commas</string>
+  <string name="ui_c2c9ef4b52" formatted="false">Describe each step or remove empty steps</string>
+  <string name="ui_aab38be60f" formatted="false">Image upload failed. The recipe has not been saved.</string>
+  <string name="ui_f94651d354" formatted="false">Enter 1–10080 minutes</string>
+  <string name="ui_7b3a4d421f" formatted="false">Unable to read image. Please choose it again.</string>
+  <string name="ui_cea52e2a12" formatted="false">Caption / step description</string>
+  <string name="ui_64088b2054" formatted="false">Paste a link or URL</string>
+  <string name="ui_15152fee56" formatted="false">Unable to parse. Check the link.</string>
+  <string name="ui_1c0e1e271a" formatted="false">Time (minutes, optional)</string>
+  <string name="ui_87531402ee" formatted="false">Description and notes (optional)</string>
+  <string name="ui_0e5444c7ee" formatted="false">Parsing link…</string>
+  <string name="ui_6b939b6382" formatted="false">Describe this step</string>
+  <string name="ui_8194d1e012" formatted="false">Choose groups to share with</string>
+  <string name="ui_7ec65389b4" formatted="false">Network error. Please retry.</string>
+  <string name="ui_6020ca1779" formatted="false">Unable to load groups</string>
+  <string name="ui_04eefad0c1" formatted="false">Image category and caption</string>
+  <string name="ui_dd24a90cd5" formatted="false">＋ Add step</string>
+  <string name="ui_69f5326297" formatted="false">Add step photo</string>
+  <string name="ui_0e8168f0dd" formatted="false">Replace step photo</string>
+  <string name="ui_674593ff88" formatted="false">Unable to read draft</string>
+  <string name="ui_95aa68d84d" formatted="false">Add external link</string>
+  <string name="ui_c0b80e2244" formatted="false">Current kitchen</string>
+  <string name="ui_b38754def3" formatted="false">Unable to load recipes</string>
+  <string name="ui_2a33020e5b" formatted="false">Saving…</string>
+  <string name="ui_27d8a2fa6b" formatted="false">Publishing…</string>
+  <string name="ui_c45c4747bb" formatted="false">Ingredients and amounts</string>
+  <string name="ui_9b90f55e19" formatted="false">Enter a dish name</string>
+  <string name="ui_4d4d119aab" formatted="false">Only me</string>
+  <string name="ui_012b318667" formatted="false">Share to groups</string>
+  <string name="ui_fbd2495eab" formatted="false">Saved!</string>
+  <string name="ui_6c6eb30524" formatted="false">Published!</string>
+  <string name="ui_65a5713f64" formatted="false">Save recipe</string>
+  <string name="ui_fea10d57e2" formatted="false">Steps</string>
+  <string name="ui_407fd4f2fb" formatted="false">Delete step</string>
+  <string name="ui_a334f6e2d9" formatted="false">Tutorial screenshot</string>
+  <string name="ui_b107c6ae6b" formatted="false">Cooking record</string>
+  <string name="ui_f964950720" formatted="false">Visibility</string>
+  <string name="ui_034929bf43" formatted="false">Public</string>
+  <string name="ui_55a6506c29" formatted="false">Edit saved tutorial</string>
+  <string name="ui_5348dcac29" formatted="false">Unable to parse</string>
+  <string name="ui_0d5635dea1" formatted="false">Step photo</string>
+  <string name="ui_625fb26b4b" formatted="false">Cancel</string>
+  <string name="ui_38cf16f220" formatted="false">OK</string>
+  <string name="ui_b58c7549c0" formatted="false">Add</string>
+  <string name="ui_315eacd193" formatted="false">Move up</string>
+  <string name="ui_412310615b" formatted="false">Cover</string>
+  <string name="ui_7ddbe15c84" formatted="false">Network</string>
+  <string name="ui_ff190ad89e" formatted="false">Back to menu</string>
+  <string name="ui_705ea281fb" formatted="false">No matching recipes. Try broader filters.</string>
+  <string name="ui_2df6c46856" formatted="false">Last results · Refreshing</string>
+  <string name="ui_5981cc43fb" formatted="false">Search dishes, ingredients, tastes</string>
+  <string name="ui_57bcca8c05" formatted="false"> (previous results kept)</string>
+  <string name="ui_0402920ca9" formatted="false">Missing ≤2</string>
+  <string name="ui_a996573fd0" formatted="false">Under 15 min</string>
+  <string name="ui_1826fa4a7b" formatted="false">Under 30 min</string>
+  <string name="ui_752589b25d" formatted="false">Shared with me</string>
+  <string name="ui_37dc7bfce2" formatted="false">Loading…</string>
+  <string name="ui_2f8ba39ad4" formatted="false">My recipes</string>
+  <string name="ui_99b7a390f3" formatted="false">All sources</string>
+  <string name="ui_568d968eee" formatted="false">Any taste</string>
+  <string name="ui_1c6a1a8b39" formatted="false">Any time</string>
+  <string name="ui_2722a62702" formatted="false">Any stock</string>
+  <string name="ui_f92d315989" formatted="false">Have all</string>
+  <string name="ui_1b7ffa2f43" formatted="false">Created by me</string>
+  <string name="ui_47b582adb2" formatted="false">Favorites</string>
+  <string name="ui_7728154995" formatted="false">Load more</string>
+  <string name="ui_d3617a614a" formatted="false">Can cook</string>
+  <string name="ui_0e0b0ddfeb" formatted="false">Shuffle</string>
+  <string name="ui_934ebd87e6" formatted="false">Favorited</string>
+  <string name="ui_fc4d75f6cb" formatted="false">Discover</string>
+  <string name="ui_153fa67a7f" formatted="false">Select</string>
+  <string name="ui_7bb3e48630" formatted="false">Back to profile</string>
+  <string name="ui_f24e502e92" formatted="false">Unable to load cooking notes. Reopen to retry.</string>
+  <string name="ui_c07569f86e" formatted="false">Can cook · Unmark</string>
+  <string name="ui_deb26c26fb" formatted="false">Link copied</string>
+  <string name="ui_16407ac216" formatted="false">Choose a browser</string>
+  <string name="ui_6d02714217" formatted="false">Marked as disliked</string>
+  <string name="ui_eb006cd6f1" formatted="false">Choose a kitchen first</string>
+  <string name="ui_ad1a148b7b" formatted="false">Make my own version</string>
+  <string name="ui_00f9d79879" formatted="false">Record this cook</string>
+  <string name="ui_a40e588383" formatted="false">My cooking notes</string>
+  <string name="ui_72c1c093e4" formatted="false">Unable to open link</string>
+  <string name="ui_3a906c714a" formatted="false">Removed from favorites</string>
+  <string name="ui_0191cf83a3" formatted="false">Mark as can cook</string>
+  <string name="ui_bf709ae4c8" formatted="false">Mark removed</string>
+  <string name="ui_fbb7e7ea47" formatted="false">Recipe details</string>
+  <string name="ui_b26b310008" formatted="false">Add to request</string>
+  <string name="ui_7a73e91a1d" formatted="false">Add to prep</string>
+  <string name="ui_42ca66bafb" formatted="false">External link</string>
+  <string name="ui_0bffc62bb3" formatted="false">Network error</string>
+  <string name="ui_5fa802bef5" formatted="false">Action failed</string>
+  <string name="ui_ae336cd047" formatted="false">Favorite</string>
+  <string name="ui_e62fbccc78" formatted="false">Dislike</string>
+  <string name="ui_1622dc9b6b" formatted="false">Unknown</string>
+  <string name="ui_8637840d3d" formatted="false">Recipes opened by this account on this device. Up to 200 entries.</string>
+  <string name="ui_8cc3c5dbab" formatted="false">Clear recipe history on this device? Recipes and favorites will be kept.</string>
+  <string name="ui_cfcddb772c" formatted="false">No reading history yet</string>
+  <string name="ui_e44745f241" formatted="false">Clear history</string>
+  <string name="ui_5ac95e3cdd" formatted="false">Reading history</string>
+  <string name="ui_288f0c404c" formatted="false">Clear</string>
+  <string name="ui_1986f96841" formatted="false">Use YYYY-MM-DD</string>
+  <string name="ui_a24fefda6e" formatted="false">Cooking date YYYY-MM-DD</string>
+  <string name="ui_930ee7d242" formatted="false">Process, amount changes and notes for next time</string>
+  <string name="ui_df7b52aa75" formatted="false">Add process or finished-dish photos</string>
+  <string name="ui_5960795a3e" formatted="false">Back · Keep draft</string>
+  <string name="ui_7d0c2258af" formatted="false">Write a note about this cook</string>
+  <string name="ui_c76ca04b2c" formatted="false">Save note</string>
+  <string name="ui_6328552cc5" formatted="false">Remove photo</string>
+  <string name="ui_315e99b47a" formatted="false">No group messages yet. You can use kitchens, requests and prep on your own.</string>
+  <string name="ui_7bd7075cda" formatted="false">Check food expiring soon</string>
+  <string name="ui_634926c4ca" formatted="false">Manage groups</string>
+  <string name="ui_da6878f718" formatted="false">Search groups</string>
+  <string name="ui_19268a99cb" formatted="false">Food reminders</string>
+  <string name="ui_ac148b4c87" formatted="false">Expiring soon</string>
+  <string name="ui_5ab356bba3" formatted="false">Unknown ingredient</string>
+  <string name="ui_d813eea6b6" formatted="false">Used up</string>
+  <string name="ui_4d5ccd0118" formatted="false">Expired</string>
+  <string name="ui_4b123f5f93" formatted="false">Amount: </string>
+  <string name="ui_5c6881399f" formatted="false">Not set</string>
+  <string name="ui_fe2d26a257" formatted="false">Not set</string>
+  <string name="ui_fd6e80f1e0" formatted="false">Fresh</string>
+  <string name="ui_487fcd5d2e" formatted="false">Search failed. Results kept; pull down to retry.</string>
+  <string name="ui_8c3ec9dfd5" formatted="false">No description</string>
+  <string name="ui_1f2d6b1b2c" formatted="false">No description</string>
+  <string name="ui_77c507528d" formatted="false">Camera permission is needed to scan</string>
+  <string name="ui_4b88cfb089" formatted="false">Scan a contact QR code</string>
+  <string name="ui_224b61b7a1" formatted="false">Invalid QR code</string>
+  <string name="ui_415109cfac" formatted="false">Contact added</string>
+  <string name="ui_f45a3d8a26" formatted="false">Unable to add contact</string>
+  <string name="ui_5087367b47" formatted="false">Scan cancelled</string>
+  <string name="ui_524fc5fded" formatted="false">Storage permission is needed to save the QR code</string>
+  <string name="ui_04cd1d0438" formatted="false">QR code saved to Photos</string>
+  <string name="ui_60cb8f1898" formatted="false">Unable to generate QR code</string>
+  <string name="ui_dfac8f84fe" formatted="false">QR code is unavailable</string>
+  <string name="ui_70189fcd83" formatted="false">Unable to read account details</string>
+  <string name="ui_6de920b4e4" formatted="false">Unable to save</string>
+  <string name="ui_2878420820" formatted="false">Jiayao user</string>
+  <string name="ui_059d992c84" formatted="false">Groups I created</string>
+  <string name="ui_dc216b65a4" formatted="false">Message saved. Retry when connected.</string>
+  <string name="ui_8e0afea435" formatted="false">Sticker not sent. Please retry.</string>
+  <string name="ui_ff8fb5ccff" formatted="false">[Sticker] Pending</string>
+  <string name="ui_8b83910b36" formatted="false">Allow background message notifications</string>
+  <string name="ui_469ecd589d" formatted="false">Retry pending messages</string>
+  <string name="ui_1c2d3afd8b" formatted="false">Unknown user</string>
+  <string name="ui_47c75f2e6b" formatted="false">Groups I joined</string>
+  <string name="ui_5b6af8959a" formatted="false">Enter a group name</string>
+  <string name="ui_0156231b04" formatted="false">Enter a group description</string>
+  <string name="ui_b26107b6c5" formatted="false">Creating…</string>
+  <string name="ui_730321fcf0" formatted="false">Group created</string>
+  <string name="ui_9fd0002489" formatted="false">Create now</string>
+  <string name="ui_a889286a51" formatted="false">Unable to create</string>
+  <string name="ui_39783e6ff7" formatted="false">Default: food expiring within 3 days. Uses this device’s time zone; battery saving may delay reminders.</string>
+  <string name="ui_34053f01aa" formatted="false">Restore this image? Its original address can be used again.</string>
+  <string name="ui_a3b3be2af2" formatted="false">Try Jiayao to organize your recipes and kitchen!</string>
+  <string name="ui_c08c2f36d2" formatted="false">Unable to send code. Check your connection and retry.</string>
+  <string name="ui_a568feaf47" formatted="false">Code sent. Valid for 10 minutes.</string>
+  <string name="ui_d6dfc7028c" formatted="false">Unable to save. Your content is kept; please retry.</string>
+  <string name="ui_3aa47b363c" formatted="false">Image trash (removed after 30 days)</string>
+  <string name="ui_8ac9af261b" formatted="false">Enter the 6-digit code from your email</string>
+  <string name="ui_784c4de2e4" formatted="false">Registered. Signing in…</string>
+  <string name="ui_867f270c2e" formatted="false">Unable to load kitchens · Retry</string>
+  <string name="ui_d2d6ba5b26" formatted="false">Current kitchen · View stock</string>
+  <string name="ui_c018eeb2d2" formatted="false">Shared kitchen · Switch</string>
+  <string name="ui_2f43109392" formatted="false">Enable reminders, once per day</string>
+  <string name="ui_97c99a86fb" formatted="false">Days before expiry (0–365)</string>
+  <string name="ui_8b4169e947" formatted="false">Show my contact card</string>
+  <string name="ui_a1d036fe76" formatted="false">View and restore deleted images</string>
+  <string name="ui_d8f9fa703c" formatted="false">New here? Register</string>
+  <string name="ui_b45b4ed55a" formatted="false">Enter a valid email address</string>
+  <string name="ui_8a56d0cff6" formatted="false">Username must be 50 characters or fewer</string>
+  <string name="ui_7c1277e4fd" formatted="false">Already have an account? Sign in</string>
+  <string name="ui_8bf65747a2" formatted="false">Enter a number from 0 to 365</string>
+  <string name="ui_e22e0575cb" formatted="false">No accessible kitchens</string>
+  <string name="ui_c86435dc69" formatted="false">Language, text and notifications</string>
+  <string name="ui_fe142a5429" formatted="false">Enter email and password</string>
+  <string name="ui_f3a4f9ea11" formatted="false">Recently viewed recipes</string>
+  <string name="ui_eddeaaf2ee" formatted="false">My accessible kitchens</string>
+  <string name="ui_152bbcb262" formatted="false">Unable to send verification code</string>
+  <string name="ui_227cc473cf" formatted="false">Unable to load trash</string>
+  <string name="ui_8e8b4dd2f9" formatted="false">Unable to load settings</string>
+  <string name="ui_4a86cd505e" formatted="false">My QR code</string>
+  <string name="ui_11d0c6e5bc" formatted="false">Shared with me</string>
+  <string name="ui_3138b7d701" formatted="false">Requests and prep</string>
+  <string name="ui_4fa105b9e2" formatted="false">Account and tools</string>
+  <string name="ui_c3af9f8f1d" formatted="false">Image trash</string>
+  <string name="ui_d369f43aac" formatted="false">Send code</string>
+  <string name="ui_a690f4d30e" formatted="false">My requests</string>
+  <string name="ui_2869f51718" formatted="false">My prep</string>
+  <string name="ui_7f649e7630" formatted="false">Shared recipes</string>
+  <string name="ui_44efd179aa" formatted="false">Sign out</string>
+  <string name="ui_975ff67ee1" formatted="false">Favorites</string>
+  <string name="ui_0881570719" formatted="false">Sending…</string>
+  <string name="ui_b6076a055f" formatted="false">Sign-in failed</string>
+  <string name="ui_1c56d8c5aa" formatted="false">Registration failed</string>
+  <string name="ui_2e827d23cb" formatted="false">Unable to restore</string>
+  <string name="ui_ba330b9fe4" formatted="false">Drafts</string>
+  <string name="ui_74c11dae2c" formatted="false">Share to</string>
+  <string name="ui_b15d91274e" formatted="false">Close</string>
+  <string name="ui_132c5cdcce" formatted="false">Retry</string>
+  <string name="ui_402d19e50f" formatted="false">Sign in</string>
+  <string name="ui_fe0e8bf768" formatted="false">Register</string>
+  <string name="ui_c7db6d4f1a" formatted="false">Restore</string>
+  <string name="ui_f0f2a7ce59" formatted="false">Date (optional, YYYY-MM-DD)</string>
+  <string name="ui_24ea6b09e1" formatted="false">Missing ingredient types added. Check the amounts.</string>
+  <string name="ui_17f50e0655" formatted="false">Use YYYY-MM-DD</string>
+  <string name="ui_d4cb5f6575" formatted="false">Back · Draft saved automatically</string>
+  <string name="ui_6d58daf417" formatted="false">Suggest shopping items from recipes</string>
+  <string name="ui_be850c21d5" formatted="false">Shopping list: one item per line</string>
+  <string name="ui_e4cfb95fab" formatted="false">Dish names, separated by commas</string>
+  <string name="ui_72d32d3460" formatted="false">Save and share to a group</string>
+  <string name="ui_954408d0e5" formatted="false">Create my prep from this menu</string>
+  <string name="ui_805cb9cde8" formatted="false">＋ Choose recipes</string>
+  <string name="ui_856d0df5f2" formatted="false">Enter a title</string>
+  <string name="ui_c809061b3c" formatted="false">Share to a group</string>
+  <string name="ui_7dc2d8a222" formatted="false">Time not set</string>
+  <string name="ui_8ee9f276a6" formatted="false">Menu title</string>
+  <string name="ui_84e2805b5c" formatted="false">Keep private</string>
+  <string name="ui_ca89d33725" formatted="false">Shopping needed</string>
+  <string name="ui_f8dfedcd8a" formatted="false">Saved</string>
+  <string name="ui_54bba45c94" formatted="false">Shared</string>
+  <string name="ui_0b67983743" formatted="false">No drafts yet. Edits are saved automatically.</string>
+  <string name="ui_f9616f9a11" formatted="false">＋ New prep</string>
+  <string name="ui_880468380a" formatted="false">＋ New request</string>
+  <string name="ui_e92d29c51a" formatted="false">Meals to prepare</string>
+  <string name="ui_3368ec1127" formatted="false">Meal requests</string>
+  <string name="ui_82bb31b616" formatted="false">Continue whenever you like</string>
+  <string name="ui_91b34afa6c" formatted="false">Untitled draft</string>
+  <string name="ui_22b4334f91" formatted="false">Drafts</string>
+  <string name="ui_c58dc542ee" formatted="false">New item: confirm its category, or choose Uncategorized.</string>
+  <string name="ui_2bc418d3e3" formatted="false">Unable to load ingredients. Tap to retry; input kept.</string>
+  <string name="ui_13e858b0eb" formatted="false">Shelf life cannot exceed 3650 days</string>
+  <string name="ui_6cec1849f4" formatted="false">Reserved for (does not change editing access)</string>
+  <string name="ui_40e3aba8c8" formatted="false">Image upload failed. Stock has not been saved.</string>
+  <string name="ui_5caf5e3a24" formatted="false">Shelf life must be a positive whole number</string>
+  <string name="ui_47bfe84b0c" formatted="false">Please sign in first</string>
+  <string name="ui_53a656c5e7" formatted="false">Expiry date cannot be before today</string>
+  <string name="ui_e0d982c2fd" formatted="false">Shared (not reserved)</string>
+  <string name="ui_6ba5301b0b" formatted="false">Searching ingredients…</string>
+  <string name="ui_9923b97d63" formatted="false">Enter ingredient details</string>
+  <string name="ui_2fbc875882" formatted="false">Enter an ingredient name</string>
+  <string name="ui_715a3f2df4" formatted="false">Unable to read image</string>
+  <string name="ui_d27ba70966" formatted="false">Unable to load members</string>
+  <string name="ui_67d5682523" formatted="false">Choose image source</string>
+  <string name="ui_b44d2867ab" formatted="false">Choose expiry date</string>
+  <string name="ui_421b4b18d2" formatted="false">Enter shelf life</string>
+  <string name="ui_1e1b18a33f" formatted="false">Unable to save ingredient</string>
+  <string name="ui_83c39abd16" formatted="false">Choose from Photos</string>
+  <string name="ui_d730bee903" formatted="false">Added!</string>
+  <string name="ui_6452a05591" formatted="false">Unable to add</string>
+  <string name="ui_8347a927c0" formatted="false">Change</string>
+  <string name="ui_bed9ec1e84" formatted="false">Take photo</string>
+  <string name="ui_4a04af28b2" formatted="false">No matching items. Try All or a different search.</string>
+  <string name="ui_add39f45f2" formatted="false">Unable to save. Check the date and connection, then retry.</string>
+  <string name="ui_507692eb1b" formatted="false">Expiry date YYYY-MM-DD</string>
+  <string name="ui_e19581a0b5" formatted="false">Category for this stock entry</string>
+  <string name="ui_5cb892ec39" formatted="false">Unable to load editor. Retry.</string>
+  <string name="ui_49eff504a4" formatted="false">Sign in to manage stock</string>
+  <string name="ui_4665781935" formatted="false">Used up</string>
+  <string name="ui_51417b630e" formatted="false">No matching stock</string>
+  <string name="ui_ff62d758ff" formatted="false">Edit remaining amount</string>
+  <string name="ui_a87bc7d464" formatted="false">Remove incorrect entry</string>
+  <string name="ui_339575cc1a" formatted="false">Marked as used up</string>
+  <string name="ui_87b0ac09f2" formatted="false">Unable to load categories</string>
+  <string name="ui_31639b9c4a" formatted="false">No used-up items yet</string>
+  <string name="ui_9dea8b88dd" formatted="false">Restore stock</string>
+  <string name="ui_b2e3b9fa47" formatted="false">Spoiled or discarded</string>
+  <string name="ui_19277580db" formatted="false">Stock restored</string>
+  <string name="ui_14f66fc55d" formatted="false">Marked as discarded</string>
+  <string name="ui_56c9087a99" formatted="false">Entry removed</string>
+  <string name="ui_1a75030502" formatted="false">All categories</string>
+  <string name="ui_5fcb1e4d94" formatted="false">Choose category</string>
+  <string name="ui_bea7aa0b1b" formatted="false">Storage location</string>
+  <string name="ui_2f4aaddde3" formatted="false">Delete</string>
+  <string name="ui_0bf60b32f9" formatted="false">Amount</string>
+  <string name="ui_bd9fcf46b4" formatted="false">Undo</string>
+  <string name="ui_2432b57515" formatted="false">Notes</string>
+  <string name="ui_b87b77561e" formatted="false">Message</string>
+  <string name="ui_4c50eef3bd" formatted="false">Avatar</string>
+  <string name="ui_844fef3505" formatted="false">My groups</string>
+  <string name="ui_679c4032ce" formatted="false">Create group</string>
+  <string name="ui_69724359e2" formatted="false">Creations</string>
+  <string name="ui_4ccbdc5301" formatted="false">Menu</string>
+  <string name="ui_0aebdb41cd" formatted="false">Group name</string>
+  <string name="ui_ac58c0fd79" formatted="false">Group description</string>
+  <string name="ui_640e7313cf" formatted="false">Describe what this group is for and who you would like to invite</string>
+  <string name="ui_02d9819dda" formatted="false">Tip</string>
+  <string name="ui_f16ca0bc64" formatted="false">🎲 Surprise me</string>
+  <string name="ui_bec13f19cb" formatted="false">Add ingredient</string>
+  <string name="ui_f128a11b4c" formatted="false">Ingredient details</string>
+  <string name="ui_cef4782236" formatted="false">Photo (optional)</string>
+  <string name="ui_ccfa4ec20f" formatted="false">Add a photo to help others find it</string>
+  <string name="ui_2dca6419b0" formatted="false">Ingredient photo preview</string>
+  <string name="ui_3875ccae23" formatted="false">Delete image</string>
+  <string name="ui_c91155ba37" formatted="false">Searching…</string>
+  <string name="ui_6d5dac1a9b" formatted="false">Review or correct the recognized details:</string>
+  <string name="ui_24fd1e30af" formatted="false">Ingredient name *</string>
+  <string name="ui_d50a9ad504" formatted="false">Item category</string>
+  <string name="ui_a9ccfc1042" formatted="false">Amount (optional)</string>
+  <string name="ui_990151ac20" formatted="false">Shelf life (days) *</string>
+  <string name="ui_34afe96a1d" formatted="false">Storage location (optional)</string>
+  <string name="ui_7820722608" formatted="false">Back to edit</string>
+  <string name="ui_babc8fe739" formatted="false">Confirm and save</string>
+  <string name="ui_e5f71fc31e" formatted="false">Search</string>
+  <string name="ui_89f5251319" formatted="false">Group settings</string>
+  <string name="ui_4705843b2b" formatted="false">Send sticker</string>
+  <string name="ui_17e8e26968" formatted="false">Write a message…</string>
+  <string name="ui_1535fcfa4c" formatted="false">Send</string>
+  <string name="ui_2ba22d9710" formatted="false">History icon</string>
+  <string name="ui_9049e90515" formatted="false">Jiayao</string>
+  <string name="ui_3c46bf18ab" formatted="false">Good food, together</string>
+  <string name="ui_55c94dbeb8" formatted="false">Paste the shared text or URL to parse it</string>
+  <string name="ui_9f8ff7515d" formatted="false">Paste a shared tutorial link</string>
+  <string name="ui_93e4998872" formatted="false">Search your stock</string>
+  <string name="ui_a8b0c20416" formatted="false">All</string>
+  <string name="ui_2cae0566ad" formatted="false">Expiring</string>
+  <string name="ui_7e450d2325" formatted="false">All categories ▾</string>
+  <string name="ui_7aa52f0c9e" formatted="false">Swipe to use up · Hold or tap More to manage</string>
+  <string name="ui_cbfbee715c" formatted="false">No items here yet</string>
+  <string name="ui_6555ef98b5" formatted="false">Contacts</string>
+  <string name="ui_a640204afd" formatted="false">Link title</string>
+  <string name="ui_26ca20b161" formatted="false">Source</string>
+  <string name="ui_4183a88537" formatted="false">My QR code</string>
+  <string name="ui_22b03c024d" formatted="false">QR code</string>
+  <string name="ui_f57bd367c4" formatted="false">Scan to add me as a contact</string>
+  <string name="ui_cd4fbcefd3" formatted="false">Save QR code</string>
+  <string name="ui_dd245fe8ab" formatted="false">My creations</string>
+  <string name="ui_8e89707af7" formatted="false">No recipes created yet</string>
+  <string name="ui_e16cfeb281" formatted="false">Share your favorite dish</string>
+  <string name="ui_95b351c862" formatted="false">Edit</string>
+  <string name="ui_b3c87b5389" formatted="false">Recipe cover</string>
+  <string name="ui_545d6d33e4" formatted="false">Cooking time</string>
+  <string name="ui_3bdd08adab" formatted="false">Description</string>
+  <string name="ui_b2cea874e0" formatted="false">External tutorial links</string>
+  <string name="ui_3bc5e602b2" formatted="false">Email</string>
+  <string name="ui_268b1e2ba8" formatted="false">Email verification code (6 digits)</string>
+  <string name="ui_ae2246a838" formatted="false">Username (optional, generated if blank)</string>
+  <string name="ui_08b94b8c0f" formatted="false">Password (at least 8 characters)</string>
+  <string name="ui_17cd044e7c" formatted="false">Edit profile</string>
+  <string name="ui_c31f48f84e" formatted="false">Share</string>
+  <string name="ui_2c70d9a949" formatted="false">Group avatar</string>
+  <string name="ui_41b792a4b1" formatted="false">Description</string>
+  <string name="ui_0ec9eaf9c3" formatted="false">More</string>
+  <string name="ui_8993734a3e" formatted="false">No favorites yet</string>
+  <string name="ui_0d9473600d" formatted="false">Discover recipes you like</string>
+  <string name="ui_ecdff96a5a" formatted="false">Ingredient icon</string>
+  <string name="ui_60f31120ac" formatted="false">Ingredient name</string>
+  <string name="ui_3df483e73a" formatted="false">Search recipes, ingredients, people…</string>
+  <string name="ui_e9c38f8837" formatted="false">Search history</string>
+  <string name="ui_7f19d9aff3" formatted="false">Like</string>
+  <string name="ui_0ed7595032" formatted="false">View all &gt;</string>
+  <string name="ui_eb964695a2" formatted="false">Recipe name</string>
+  <string name="ui_633df47823" formatted="false">Recipe description</string>
+  <string name="ui_18ce9a5fd3" formatted="false">Link thumbnail</string>
+  <string name="ui_879058ce06" formatted="false">Copy link</string>
+  <string name="ui_d0ed01d1ce" formatted="false">Open link</string>
+  <string name="ui_819767ada1" formatted="false">Username</string>
+  <string name="ui_a3944a9bc4" formatted="false">Add recipe</string>
+  <string name="ui_83611abd5f" formatted="false">Publish</string>
+  <string name="ui_76eb8e6731" formatted="false">Dish name</string>
+  <string name="ui_88d24f25df" formatted="false">Add tutorial link</string>
+  <string name="ui_ba6e91fa9e" formatted="false">Permissions</string>
+  <string name="ui_e2edde5adb" formatted="false">Expand</string>
+</resources>

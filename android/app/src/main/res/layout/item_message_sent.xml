@@ -33,7 +33,7 @@
             android:layout_height="wrap_content"
             android:background="@drawable/bg_message_sent"
             android:padding="12dp"
-            android:text="消息内容"
+            android:text="@string/ui_b87b77561e"
             android:textColor="@color/white"
             android:textSize="16sp" />
 
@@ -48,7 +48,7 @@
         android:background="@drawable/bg_circle"
         android:backgroundTint="@color/primary"
         android:padding="8dp"
-        android:contentDescription="头像" />
+        android:contentDescription="@string/ui_4c50eef3bd" />
 
 </LinearLayout>
 

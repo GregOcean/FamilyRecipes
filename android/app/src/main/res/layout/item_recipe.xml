@@ -24,7 +24,7 @@
             android:layout_width="60dp"
             android:layout_height="60dp"
             android:scaleType="centerCrop"
-            android:contentDescription="菜谱封面"
+            android:contentDescription="@string/ui_b3c87b5389"
             tools:src="@drawable/placeholder_recipe" />
 
         <!-- 菜谱信息 -->

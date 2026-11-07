@@ -1,4 +1,5 @@
 package com.familyrecipes.android.ui.search
+import com.familyrecipes.android.ui.design.UiStrings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.familyrecipes.android.data.model.GlobalSearchResult
@@ -35,7 +36,7 @@ class SearchViewModel : ViewModel() {
                 dao.put(LocalRecord(account,"search","latest",Gson().toJson(Cached(keyword,priority,result))))
                 mutable.value=SearchState(keyword,result)
             } catch(e:CancellationException) { throw e }
-              catch(_:Exception) { if(revision==generation) mutable.value=mutable.value.copy(loading=false,error="搜索失败，已保留结果，下拉重试") }
+              catch(_:Exception) { if(revision==generation) mutable.value=mutable.value.copy(loading=false,error=UiStrings.s(com.familyrecipes.android.R.string.ui_487fcd5d2e)) }
         }
     }
 }

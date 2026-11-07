@@ -10,7 +10,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/white"
+        android:background="@color/surface"
         android:orientation="horizontal"
         android:paddingVertical="20dp">
 
@@ -40,14 +40,14 @@
                     android:layout_gravity="center"
                     android:src="@drawable/ic_clock_filled"
                     android:tint="@color/white"
-                    android:contentDescription="即将过期" />
+                    android:contentDescription="@string/ui_ac148b4c87" />
             </FrameLayout>
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="即将过期"
+                android:text="@string/ui_ac148b4c87"
                 android:textColor="@color/black"
                 android:textSize="14sp" />
         </LinearLayout>
@@ -78,14 +78,14 @@
                     android:layout_gravity="center"
                     android:src="@drawable/ic_at"
                     android:tint="@color/white"
-                    android:contentDescription="家人呼唤" />
+                    android:contentDescription="@string/ui_c1fa468a43" />
             </FrameLayout>
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="家人呼唤"
+                android:text="@string/ui_c1fa468a43"
                 android:textColor="@color/black"
                 android:textSize="14sp" />
         </LinearLayout>
@@ -116,14 +116,14 @@
                     android:layout_gravity="center"
                     android:src="@drawable/ic_heart_filled"
                     android:tint="@color/white"
-                    android:contentDescription="爱心点赞" />
+                    android:contentDescription="@string/ui_7f19d9aff3" />
             </FrameLayout>
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="爱心点赞"
+                android:text="@string/ui_7f19d9aff3"
                 android:textColor="@color/black"
                 android:textSize="14sp" />
         </LinearLayout>
@@ -140,7 +140,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/white"
+        android:background="@color/surface"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="16dp"
@@ -150,7 +150,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="我的群组"
+            android:text="@string/ui_844fef3505"
             android:textColor="@color/black"
             android:textSize="16sp"
             android:textStyle="bold" />
@@ -159,7 +159,7 @@
             android:id="@+id/tv_view_all"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="查看全部 >"
+            android:text="@string/ui_0ed7595032"
             android:textColor="@color/gray"
             android:textSize="14sp" />
     </LinearLayout>
@@ -169,7 +169,7 @@
         android:id="@+id/swipeRefresh"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/white">
+        android:background="@color/surface">
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerView"

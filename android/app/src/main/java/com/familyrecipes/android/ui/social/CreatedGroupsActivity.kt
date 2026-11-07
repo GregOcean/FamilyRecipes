@@ -1,5 +1,6 @@
 package com.familyrecipes.android.ui.social
 
+import com.familyrecipes.android.ui.design.UiStrings
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
@@ -26,7 +27,7 @@ class CreatedGroupsActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         // 修改标题
-        binding.toolbar.title = "我创建的群"
+        binding.toolbar.title = UiStrings.s(com.familyrecipes.android.R.string.ui_059d992c84)
         binding.toolbar.setNavigationOnClickListener {
             finish()
         }
@@ -86,10 +87,10 @@ class CreatedGroupsActivity : AppCompatActivity() {
                         binding.tvEmpty.visibility = View.GONE
                     }
                 } else {
-                    android.widget.Toast.makeText(this@CreatedGroupsActivity, "加载失败", android.widget.Toast.LENGTH_SHORT).show()
+                    android.widget.Toast.makeText(this@CreatedGroupsActivity, UiStrings.s(com.familyrecipes.android.R.string.ui_866b795eae), android.widget.Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                android.widget.Toast.makeText(this@CreatedGroupsActivity, "网络错误: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(this@CreatedGroupsActivity, UiStrings.f(com.familyrecipes.android.R.string.network_error_value, e.message), android.widget.Toast.LENGTH_SHORT).show()
             } finally {
                 binding.swipeRefresh.isRefreshing = false
             }

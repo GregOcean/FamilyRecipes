@@ -1,5 +1,6 @@
 package com.familyrecipes.android.ui.fridge
 
+import com.familyrecipes.android.ui.design.UiStrings
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Canvas
@@ -93,8 +94,8 @@ class FridgeFragment : Fragment(), SearchableFragment {
     private fun setupCategorySidebar() {
         binding.btnCategories.setOnClickListener {
             val choices=categories.flatMap{listOf(it)+it.children.orEmpty()}
-            androidx.appcompat.app.AlertDialog.Builder(requireContext()).setTitle("选择分类").setItems((listOf("全部分类")+choices.map{"${it.icon.orEmpty()} ${it.name}"}).toTypedArray()){_,index->
-                val selected=choices.getOrNull(index-1);selectedCategoryId=selected?.id;binding.btnCategories.text=(selected?.name?:"全部分类")+" ▾";filterItemsByCategory()
+            androidx.appcompat.app.AlertDialog.Builder(requireContext()).setTitle(UiStrings.s(com.familyrecipes.android.R.string.ui_5fcb1e4d94)).setItems((listOf(UiStrings.s(com.familyrecipes.android.R.string.ui_1a75030502))+choices.map{"${it.icon.orEmpty()} ${it.name}"}).toTypedArray()){_,index->
+                val selected=choices.getOrNull(index-1);selectedCategoryId=selected?.id;binding.btnCategories.text=(selected?.name?:UiStrings.s(com.familyrecipes.android.R.string.ui_1a75030502))+" ▾";filterItemsByCategory()
             }.show()
         }
         binding.etInventorySearch.doAfterTextChanged { filterItemsByCategory() }
@@ -128,7 +129,7 @@ class FridgeFragment : Fragment(), SearchableFragment {
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
-                android.util.Log.e("FridgeFragment", "加载分类失败", e)
+                android.util.Log.e("FridgeFragment", UiStrings.s(com.familyrecipes.android.R.string.ui_87b0ac09f2), e)
             }
         }
     }
@@ -148,8 +149,8 @@ class FridgeFragment : Fragment(), SearchableFragment {
         }
         categoryAdapter.setCounts(counts, searched.size)
         binding.tvInventoryEmpty.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
-        binding.tvInventoryEmpty.text = if (query.isNotEmpty()) "未找到匹配物品，可切换“全部”或修改搜索词"
-            else "这个分类还没有物品\n点击 + 添加，或查看其他分类"
+        binding.tvInventoryEmpty.text = if (query.isNotEmpty()) UiStrings.s(com.familyrecipes.android.R.string.ui_4a04af28b2)
+            else UiStrings.s(com.familyrecipes.android.R.string.ui_9762b17785)
 
         fridgeAdapter.notifyDataSetChanged()
         
@@ -254,7 +255,7 @@ class FridgeFragment : Fragment(), SearchableFragment {
                     paint.textSize = 48f
                     paint.textAlign = Paint.Align.LEFT
                     c.drawText(
-                        "已吃完",
+                        UiStrings.s(com.familyrecipes.android.R.string.ui_d813eea6b6),
                         itemView.left + 40f,
                         itemView.top + (itemView.height / 2f) + 15f,
                         paint
@@ -275,7 +276,7 @@ class FridgeFragment : Fragment(), SearchableFragment {
                     paint.textSize = 48f
                     paint.textAlign = Paint.Align.RIGHT
                     c.drawText(
-                        "删除",
+                        UiStrings.s(com.familyrecipes.android.R.string.ui_2f4aaddde3),
                         itemView.right - 40f,
                         itemView.top + (itemView.height / 2f) + 15f,
                         paint
@@ -322,20 +323,20 @@ class FridgeFragment : Fragment(), SearchableFragment {
                 val members=ApiClient.getService().getGroupDetail(requireNotNull(kitchen.groupId)).body()?.data?.members.orEmpty()
                 val box=android.widget.LinearLayout(requireContext()).apply { orientation=android.widget.LinearLayout.VERTICAL;setPadding(32,16,32,16) }
                 fun field(label:String,value:String?)=android.widget.EditText(requireContext()).apply { hint=label;setText(value);box.addView(this) }
-                val amount=field("数量",draft.amount)
-                val expiry=field("到期日期 YYYY-MM-DD",draft.expiryDate)
-                val location=field("存放位置",draft.storageLocation)
-                val notes=field("备注",draft.notes)
+                val amount=field(UiStrings.s(com.familyrecipes.android.R.string.ui_0bf60b32f9),draft.amount)
+                val expiry=field(UiStrings.s(com.familyrecipes.android.R.string.ui_507692eb1b),draft.expiryDate)
+                val location=field(UiStrings.s(com.familyrecipes.android.R.string.ui_bea7aa0b1b),draft.storageLocation)
+                val notes=field(UiStrings.s(com.familyrecipes.android.R.string.ui_2432b57515),draft.notes)
                 val owner=android.widget.Spinner(requireContext()).apply {
                     adapter=android.widget.ArrayAdapter(requireContext(),android.R.layout.simple_spinner_dropdown_item,
-                        listOf("全家共享（无预留）")+members.map { "预留给 ${it.user?.username ?: it.userId}" })
+                        listOf(UiStrings.s(com.familyrecipes.android.R.string.ui_e0d982c2fd))+members.map { "预留给 ${it.user?.username ?: it.userId}" })
                     setSelection(members.indexOfFirst { it.userId==draft.ownerUserId }+1)
                 }
                 box.addView(owner)
                 val categoriesResponse = ApiClient.getService().getAllCategories()
                 check(categoriesResponse.isSuccessful && categoriesResponse.body()?.code == 200)
                 val choices = categoriesResponse.body()?.data.orEmpty()
-                val categoryLabel = android.widget.TextView(requireContext()).apply { text="物品分类（仅修改这条库存）" }
+                val categoryLabel = android.widget.TextView(requireContext()).apply { text=UiStrings.s(com.familyrecipes.android.R.string.ui_e19581a0b5) }
                 box.addView(categoryLabel)
                 val classification = android.widget.Spinner(requireContext()).apply {
                     adapter = android.widget.ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item,
@@ -359,8 +360,8 @@ class FridgeFragment : Fragment(), SearchableFragment {
                     override fun onNothingSelected(parent:android.widget.AdapterView<*>?) { }
                 }
                 val scroll=android.widget.ScrollView(requireContext()).apply { addView(box) }
-                val dialog=androidx.appcompat.app.AlertDialog.Builder(requireContext()).setTitle("编辑 ${item.ingredient?.name ?: "库存"}")
-                    .setView(scroll).setPositiveButton("保存",null).setNegativeButton("取消",null).create()
+                val dialog=androidx.appcompat.app.AlertDialog.Builder(requireContext()).setTitle("编辑 ${item.ingredient?.name ?: UiStrings.s(com.familyrecipes.android.R.string.ui_0eac8802de)}")
+                    .setView(scroll).setPositiveButton(UiStrings.s(com.familyrecipes.android.R.string.ui_be5fbbe34c),null).setNegativeButton(UiStrings.s(com.familyrecipes.android.R.string.ui_625fb26b4b),null).create()
                 dialog.show();dialog.getButton(-1).setOnClickListener {
                     viewLifecycleOwner.lifecycleScope.launch {
                         try {
@@ -369,11 +370,11 @@ class FridgeFragment : Fragment(), SearchableFragment {
                             com.familyrecipes.android.data.local.DraftWrites.clear(account,key)
                             dialog.dismiss();loadData()
                         } catch(e:kotlinx.coroutines.CancellationException) { throw e }
-                          catch(_:Exception) { expiry.error="保存失败，检查日期和网络后重试" }
+                          catch(_:Exception) { expiry.error=UiStrings.s(com.familyrecipes.android.R.string.ui_add39f45f2) }
                     }
                 }
             } catch(e:kotlinx.coroutines.CancellationException) { throw e }
-              catch(_:Exception) { Toast.makeText(context,"编辑信息加载失败，请重试",Toast.LENGTH_SHORT).show() }
+              catch(_:Exception) { Toast.makeText(context,UiStrings.s(com.familyrecipes.android.R.string.ui_5cb892ec39),Toast.LENGTH_SHORT).show() }
         }
     }
 
@@ -411,7 +412,7 @@ class FridgeFragment : Fragment(), SearchableFragment {
                         fridgeAdapter.notifyDataSetChanged()
                         
                         if (searchFiltered.isEmpty()) {
-                            Toast.makeText(context, "没有找到相关库存", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, UiStrings.s(com.familyrecipes.android.R.string.ui_51417b630e), Toast.LENGTH_SHORT).show()
                         } else {
                             Toast.makeText(context, "找到 ${searchFiltered.size} 个库存", Toast.LENGTH_SHORT).show()
                         }
@@ -420,12 +421,12 @@ class FridgeFragment : Fragment(), SearchableFragment {
                         // Expiry badges are shown in rows; reminders are rate limited by the worker.
                     }
                 } else {
-                    Toast.makeText(context, "加载失败", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, UiStrings.s(com.familyrecipes.android.R.string.ui_866b795eae), Toast.LENGTH_SHORT).show()
                 }
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Toast.makeText(context, "网络错误: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, UiStrings.f(com.familyrecipes.android.R.string.network_error_value, e.message), Toast.LENGTH_SHORT).show()
             } finally {
                 if(revision==loadGeneration) _binding?.swipeRefresh?.isRefreshing = false
             }
@@ -459,20 +460,20 @@ class FridgeFragment : Fragment(), SearchableFragment {
                         fridgeAdapter.notifyDataSetChanged()
                         
                         if (searchFiltered.isEmpty()) {
-                            Toast.makeText(context, "没有找到相关库存", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, UiStrings.s(com.familyrecipes.android.R.string.ui_51417b630e), Toast.LENGTH_SHORT).show()
                         } else {
                             Toast.makeText(context, "找到 ${searchFiltered.size} 个库存", Toast.LENGTH_SHORT).show()
                         }
                     } else if (items.isEmpty()) {
-                        Toast.makeText(context, "暂无消耗记录", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, UiStrings.s(com.familyrecipes.android.R.string.ui_31639b9c4a), Toast.LENGTH_SHORT).show()
                     }
                 } else {
-                    Toast.makeText(context, "加载失败", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, UiStrings.s(com.familyrecipes.android.R.string.ui_866b795eae), Toast.LENGTH_SHORT).show()
                 }
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Toast.makeText(context, "网络错误: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, UiStrings.f(com.familyrecipes.android.R.string.network_error_value, e.message), Toast.LENGTH_SHORT).show()
             } finally {
                 if(revision==loadGeneration) _binding?.swipeRefresh?.isRefreshing = false
             }
@@ -494,7 +495,7 @@ class FridgeFragment : Fragment(), SearchableFragment {
 
     private fun showItemActions(item:FridgeItem) {
         val consumed=item.status==FridgeItem.STATUS_CONSUMED
-        val labels=arrayOf(if(consumed)"恢复到库存" else "已吃完 / 用完","修改剩余数量","变质或丢弃","删除误录记录")
+        val labels=arrayOf(if(consumed)UiStrings.s(com.familyrecipes.android.R.string.ui_9dea8b88dd) else UiStrings.s(com.familyrecipes.android.R.string.ui_4665781935),UiStrings.s(com.familyrecipes.android.R.string.ui_ff62d758ff),UiStrings.s(com.familyrecipes.android.R.string.ui_b2e3b9fa47),UiStrings.s(com.familyrecipes.android.R.string.ui_a87bc7d464))
         androidx.appcompat.app.AlertDialog.Builder(requireContext()).setTitle(item.ingredient?.name).setItems(labels){_,index->
             when(index){0->changeStatus(item.id!!,if(consumed)"normal" else "consumed");1->navigateToRecipesByIngredient(item);2->changeStatus(item.id!!,"discarded");3->changeStatus(item.id!!,"deleted")}
         }.show()
@@ -506,8 +507,8 @@ class FridgeFragment : Fragment(), SearchableFragment {
         viewLifecycleOwner.lifecycleScope.launch{try{
             com.familyrecipes.android.ui.design.Ui.ok(ApiClient.getService().changeStockStatus(itemId,mapOf("status" to status)))
             loadData()
-            if(!undo)com.google.android.material.snackbar.Snackbar.make(binding.root,when(status){"consumed"->"已移到已吃完";"discarded"->"已标记丢弃";"deleted"->"已删除记录";else->"已恢复库存"},8000)
-                .setAction("撤销"){changeStatus(itemId,if(previous=="consumed")"consumed" else "normal",true)}.show()
+            if(!undo)com.google.android.material.snackbar.Snackbar.make(binding.root,when(status){"consumed"->UiStrings.s(com.familyrecipes.android.R.string.ui_339575cc1a);"discarded"->UiStrings.s(com.familyrecipes.android.R.string.ui_14f66fc55d);"deleted"->UiStrings.s(com.familyrecipes.android.R.string.ui_56c9087a99);else->UiStrings.s(com.familyrecipes.android.R.string.ui_19277580db)},8000)
+                .setAction(UiStrings.s(com.familyrecipes.android.R.string.ui_bd9fcf46b4)){changeStatus(itemId,if(previous=="consumed")"consumed" else "normal",true)}.show()
         }catch(e:kotlinx.coroutines.CancellationException){throw e}catch(e:Exception){fridgeAdapter.notifyDataSetChanged();com.familyrecipes.android.ui.design.Ui.toast(requireContext(),e)}}
     }
     override fun onHiddenChanged(hidden:Boolean){super.onHiddenChanged(hidden);if(!hidden && ::fridgeAdapter.isInitialized)loadData()}
@@ -544,7 +545,7 @@ class FridgeFragment : Fragment(), SearchableFragment {
         binding.categorySidebar.visibility = View.GONE
         
         // 显示提示信息（可以用一个TextView或者空状态视图）
-        android.widget.Toast.makeText(context, "库存功能需要登录后使用", android.widget.Toast.LENGTH_LONG).show()
+        android.widget.Toast.makeText(context, UiStrings.s(com.familyrecipes.android.R.string.ui_49eff504a4), android.widget.Toast.LENGTH_LONG).show()
         
         // 自动跳转到"我的"页面
         com.familyrecipes.android.util.AuthUtil.navigateToProfile(requireContext())

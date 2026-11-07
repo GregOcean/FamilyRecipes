@@ -86,6 +86,40 @@ class FoundationIntegrationTest {
         if (visibility.equals("group")) r.setSharedGroupIds("["+group+"]");
         return recipes.createRecipe(r, null, null, null, null, null);
     }
+
+    @Test void newRecipeDefaultsToPublicButExplicitPrivateIsRespected() {
+        Recipe r = new Recipe(); r.setName("默认公开"); r.setCreatorId(owner);
+        var saved = recipes.createRecipe(r,null,null,null,null,null);
+        assertEquals("public",saved.getVisibility());
+        assertNotNull(recipes.getRecipeDetail(saved.getId(),outsider));
+        var privateRecipe = recipe("private");
+        assertThrows(ApiException.class,()->recipes.getRecipeDetail(privateRecipe.getId(),outsider));
+    }
+    @Test void externalLinksKeepNotesAndUserOrderAcrossEdits() {
+        Recipe r = new Recipe(); r.setName("多来源菜谱"); r.setCreatorId(owner); r.setVisibility("private");
+        ExternalRecipe a = new ExternalRecipe(); a.setTitle("视频"); a.setUrl("https://youtu.be/demo");
+        a.setNotes("孩子吃可以省略辣椒"); a.setSource("wrong"); a.setSortOrder(99);
+        ExternalRecipe b = new ExternalRecipe(); b.setTitle("步骤"); b.setUrl("https://www.instagram.com/p/demo");
+        b.setNotes("第3步可省略");
+        r = recipes.createRecipe(r,null,null,null,null,List.of(a,b));
+        assertEquals("YouTube",r.getExternalRecipes().get(0).getSource());
+        assertEquals("孩子吃可以省略辣椒",r.getExternalRecipes().get(0).getNotes());
+        assertEquals(0,r.getExternalRecipes().get(0).getSortOrder());
+        b.setNotes("更新备注");
+        r = recipes.updateRecipe(r,null,null,null,null,List.of(b,a));
+        var saved = recipes.getRecipeDetail(r.getId(),owner).getExternalRecipes();
+        assertEquals(List.of("步骤","视频"), saved.stream().map(ExternalRecipe::getTitle).toList());
+        assertEquals("更新备注",saved.get(0).getNotes());
+        assertEquals(List.of(0,1),saved.stream().map(ExternalRecipe::getSortOrder).toList());
+        ExternalRecipe c = new ExternalRecipe(); c.setRecipeId(r.getId()); c.setAddedBy(owner);
+        c.setTitle("另一种做法"); c.setUrl("https://fb.watch/demo");
+        recipes.addExternalRecipe(c);
+        assertEquals(2,recipes.getRecipeDetail(r.getId(),owner).getExternalRecipes().get(2).getSortOrder());
+        c.setAddedBy(outsider);
+        assertThrows(ApiException.class,()->recipes.addExternalRecipe(c));
+        c.setAddedBy(owner); c.setUrl("javascript:alert(1)");
+        assertThrows(ApiException.class,()->recipes.addExternalRecipe(c));
+    }
     @Test void passwordsAreHashedAndValidationIsEnforced() throws Exception {
         String email=UUID.randomUUID()+"@test.example";
         User user=users.register(email,"test-password-123","new user",codeFor(email));
@@ -441,5 +475,49 @@ class FoundationIntegrationTest {
         var item=new FridgeItem();item.setUserId(owner);item.setKitchenId(kitchen);item.setIngredientId(ingredient.getIngredientId());item.setExpiryDate(LocalDate.now(clock).plusDays(5));fridge.addItem(item);
         assertEquals(1,workflows.browse(owner,kitchen,"mine","all","test","酸",30,0,true,"x",1).getTotal());
         assertEquals(0,workflows.browse(outsider,null,"discovery","all","test","酸",30,null,false,"x",1).getTotal());
+    }
+
+    @Autowired ChatShareService chatShares;
+    @Test void chatSharingGrantsReadOnlyAccessAndRetriesDoNotDuplicate() throws Exception {
+        Recipe privateRecipe=recipe("private");
+        assertFalse(recipeMapper.isVisible(privateRecipe.getId(),outsider));
+        assertThrows(ApiException.class,()->chatShares.shareRecipe(privateRecipe.getId(),group,outsider,UUID.randomUUID().toString()));
+        db.update("INSERT INTO group_member(group_id,user_id,role) VALUES(?,?,'member')",group,outsider);
+        String client=UUID.randomUUID().toString();
+        var sent=chatShares.shareRecipe(privateRecipe.getId(),group,owner,client);
+        assertEquals(client,sent.getClientMessageId());
+        assertEquals(sent.getId(),chatShares.shareRecipe(privateRecipe.getId(),group,owner,client).getId());
+        assertTrue(recipeMapper.isVisible(privateRecipe.getId(),outsider));
+        assertEquals(1, workflows.browse(outsider,kitchen,"mine","shared","","",null,null,false,"chat",1).getTotal());
+        BufferedImage avatar = new BufferedImage(2,2,BufferedImage.TYPE_INT_RGB);
+        ByteArrayOutputStream imageBytes = new ByteArrayOutputStream(); ImageIO.write(avatar,"png",imageBytes);
+        String avatarUrl = media.upload(new MockMultipartFile("file","avatar.png","image/png",imageBytes.toByteArray()),owner);
+        db.update("UPDATE user SET avatar=? WHERE id=?",avatarUrl,owner);
+        String filename=avatarUrl.substring(avatarUrl.lastIndexOf('/')+1);
+        assertTrue(java.nio.file.Files.exists(media.read(filename,outsider)));
+        assertThrows(ApiException.class,()->recipes.deleteRecipe(privateRecipe.getId(),outsider));
+        mvc.perform(post("/api/recipes/"+privateRecipe.getId()+"/share-chat").header("Authorization",ownerAuth)
+            .contentType("application/json").content(json.writeValueAsString(Map.of("groupId",group,"clientMessageId",client))))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.id").value(sent.getId()));
+        db.update("DELETE FROM group_member WHERE group_id=? AND user_id=?",group,outsider);
+        assertFalse(recipeMapper.isVisible(privateRecipe.getId(),outsider));
+        assertThrows(ApiException.class,()->media.read(filename,outsider));
+    }
+    @Test void mentionsValidateGroupMembershipAndPreserveSenderIdentity() {
+        String content="@[同名成员](familyrecipes://user/"+outsider+") 一起吃饭";
+        assertThrows(ApiException.class,()->messages.sendMessage(group,owner,content,null));
+        db.update("INSERT INTO group_member(group_id,user_id,role) VALUES(?,?,'member')",group,outsider);
+        var sent=messages.sendMessage(group,owner,content,null,UUID.randomUUID().toString());
+        assertEquals("owner",sent.getSender().getUsername());
+        assertEquals(content,messages.catchUp(group,outsider,0L,200).get(0).getContent());
+        assertThrows(ApiException.class,()->messages.sendMessage(group,owner,"@[x](familyrecipes://user/9999999999999999999999)",null));
+    }
+    @Test void mealShareRetriesReturnOriginalMessageAfterEditing() {
+        var meal=new MealArrangement();meal.setKitchenId(kitchen);meal.setKind("prep");meal.setTitle("备菜");
+        meal.setDishes(List.of());meal.setShopping(List.of());meal=meals.save(meal,owner);
+        String client=UUID.randomUUID().toString();
+        var sent=meals.share(meal.getId(),group,owner,client);
+        meal.setTitle("后来改名");meals.save(meal,owner);
+        assertEquals(sent.getId(),meals.share(meal.getId(),group,owner,client).getId());
     }
 }

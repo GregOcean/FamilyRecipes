@@ -19,7 +19,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="添加内容"
+        android:text="@string/ui_f754888421"
         android:textSize="18sp"
         android:textStyle="bold"
         android:textColor="@color/text_primary"
@@ -57,7 +57,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="菜谱"
+                android:text="@string/ui_ad237159d7"
                 android:textSize="14sp"
                 android:textColor="@color/text_primary"
                 android:layout_marginTop="8dp" />
@@ -86,7 +86,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="作品"
+                android:text="@string/ui_69724359e2"
                 android:textSize="14sp"
                 android:textColor="@color/text_primary"
                 android:layout_marginTop="8dp" />
@@ -115,7 +115,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="菜单"
+                android:text="@string/ui_4ccbdc5301"
                 android:textSize="14sp"
                 android:textColor="@color/text_primary"
                 android:layout_marginTop="8dp" />
@@ -144,7 +144,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="库存"
+                android:text="@string/ui_0eac8802de"
                 android:textSize="14sp"
                 android:textColor="@color/text_primary"
                 android:layout_marginTop="8dp" />

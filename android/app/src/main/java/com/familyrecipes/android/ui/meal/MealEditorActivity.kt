@@ -1,5 +1,6 @@
 package com.familyrecipes.android.ui.meal
 
+import com.familyrecipes.android.ui.design.UiStrings
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
@@ -63,7 +64,7 @@ class MealEditorActivity : AppCompatActivity() {
                 kind = intent.getStringExtra("kind") ?: "order")
         root = Ui.box(this)
         setContentView(Ui.scroll(this, root))
-        root.addView(Ui.text(this, "加载中…"))
+        root.addView(Ui.text(this, UiStrings.s(com.familyrecipes.android.R.string.ui_fb4ca1cf1b)))
         lifecycleScope.launch {
             try {
                 DraftWrites.flush()
@@ -86,8 +87,8 @@ class MealEditorActivity : AppCompatActivity() {
                 throw e
             } catch (e: Exception) {
                 root.removeAllViews()
-                root.addView(Ui.text(this@MealEditorActivity, e.message ?: "加载失败"))
-                root.addView(Ui.button(this@MealEditorActivity, "返回") { finish() })
+                root.addView(Ui.text(this@MealEditorActivity, e.message ?: UiStrings.s(com.familyrecipes.android.R.string.ui_866b795eae)))
+                root.addView(Ui.back(this@MealEditorActivity) { finish() })
             }
         }
     }
@@ -100,33 +101,33 @@ class MealEditorActivity : AppCompatActivity() {
     private fun draw() {
         ready = false
         root.removeAllViews()
-        root.addView(Ui.button(this, "返回 · 草稿自动保存") { finish() })
-        root.addView(Ui.text(this, if (model.kind == "prep") "备菜" else "点菜", 24f, true))
+        root.addView(Ui.back(this) { finish() })
+        root.addView(Ui.text(this, if (model.kind == "prep") UiStrings.s(com.familyrecipes.android.R.string.ui_90e2746c75) else UiStrings.s(com.familyrecipes.android.R.string.ui_d85522beda), 24f, true))
         val editable = model.ownerId == null || model.ownerId == PreferenceManager.userId
-        title = Ui.field(this, "菜单名称", model.title)
+        title = Ui.field(this, UiStrings.s(com.familyrecipes.android.R.string.ui_8ee9f276a6), model.title)
         root.addView(title)
-        dishes = Ui.field(this, "菜名，用顿号分隔", model.dishes.joinToString("、") { it.name }, true)
+        dishes = Ui.field(this, UiStrings.s(com.familyrecipes.android.R.string.ui_e4cfb95fab), model.dishes.joinToString("、") { it.name }, true)
         root.addView(dishes)
         val choose =
-            Ui.button(this, "＋ 从菜谱中选") {
+            Ui.button(this, UiStrings.s(com.familyrecipes.android.R.string.ui_805cb9cde8)) {
                 picker.launch(Intent(this, RecipePickerActivity::class.java))
             }
         root.addView(choose)
-        date = Ui.field(this, "日期（可选，YYYY-MM-DD）", model.mealDate.orEmpty())
+        date = Ui.field(this, UiStrings.s(com.familyrecipes.android.R.string.ui_f0f2a7ce59), model.mealDate.orEmpty())
         root.addView(date)
         meal = model.meal.orEmpty()
-        val meals = listOf("时间未定", "早餐", "午餐", "晚餐", "加餐")
+        val meals = listOf(UiStrings.s(com.familyrecipes.android.R.string.ui_7dc2d8a222), "早餐", "午餐", "晚餐", "加餐")
         val select =
-            Ui.select(this, meals, meals.indexOf(meal).coerceAtLeast(0)) {
+            Ui.select(this, meals.map{UiStrings.domain(it)}, meals.indexOf(meal).coerceAtLeast(0)) {
                 meal = if (it == 0) "" else meals[it]
                 draft()
             }
         root.addView(select)
-        shopping = Ui.field(this, "采购清单：每行一项", model.shopping.joinToString("\n") { it.name }, true)
+        shopping = Ui.field(this, UiStrings.s(com.familyrecipes.android.R.string.ui_be850c21d5), model.shopping.joinToString("\n") { it.name }, true)
         if (model.kind == "prep") {
-            root.addView(Ui.text(this, "需要采购", 20f, true))
+            root.addView(Ui.text(this, UiStrings.s(com.familyrecipes.android.R.string.ui_ca89d33725), 20f, true))
             root.addView(shopping)
-            root.addView(Ui.button(this, "根据菜谱补充采购清单") { generateShopping() })
+            root.addView(Ui.button(this, UiStrings.s(com.familyrecipes.android.R.string.ui_6d58daf417)) { generateShopping() })
             model.shopping.forEachIndexed { i, item ->
                 root.addView(
                     CheckBox(this).apply {
@@ -152,12 +153,12 @@ class MealEditorActivity : AppCompatActivity() {
         choose.isEnabled = editable
         select.isEnabled = editable
         if (editable) {
-            root.addView(Ui.button(this, "保存", true) { save(false) })
-            root.addView(Ui.button(this, "保存并分享到群聊") { save(true) })
+            root.addView(Ui.button(this, UiStrings.s(com.familyrecipes.android.R.string.ui_be5fbbe34c), true) { save(false) })
+            root.addView(Ui.button(this, UiStrings.s(com.familyrecipes.android.R.string.ui_72d32d3460)) { save(true) })
         }
         if (model.kind == "order")
             root.addView(
-                Ui.button(this, "据此创建我的备菜") {
+                Ui.button(this, UiStrings.s(com.familyrecipes.android.R.string.ui_954408d0e5)) {
                     val snapshot = value()
                     model =
                         snapshot.copy(
@@ -241,7 +242,7 @@ class MealEditorActivity : AppCompatActivity() {
                         .filter { it.isNotBlank() }
                         .distinct()
                         .joinToString("\n"))
-                Toast.makeText(this@MealEditorActivity, "按缺少的食材种类补充，请核对用量", Toast.LENGTH_LONG)
+                Toast.makeText(this@MealEditorActivity, UiStrings.s(com.familyrecipes.android.R.string.ui_24ea6b09e1), Toast.LENGTH_LONG)
                     .show()
             } catch (e: CancellationException) {
                 throw e
@@ -266,11 +267,11 @@ class MealEditorActivity : AppCompatActivity() {
         if (busy) return
         val v = value()
         if (v.title.isBlank()) {
-            title.error = "请填写名称"
+            title.error = UiStrings.s(com.familyrecipes.android.R.string.ui_856d0df5f2)
             return
         }
         if (v.mealDate != null && runCatching { java.time.LocalDate.parse(v.mealDate) }.isFailure) {
-            date.error = "日期格式为 YYYY-MM-DD"
+            date.error = UiStrings.s(com.familyrecipes.android.R.string.ui_17f50e0655)
             return
         }
         draft()
@@ -284,7 +285,7 @@ class MealEditorActivity : AppCompatActivity() {
                 DraftWrites.clear(account, key)
                 if (share) share(result)
                 else {
-                    Toast.makeText(this@MealEditorActivity, "已保存", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MealEditorActivity, UiStrings.s(com.familyrecipes.android.R.string.ui_f8dfedcd8a), Toast.LENGTH_SHORT).show()
                     finish()
                 }
             } catch (e: CancellationException) {
@@ -301,14 +302,14 @@ class MealEditorActivity : AppCompatActivity() {
     private suspend fun share(m: MealArrangement) {
         val groups = Ui.data(ApiClient.getService().getGroupsList())
         androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("分享给群聊")
+            .setTitle(UiStrings.s(com.familyrecipes.android.R.string.ui_c809061b3c))
             .setItems(groups.map { it.name }.toTypedArray()) { _, index ->
                 lifecycleScope.launch {
                     try {
                         Ui.ok(
                             ApiClient.getService()
-                                .shareMeal(m.id!!, mapOf("groupId" to groups[index].id!!)))
-                        Toast.makeText(this@MealEditorActivity, "已分享", Toast.LENGTH_SHORT).show()
+                                .shareMeal(m.id!!, ChatShareRequest(groups[index].id!!)))
+                        Toast.makeText(this@MealEditorActivity, UiStrings.s(com.familyrecipes.android.R.string.ui_54bba45c94), Toast.LENGTH_SHORT).show()
                         finish()
                     } catch (e: CancellationException) {
                         throw e
@@ -317,7 +318,7 @@ class MealEditorActivity : AppCompatActivity() {
                     }
                 }
             }
-            .setNegativeButton("暂不分享") { _, _ -> finish() }
+            .setNegativeButton(UiStrings.s(com.familyrecipes.android.R.string.ui_84e2805b5c)) { _, _ -> finish() }
             .show()
     }
 }

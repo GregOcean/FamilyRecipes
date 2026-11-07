@@ -1,5 +1,6 @@
 package com.familyrecipes.android.ui
 
+import com.familyrecipes.android.ui.design.UiStrings
 import android.content.Intent
 import android.os.Bundle
 import android.view.Gravity
@@ -28,28 +29,33 @@ class MainActivity : AppCompatActivity() {
     private lateinit var container: FrameLayout
     private lateinit var bottom: LinearLayout
     private var selected = "recipes"
-    private var currentKitchenName = "我的厨房"
+    private var currentKitchenName = UiStrings.s(com.familyrecipes.android.R.string.ui_056b3fdd26)
 
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
+        val languagePrefs=getSharedPreferences("ui-language",0)
+        if(!languagePrefs.getBoolean("initialized",false)) {
+            languagePrefs.edit().putBoolean("initialized",true).apply()
+            androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(androidx.core.os.LocaleListCompat.forLanguageTags("zh-CN"))
+        }
         drawer = DrawerLayout(this)
         val shell = Ui.box(this, 0)
         val top =
             Ui.row(this).apply {
                 setPadding(12, 8, 12, 8)
-                setBackgroundColor(android.graphics.Color.WHITE)
+                setBackgroundColor(Ui.surface)
             }
         top.addView(
             Ui.button(this, "☰") { drawer.openDrawer(GravityCompat.START) }
                 .apply {
-                    contentDescription = "打开工具栏"
+                    contentDescription = UiStrings.s(com.familyrecipes.android.R.string.ui_a9e2bd537b)
                     backgroundTintList =
                         android.content.res.ColorStateList.valueOf(
                             android.graphics.Color.TRANSPARENT)
                 },
             LinearLayout.LayoutParams(64.dp(), -2))
         kitchenLabel =
-            Ui.button(this, PreferenceManager.currentKitchenName ?: "我的厨房") {
+            Ui.button(this, PreferenceManager.currentKitchenName ?: UiStrings.s(com.familyrecipes.android.R.string.ui_056b3fdd26)) {
                     showSwitchKitchenDialog()
                 }
                 .apply {
@@ -59,52 +65,31 @@ class MainActivity : AppCompatActivity() {
                 }
         top.addView(kitchenLabel, LinearLayout.LayoutParams(0, -2, 1f))
         top.addView(
-            Ui.button(this, "🌻") { showPage("profile") }
-                .apply {
-                    contentDescription = "个人头像，进入我的"
-                    backgroundTintList =
-                        android.content.res.ColorStateList.valueOf(0xfffff1bd.toInt())
-                },
-            LinearLayout.LayoutParams(64.dp(), -2))
+            com.familyrecipes.android.ui.design.UserAvatar.current(this, this).apply {
+                contentDescription = UiStrings.s(R.string.ui_c32eedbf88)
+                isFocusable = true
+                setOnClickListener { showPage("profile") }
+            },
+            LinearLayout.LayoutParams(48.dp(), 48.dp()).apply { gravity = Gravity.CENTER_VERTICAL; marginEnd = 8.dp() })
         shell.addView(top)
         container = FrameLayout(this).apply { id = R.id.fragment_container }
         shell.addView(container, LinearLayout.LayoutParams(-1, 0, 1f))
-        bottom = Ui.row(this).apply { setBackgroundColor(android.graphics.Color.WHITE) }
+        bottom = Ui.row(this).apply { setBackgroundColor(Ui.surface) }
         shell.addView(bottom)
         drawer.addView(shell, DrawerLayout.LayoutParams(-1, -1))
         val panel = Ui.box(this)
-        panel.addView(Ui.text(this, "常用工具", 24f, true))
+        panel.addView(Ui.text(this, UiStrings.s(com.familyrecipes.android.R.string.ui_3e90c5117d), 24f, true))
         listOf(
-                "厨房与群组" to { showSwitchKitchenDialog() },
-                "创建群聊" to
-                    {
-                        startActivity(
-                            Intent(
-                                this,
-                                com.familyrecipes.android.ui.social.CreateGroupActivity::class
-                                    .java))
-                    },
-                "扫一扫" to
-                    {
-                        startActivity(
-                            Intent(
-                                this,
-                                com.familyrecipes.android.ui.social.ScanQRActivity::class.java))
-                    },
-                "我的二维码" to
-                    {
-                        startActivity(
-                            Intent(
-                                this,
-                                com.familyrecipes.android.ui.social.MyQRCodeActivity::class.java))
-                    },
-                "通知、字体与系统设置" to { showPage("profile") })
+            UiStrings.s(com.familyrecipes.android.R.string.ui_d46695d56e) to {if(com.familyrecipes.android.util.AuthUtil.requireLogin(this)) startActivity(Intent(this,com.familyrecipes.android.ui.settings.ManagementActivity::class.java))},
+            UiStrings.s(com.familyrecipes.android.R.string.ui_47fdc41702) to {if(com.familyrecipes.android.util.AuthUtil.requireLogin(this)) startActivity(Intent(this,com.familyrecipes.android.ui.settings.ManagementActivity::class.java).putExtra("groups",true))},
+            UiStrings.s(com.familyrecipes.android.R.string.ui_402b79ad66) to {startActivity(Intent(this,com.familyrecipes.android.ui.social.ScanQRActivity::class.java))},
+            UiStrings.s(com.familyrecipes.android.R.string.ui_e366ccf155) to {startActivity(Intent(this,com.familyrecipes.android.ui.settings.SettingsActivity::class.java))})
             .forEach { (label, action) ->
                 panel.addView(
                     Ui.button(this, label) {
                         drawer.closeDrawers()
                         action()
-                    })
+                    }.apply { if(label==UiStrings.s(com.familyrecipes.android.R.string.ui_402b79ad66)){setIconResource(R.drawable.ic_scan_square);iconSize=24.dp()} })
             }
         drawer.addView(
             Ui.scroll(this, panel), DrawerLayout.LayoutParams(300.dp(), -1, Gravity.START))
@@ -122,6 +107,14 @@ class MainActivity : AppCompatActivity() {
         initializeKitchen()
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (intent.getStringExtra("navigate_to") == "profile") showPage("profile")
+    }
+
+    override fun onResume(){super.onResume();if(::kitchenLabel.isInitialized)initializeKitchen()}
+
     private fun Int.dp() = (this * resources.displayMetrics.density).toInt()
 
     override fun onSaveInstanceState(out: Bundle) {
@@ -130,6 +123,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun showPage(page: String) {
+        if (page in setOf("stock", "meals", "messages") && !PreferenceManager.isLoggedIn()) {
+            showPage("profile")
+            return
+        }
         selected = page
         val fragment: Fragment =
             when (page) {
@@ -151,11 +148,11 @@ class MainActivity : AppCompatActivity() {
     private fun drawNavigation() {
         bottom.removeAllViews()
         listOf(
-                Triple("recipes", "菜谱", R.drawable.ic_book_outline),
-                Triple("stock", "库存", R.drawable.ic_inventory_outline),
+                Triple("recipes", UiStrings.s(com.familyrecipes.android.R.string.ui_ad237159d7), R.drawable.ic_book_outline),
+                Triple("stock", UiStrings.s(com.familyrecipes.android.R.string.ui_0eac8802de), R.drawable.ic_inventory_outline),
                 Triple("add", "＋", R.drawable.ic_add_circle),
-                Triple("meals", "安排", R.drawable.ic_calendar),
-                Triple("messages", "消息", R.drawable.ic_message))
+                Triple("meals", UiStrings.s(com.familyrecipes.android.R.string.ui_769ef5ab61), R.drawable.ic_calendar),
+                Triple("messages", UiStrings.s(com.familyrecipes.android.R.string.ui_ff692f04ac), R.drawable.ic_message))
             .forEach { (page, label, icon) ->
                 val b =
                     androidx.appcompat.widget.AppCompatButton(this).apply {
@@ -165,7 +162,7 @@ class MainActivity : AppCompatActivity() {
                         minimumWidth = 0
                         minWidth = 0
                         setTextColor(
-                            if (page == "add") android.graphics.Color.WHITE
+                            if (page == "add") Ui.onBlue
                             else if (page == selected) Ui.blue else Ui.muted)
                         background =
                             android.graphics.drawable.GradientDrawable().apply {
@@ -197,29 +194,29 @@ class MainActivity : AppCompatActivity() {
     private fun showAddMenu() {
         val dialog = BottomSheetDialog(this)
         val box = Ui.box(this)
-        box.addView(Ui.text(this, "新建", 23f, true))
+        box.addView(Ui.text(this, UiStrings.s(com.familyrecipes.android.R.string.ui_26bb841878), 23f, true))
         listOf(
-                "食材" to AddIngredientActivity::class.java,
-                "菜谱" to EditRecipeActivity::class.java,
-                "点菜" to MealEditorActivity::class.java,
-                "备菜" to MealEditorActivity::class.java)
+                UiStrings.s(com.familyrecipes.android.R.string.ui_43589f00eb) to AddIngredientActivity::class.java,
+                UiStrings.s(com.familyrecipes.android.R.string.ui_ad237159d7) to EditRecipeActivity::class.java,
+                UiStrings.s(com.familyrecipes.android.R.string.ui_d85522beda) to MealEditorActivity::class.java,
+                UiStrings.s(com.familyrecipes.android.R.string.ui_90e2746c75) to MealEditorActivity::class.java)
             .chunked(2)
             .forEach { pair ->
                 val row = Ui.row(this)
                 pair.forEach { (label, clazz) ->
                     val b =
                         Ui.tile(this, label, when(label){
-                            "食材" -> R.drawable.ic_ui_produce
-                            "菜谱" -> R.drawable.ic_book_outline
-                            "点菜" -> R.drawable.ic_ui_order
+                            UiStrings.s(com.familyrecipes.android.R.string.ui_43589f00eb) -> R.drawable.ic_ui_produce
+                            UiStrings.s(com.familyrecipes.android.R.string.ui_ad237159d7) -> R.drawable.ic_book_outline
+                            UiStrings.s(com.familyrecipes.android.R.string.ui_d85522beda) -> R.drawable.ic_ui_order
                             else -> R.drawable.ic_ui_prep
-                        }, when(label){"食材"->0xffe9f5e9.toInt();"点菜"->0xfffff1cf.toInt();"备菜"->0xffeeeafb.toInt();else->Ui.pale}) {
+                        }, when(label){UiStrings.s(com.familyrecipes.android.R.string.ui_43589f00eb)->Ui.green;UiStrings.s(com.familyrecipes.android.R.string.ui_d85522beda)->Ui.warm;UiStrings.s(com.familyrecipes.android.R.string.ui_90e2746c75)->Ui.purple;else->Ui.pale}) {
                             dialog.dismiss()
                             if (com.familyrecipes.android.util.AuthUtil.requireLogin(
-                                this, "创建$label"))
+                                this, UiStrings.f(com.familyrecipes.android.R.string.create_label, label)))
                                 startActivity(
                                     Intent(this, clazz)
-                                        .putExtra("kind", if (label == "备菜") "prep" else "order"))
+                                        .putExtra("kind", if (label == UiStrings.s(com.familyrecipes.android.R.string.ui_90e2746c75)) "prep" else "order"))
                         }
                     row.addView(
                         b,
@@ -230,7 +227,7 @@ class MainActivity : AppCompatActivity() {
                 box.addView(row)
             }
         box.addView(
-            Ui.button(this, "继续草稿") {
+            Ui.button(this, UiStrings.s(com.familyrecipes.android.R.string.ui_09a97f905e)) {
                 dialog.dismiss()
                 showPage("meals")
                 supportFragmentManager.executePendingTransactions()
@@ -247,27 +244,68 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showSwitchKitchenDialog() {
+        if (!com.familyrecipes.android.util.AuthUtil.requireLogin(this)) return
         lifecycleScope.launch {
             try {
                 val response = ApiClient.getService().getKitchens()
                 check(response.isSuccessful && response.body()?.code == 200)
                 val kitchens = response.body()?.data.orEmpty()
-                val labels = kitchens.map { "${it.groupName ?: "群聊"} · ${it.name}" }.toTypedArray()
-                android.app.AlertDialog.Builder(this@MainActivity)
-                    .setTitle("选择厨房")
-                    .setItems(labels) { _, index -> selectKitchen(kitchens[index]) }
-                    .setPositiveButton("新增厨房") { _, _ -> createKitchen() }
-                    .setNeutralButton("重命名当前厨房") { _, _ ->
-                        kitchens
-                            .find { it.id == PreferenceManager.currentKitchenId }
-                            ?.let { editKitchenName(it) }
+                val popup=androidx.appcompat.widget.ListPopupWindow(this@MainActivity)
+                popup.anchorView=kitchenLabel
+                popup.width=(resources.displayMetrics.widthPixels-32.dp()).coerceAtLeast(200.dp())
+                val anchorLocation=IntArray(2)
+                kitchenLabel.getLocationOnScreen(anchorLocation)
+                popup.horizontalOffset=16.dp()-anchorLocation[0]
+                popup.isModal=true
+                popup.setBackgroundDrawable(android.graphics.drawable.GradientDrawable().apply {
+                    setColor(Ui.surface)
+                    cornerRadius=18.dp().toFloat()
+                    setStroke(1.dp(), Ui.pale)
+                })
+                popup.verticalOffset=6.dp()
+                popup.setAdapter(object : ArrayAdapter<Kitchen>(this@MainActivity, 0, kitchens) {
+                    override fun getView(position: Int, convertView: android.view.View?, parent: android.view.ViewGroup): android.view.View {
+                        val kitchen=getItem(position)!!
+                        val active=kitchen.id==PreferenceManager.currentKitchenId
+                        return Ui.row(this@MainActivity).apply {
+                            setPadding(14.dp(),10.dp(),14.dp(),10.dp())
+                            minimumHeight=72.dp()
+                            setBackgroundColor(if(active) Ui.pale else Ui.surface)
+                            val icon=ImageView(context).apply {
+                                setImageResource(R.drawable.ic_ui_kitchen)
+                                imageTintList=android.content.res.ColorStateList.valueOf(Ui.blue)
+                                setPadding(8.dp(),8.dp(),8.dp(),8.dp())
+                                background=android.graphics.drawable.GradientDrawable().apply {
+                                    setColor(if(active) Ui.surface else Ui.pale)
+                                    cornerRadius=12.dp().toFloat()
+                                }
+                            }
+                            addView(icon, LinearLayout.LayoutParams(40.dp(),40.dp()))
+                            val words=Ui.box(context,0).apply {
+                                setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                                setPadding(12.dp(),0,8.dp(),0)
+                                addView(Ui.text(context,kitchen.name,18f,true).apply {setPadding(0,0,0,2.dp());setTextColor(Ui.blue)})
+                                addView(Ui.text(context,kitchen.groupName.orEmpty(),14f).apply {setPadding(0,0,0,0);setTextColor(Ui.muted)})
+                            }
+                            addView(words,LinearLayout.LayoutParams(0,-2,1f))
+                            if(active) addView(Ui.text(context,"✓",22f,true).apply {setTextColor(Ui.blue)})
+                        }
                     }
-                    .setNegativeButton("取消", null)
-                    .show()
+                })
+                popup.setOnItemClickListener{_,_,index,_->popup.dismiss();if(kitchens[index].id!=PreferenceManager.currentKitchenId)selectKitchen(kitchens[index])}
+                popup.show()
+                popup.listView?.apply {
+                    background=android.graphics.drawable.GradientDrawable().apply {
+                        setColor(Ui.surface)
+                        cornerRadius=18.dp().toFloat()
+                    }
+                    clipToOutline=true
+                }
+
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Toast.makeText(this@MainActivity, "厨房加载失败，请登录后重试", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@MainActivity, UiStrings.s(com.familyrecipes.android.R.string.ui_6610d96cd4), Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -278,77 +316,6 @@ class MainActivity : AppCompatActivity() {
         updateCurrentKitchen(kitchen.name)
         // Recreate the visible screen, cancelling requests for the previous kitchen.
         recreate()
-    }
-
-    private fun createKitchen() {
-        lifecycleScope.launch {
-            try {
-                val response = ApiClient.getService().getGroupsList()
-                check(response.isSuccessful && response.body()?.code == 200)
-                val groups =
-                    response.body()?.data.orEmpty().filter {
-                        it.managerId == PreferenceManager.userId
-                    }
-                if (groups.isEmpty()) {
-                    editKitchenName(Kitchen(name = ""))
-                    return@launch
-                }
-                if (groups.size == 1) {
-                    editKitchenName(Kitchen(groupId = groups.single().id!!, name = ""))
-                    return@launch
-                }
-                android.app.AlertDialog.Builder(this@MainActivity)
-                    .setTitle("选择所属群组")
-                    .setItems(groups.map { it.name }.toTypedArray()) { _, index ->
-                        editKitchenName(Kitchen(groupId = groups[index].id!!, name = ""))
-                    }
-                    .show()
-            } catch (e: kotlinx.coroutines.CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                Toast.makeText(this@MainActivity, "群组加载失败，请重试", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    private fun editKitchenName(kitchen: Kitchen) {
-        val field =
-            android.widget.EditText(this).apply {
-                setText(kitchen.name)
-                hint = "例如：老家的厨房"
-            }
-        val dialog =
-            android.app.AlertDialog.Builder(this)
-                .setTitle("厨房名称（群管理员可修改）")
-                .setView(field)
-                .setPositiveButton("保存", null)
-                .setNegativeButton("取消", null)
-                .create()
-        dialog.show()
-        dialog.getButton(-1).setOnClickListener {
-            val name = field.text.toString().trim()
-            if (name.isBlank()) {
-                field.error = "请输入名称"
-                return@setOnClickListener
-            }
-            lifecycleScope.launch {
-                try {
-                    val response =
-                        if (kitchen.id == null)
-                            ApiClient.getService().createKitchen(kitchen.copy(name = name))
-                        else
-                            ApiClient.getService()
-                                .renameKitchen(kitchen.id, kitchen.copy(name = name))
-                    check(response.isSuccessful && response.body()?.code == 200)
-                    dialog.dismiss()
-                    selectKitchen(response.body()!!.data!!)
-                } catch (e: kotlinx.coroutines.CancellationException) {
-                    throw e
-                } catch (_: Exception) {
-                    field.error = "保存失败，请检查权限和网络后重试"
-                }
-            }
-        }
     }
 
     fun initializeKitchen() {
@@ -368,7 +335,7 @@ class MainActivity : AppCompatActivity() {
                 val kitchen =
                     kitchens.find { it.id == selectedId }
                         ?: kitchens.firstOrNull()
-                        ?: error("没有可用厨房")
+                        ?: error(UiStrings.s(com.familyrecipes.android.R.string.ui_d2ff29c1f6))
                 if (kitchen.id != selectedId) selectKitchen(kitchen)
                 else {
                     PreferenceManager.saveCurrentKitchen(kitchen.id, kitchen.name)
@@ -378,7 +345,7 @@ class MainActivity : AppCompatActivity() {
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (_: Exception) {
-                Toast.makeText(this@MainActivity, "厨房初始化失败，请点击顶部厨房入口重试", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@MainActivity, UiStrings.s(com.familyrecipes.android.R.string.ui_6f3664cf20), Toast.LENGTH_LONG).show()
             }
         }
     }

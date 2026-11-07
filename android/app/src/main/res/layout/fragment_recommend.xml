@@ -10,7 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
-        android:text="🎲 随机推荐"
+        android:text="@string/ui_f16ca0bc64"
         android:textSize="16sp" />
 
     <!-- 推荐列表 -->

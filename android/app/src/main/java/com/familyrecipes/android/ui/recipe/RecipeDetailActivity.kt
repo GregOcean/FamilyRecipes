@@ -1,5 +1,6 @@
 package com.familyrecipes.android.ui.recipe
 
+import com.familyrecipes.android.ui.design.UiStrings
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
@@ -50,12 +51,12 @@ class RecipeDetailActivity : AppCompatActivity() {
         binding.toolbar.setNavigationOnClickListener {
             finish()
         }
-        binding.toolbar.title = "菜谱详情"
+        binding.toolbar.title = UiStrings.s(com.familyrecipes.android.R.string.ui_fbb7e7ea47)
     }
 
     private fun loadRecipeDetail() {
         if (recipeId == 0L) {
-            android.widget.Toast.makeText(this, "菜谱ID无效", android.widget.Toast.LENGTH_SHORT).show()
+            android.widget.Toast.makeText(this, UiStrings.s(com.familyrecipes.android.R.string.ui_a6b4953271), android.widget.Toast.LENGTH_SHORT).show()
             finish()
             return
         }
@@ -65,11 +66,12 @@ class RecipeDetailActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
+                val historyAccount=com.familyrecipes.android.data.local.LocalStore.account
                 val response = ApiClient.getService().getRecipeDetail(recipeId)
                 
                 if (response.isSuccessful && response.body()?.code == 200) {
                     recipe = response.body()?.data
-                    recipe?.let { displayRecipe(it) }
+                    recipe?.let { item -> displayRecipe(item); try { com.familyrecipes.android.data.local.RecipeHistory.record(historyAccount,item) } catch(e:kotlinx.coroutines.CancellationException){throw e} catch(_:Exception){ /* History must not prevent reading a recipe. */ } }
                 } else {
                     android.widget.Toast.makeText(
                         this@RecipeDetailActivity,
@@ -81,7 +83,7 @@ class RecipeDetailActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 android.widget.Toast.makeText(
                     this@RecipeDetailActivity,
-                    "网络错误：${e.message}",
+                    UiStrings.f(com.familyrecipes.android.R.string.network_error_value, e.message),
                     android.widget.Toast.LENGTH_SHORT
                 ).show()
                 e.printStackTrace()
@@ -119,7 +121,7 @@ class RecipeDetailActivity : AppCompatActivity() {
         }
         
         // 设置创建者信息
-        binding.tvCreator.text = "创建者：${recipe.creator?.username ?: "未知"}"
+        binding.tvCreator.text = UiStrings.f(com.familyrecipes.android.R.string.creator_value, recipe.creator?.username ?: UiStrings.s(com.familyrecipes.android.R.string.ui_1622dc9b6b))
         
         // 设置标签
         binding.chipGroup.removeAllViews()
@@ -135,7 +137,7 @@ class RecipeDetailActivity : AppCompatActivity() {
                 isClickable = true
                 isCheckable = false
                 setChipBackgroundColorResource(R.color.primary)
-                setTextColor(getColor(R.color.white))
+                setTextColor(getColor(R.color.on_primary))
                 setOnClickListener {
                     // 点击tag跳转到搜索页面，搜索该tag（移除#前缀）
                     val searchTag = tag.tagValue.removePrefix("#")
@@ -162,43 +164,43 @@ class RecipeDetailActivity : AppCompatActivity() {
             if(!photo.caption.isNullOrBlank()) binding.gallery.addView(android.widget.TextView(this).apply { text=photo.caption;setPadding(0,8,0,24) })
         }
         val ui=com.familyrecipes.android.ui.design.Ui
-        recipe.sourceRecipeName?.let{binding.gallery.addView(ui.text(this,"改编自：$it",15f))}
-        binding.gallery.addView(ui.text(this,"食材与用量",21f,true))
+        recipe.sourceRecipeName?.let{binding.gallery.addView(ui.text(this,UiStrings.f(com.familyrecipes.android.R.string.adapted_value, it),15f))}
+        binding.gallery.addView(ui.text(this,UiStrings.s(com.familyrecipes.android.R.string.ui_c45c4747bb),21f,true))
         recipe.ingredients.orEmpty().forEach{binding.gallery.addView(ui.text(this,"${it.ingredient?.name.orEmpty()}  ${it.amount.orEmpty()}"))}
-        binding.gallery.addView(ui.text(this,"做法步骤",21f,true))
+        binding.gallery.addView(ui.text(this,UiStrings.s(com.familyrecipes.android.R.string.ui_fea10d57e2),21f,true))
         recipe.steps.orEmpty().forEach{step->binding.gallery.addView(ui.text(this,"${step.stepNumber}. ${step.description}"));step.image?.let{url->val image=android.widget.ImageView(this).apply{adjustViewBounds=true};binding.gallery.addView(image);Glide.with(this).load(com.familyrecipes.android.util.MediaImages.model(url)).into(image)}}
-        binding.gallery.addView(ui.button(this,"改成我的做法"){
-            lifecycleScope.launch{try{val kitchen=PreferenceManager.currentKitchenId?:error("请先选择厨房");val copy=ui.data(ApiClient.getService().adaptRecipe(recipeId,mapOf("kitchenId" to kitchen)));startActivity(android.content.Intent(this@RecipeDetailActivity,EditRecipeActivity::class.java).putExtra("recipe_id",copy.id))}catch(e:kotlinx.coroutines.CancellationException){throw e}catch(e:Exception){ui.toast(this@RecipeDetailActivity,e)}}
+        binding.gallery.addView(ui.button(this,UiStrings.s(com.familyrecipes.android.R.string.ui_ad1a148b7b)){
+            lifecycleScope.launch{try{val kitchen=PreferenceManager.currentKitchenId?:error(UiStrings.s(com.familyrecipes.android.R.string.ui_eb006cd6f1));val copy=ui.data(ApiClient.getService().adaptRecipe(recipeId,mapOf("kitchenId" to kitchen)));startActivity(android.content.Intent(this@RecipeDetailActivity,EditRecipeActivity::class.java).putExtra("recipe_id",copy.id))}catch(e:kotlinx.coroutines.CancellationException){throw e}catch(e:Exception){ui.toast(this@RecipeDetailActivity,e)}}
         })
         val known=recipe.cooks.orEmpty().any{it.id==currentUserId}
-        binding.gallery.addView(ui.button(this,if(known)"已标记我会做 · 取消" else "标记我会做"){
+        binding.gallery.addView(ui.button(this,if(known)UiStrings.s(com.familyrecipes.android.R.string.ui_c07569f86e) else UiStrings.s(com.familyrecipes.android.R.string.ui_0191cf83a3)){
             lifecycleScope.launch{try{ui.ok(ApiClient.getService().setKnown(recipeId,mapOf("known" to !known)));loadRecipeDetail()}catch(e:kotlinx.coroutines.CancellationException){throw e}catch(e:Exception){ui.toast(this@RecipeDetailActivity,e)}}
         })
-        listOf("order" to "加入点菜","prep" to "加入备菜").forEach{(kind,label)->binding.gallery.addView(ui.button(this,label){startActivity(android.content.Intent(this,com.familyrecipes.android.ui.meal.MealEditorActivity::class.java).putExtra("kind",kind).putExtra("recipe_id",recipe.id).putExtra("recipe_name",recipe.name))})}
-        binding.gallery.addView(ui.button(this,"记录这次做菜"){startActivity(android.content.Intent(this,CookingRecordActivity::class.java).putExtra("recipe_id",recipe.id))})
+        listOf("order" to UiStrings.s(com.familyrecipes.android.R.string.ui_b26b310008),"prep" to UiStrings.s(com.familyrecipes.android.R.string.ui_7a73e91a1d)).forEach{(kind,label)->binding.gallery.addView(ui.button(this,label){startActivity(android.content.Intent(this,com.familyrecipes.android.ui.meal.MealEditorActivity::class.java).putExtra("kind",kind).putExtra("recipe_id",recipe.id).putExtra("recipe_name",recipe.name))})}
+        binding.gallery.addView(ui.button(this,UiStrings.s(com.familyrecipes.android.R.string.ui_00f9d79879)){startActivity(android.content.Intent(this,CookingRecordActivity::class.java).putExtra("recipe_id",recipe.id))})
         val history=android.widget.LinearLayout(this).apply{orientation=android.widget.LinearLayout.VERTICAL};binding.gallery.addView(history)
-        lifecycleScope.launch{try{val records=ui.data(ApiClient.getService().cookingRecords(recipeId));history.addView(ui.text(this@RecipeDetailActivity,"我的做菜记录",21f,true));records.forEach{r->history.addView(ui.text(this@RecipeDetailActivity,"${r.cookedAt.take(10)}\n${r.notes}"));com.google.gson.Gson().fromJson(r.images,Array<String>::class.java).orEmpty().forEach{url->val image=android.widget.ImageView(this@RecipeDetailActivity).apply{adjustViewBounds=true};history.addView(image);Glide.with(this@RecipeDetailActivity).load(com.familyrecipes.android.util.MediaImages.model(url)).into(image)}}}catch(e:kotlinx.coroutines.CancellationException){throw e}catch(e:Exception){history.addView(ui.text(this@RecipeDetailActivity,"做菜记录加载失败，请重新打开重试"))}}
+        lifecycleScope.launch{try{val records=ui.data(ApiClient.getService().cookingRecords(recipeId));history.addView(ui.text(this@RecipeDetailActivity,UiStrings.s(com.familyrecipes.android.R.string.ui_a40e588383),21f,true));records.forEach{r->history.addView(ui.text(this@RecipeDetailActivity,"${r.cookedAt.take(10)}\n${r.notes}"));com.google.gson.Gson().fromJson(r.images,Array<String>::class.java).orEmpty().forEach{url->val image=android.widget.ImageView(this@RecipeDetailActivity).apply{adjustViewBounds=true};history.addView(image);Glide.with(this@RecipeDetailActivity).load(com.familyrecipes.android.util.MediaImages.model(url)).into(image)}}}catch(e:kotlinx.coroutines.CancellationException){throw e}catch(e:Exception){history.addView(ui.text(this@RecipeDetailActivity,UiStrings.s(com.familyrecipes.android.R.string.ui_f24e502e92)))}}
         // 设置统计信息
         binding.tvViewCount.text = "${recipe.viewCount ?: 0}"
         binding.tvFavoriteCount.text = "${recipe.favoriteCount ?: 0}"
         
         // 设置烹饪时间和难度
         if (recipe.cookingTime != null) {
-            binding.tvCookingTime.text = "${recipe.cookingTime}分钟"
+            binding.tvCookingTime.text = UiStrings.f(com.familyrecipes.android.R.string.minutes_value, recipe.cookingTime)
             binding.tvCookingTime.visibility = View.VISIBLE
         } else {
             binding.tvCookingTime.visibility = View.GONE
         }
         
         if (recipe.difficulty != null) {
-            binding.tvDifficulty.text = when (recipe.difficulty) {
+            binding.tvDifficulty.text = UiStrings.domain(when (recipe.difficulty) {
                 1 -> "简单"
                 2 -> "较易"
                 3 -> "适中"
                 4 -> "较难"
                 5 -> "困难"
-                else -> "未知"
-            }
+                else -> UiStrings.s(com.familyrecipes.android.R.string.ui_1622dc9b6b)
+            })
             binding.tvDifficulty.visibility = View.VISIBLE
         } else {
             binding.tvDifficulty.visibility = View.GONE
@@ -206,7 +208,7 @@ class RecipeDetailActivity : AppCompatActivity() {
         
         // 设置份数
         if (recipe.servings != null) {
-            binding.tvServings.text = "${recipe.servings}人份"
+            binding.tvServings.text = UiStrings.f(com.familyrecipes.android.R.string.servings_value, recipe.servings)
             binding.tvServings.visibility = View.VISIBLE
         } else {
             binding.tvServings.visibility = View.GONE
@@ -248,10 +250,10 @@ class RecipeDetailActivity : AppCompatActivity() {
 
     private fun updateFavoriteButton(isFavorite: Boolean) {
         if (isFavorite) {
-            binding.btnFavorite.text = "已收藏"
+            binding.btnFavorite.text = UiStrings.s(com.familyrecipes.android.R.string.ui_934ebd87e6)
             binding.btnFavorite.setIconResource(R.drawable.ic_favorite_filled)
         } else {
-            binding.btnFavorite.text = "收藏"
+            binding.btnFavorite.text = UiStrings.s(com.familyrecipes.android.R.string.ui_ae336cd047)
             binding.btnFavorite.setIconResource(R.drawable.ic_favorite_border)
         }
     }
@@ -268,7 +270,7 @@ class RecipeDetailActivity : AppCompatActivity() {
 
     private fun toggleFavorite() {
         // 检查登录状态
-        if (!com.familyrecipes.android.util.AuthUtil.requireLogin(this, "收藏")) {
+        if (!com.familyrecipes.android.util.AuthUtil.requireLogin(this, UiStrings.s(com.familyrecipes.android.R.string.ui_ae336cd047))) {
             return
         }
         
@@ -297,19 +299,19 @@ class RecipeDetailActivity : AppCompatActivity() {
                     // 设置 RESULT_OK 以便列表刷新
                     setResult(RESULT_OK)
                     
-                    val message = if (isFavorite) "已收藏" else "已取消收藏"
+                    val message = if (isFavorite) UiStrings.s(com.familyrecipes.android.R.string.ui_934ebd87e6) else UiStrings.s(com.familyrecipes.android.R.string.ui_3a906c714a)
                     android.widget.Toast.makeText(this@RecipeDetailActivity, message, android.widget.Toast.LENGTH_SHORT).show()
                 } else {
                     android.widget.Toast.makeText(
                         this@RecipeDetailActivity,
-                        "操作失败",
+                        UiStrings.s(com.familyrecipes.android.R.string.ui_5fa802bef5),
                         android.widget.Toast.LENGTH_SHORT
                     ).show()
                 }
             } catch (e: Exception) {
                 android.widget.Toast.makeText(
                     this@RecipeDetailActivity,
-                    "网络错误",
+                    UiStrings.s(com.familyrecipes.android.R.string.ui_0bffc62bb3),
                     android.widget.Toast.LENGTH_SHORT
                 ).show()
                 e.printStackTrace()
@@ -319,7 +321,7 @@ class RecipeDetailActivity : AppCompatActivity() {
     
     private fun toggleDislike() {
         // 检查登录状态
-        if (!com.familyrecipes.android.util.AuthUtil.requireLogin(this, "差评")) {
+        if (!com.familyrecipes.android.util.AuthUtil.requireLogin(this, UiStrings.s(com.familyrecipes.android.R.string.ui_e62fbccc78))) {
             return
         }
         
@@ -347,19 +349,19 @@ class RecipeDetailActivity : AppCompatActivity() {
                     // 设置 RESULT_OK 以便列表刷新
                     setResult(RESULT_OK)
                     
-                    val message = if (isDisliked) "已标记为不喜欢" else "已取消标记"
+                    val message = if (isDisliked) UiStrings.s(com.familyrecipes.android.R.string.ui_6d02714217) else UiStrings.s(com.familyrecipes.android.R.string.ui_bf709ae4c8)
                     android.widget.Toast.makeText(this@RecipeDetailActivity, message, android.widget.Toast.LENGTH_SHORT).show()
                 } else {
                     android.widget.Toast.makeText(
                         this@RecipeDetailActivity,
-                        "操作失败",
+                        UiStrings.s(com.familyrecipes.android.R.string.ui_5fa802bef5),
                         android.widget.Toast.LENGTH_SHORT
                     ).show()
                 }
             } catch (e: Exception) {
                 android.widget.Toast.makeText(
                     this@RecipeDetailActivity,
-                    "网络错误",
+                    UiStrings.s(com.familyrecipes.android.R.string.ui_0bffc62bb3),
                     android.widget.Toast.LENGTH_SHORT
                 ).show()
                 e.printStackTrace()
@@ -383,11 +385,11 @@ class RecipeDetailActivity : AppCompatActivity() {
      */
     private fun copyToClipboard(url: String) {
         val clipboard = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-        val clip = android.content.ClipData.newPlainText("外部链接", url)
+        val clip = android.content.ClipData.newPlainText(UiStrings.s(com.familyrecipes.android.R.string.ui_42ca66bafb), url)
         clipboard.setPrimaryClip(clip)
         
         android.util.Log.d("RecipeDetail", "已复制链接: $url")
-        android.widget.Toast.makeText(this, "链接已复制到剪贴板", android.widget.Toast.LENGTH_SHORT).show()
+        android.widget.Toast.makeText(this, UiStrings.s(com.familyrecipes.android.R.string.ui_deb26c26fb), android.widget.Toast.LENGTH_SHORT).show()
     }
     
     /**
@@ -432,11 +434,11 @@ class RecipeDetailActivity : AppCompatActivity() {
             } else {
                 // 如果没有找到浏览器，显示选择器
                 android.util.Log.d("RecipeDetail", "未找到浏览器，显示选择器")
-                val chooser = android.content.Intent.createChooser(intent, "选择浏览器打开")
+                val chooser = android.content.Intent.createChooser(intent, UiStrings.s(com.familyrecipes.android.R.string.ui_16407ac216))
                 startActivity(chooser)
             }
         } catch (e: Exception) {
-            android.util.Log.e("RecipeDetail", "打开链接失败", e)
+            android.util.Log.e("RecipeDetail", UiStrings.s(com.familyrecipes.android.R.string.ui_72c1c093e4), e)
             android.widget.Toast.makeText(this, "无法打开链接: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
         }
     }
@@ -455,6 +457,7 @@ class ExternalLinkDetailAdapter(
         val ivThumbnail: android.widget.ImageView = view.findViewById(com.familyrecipes.android.R.id.iv_thumbnail)
         val tvTitle: android.widget.TextView = view.findViewById(com.familyrecipes.android.R.id.tv_title)
         val tvSource: android.widget.TextView = view.findViewById(com.familyrecipes.android.R.id.tv_source)
+        val tvNotes: android.widget.TextView = view.findViewById(com.familyrecipes.android.R.id.tv_link_notes)
         val btnCopy: android.widget.ImageView = view.findViewById(com.familyrecipes.android.R.id.btn_copy)
         val btnOpen: android.widget.ImageView = view.findViewById(com.familyrecipes.android.R.id.btn_open)
     }
@@ -469,7 +472,9 @@ class ExternalLinkDetailAdapter(
         val link = links[position]
         
         holder.tvTitle.text = link.title
-        holder.tvSource.text = link.source ?: "网络"
+        holder.tvSource.text = link.source ?: UiStrings.s(com.familyrecipes.android.R.string.ui_7ddbe15c84)
+        holder.tvNotes.text=link.notes.orEmpty()
+        holder.tvNotes.visibility=if(link.notes.isNullOrBlank()) android.view.View.GONE else android.view.View.VISIBLE
         
         // 加载缩略图
         if (!link.thumbnail.isNullOrEmpty()) {

@@ -54,8 +54,24 @@ public class RecipeService {
     @Autowired private KitchenService kitchens;
     @Autowired private RecipeImageMapper images;
 
+    private void normalizeLink(ExternalRecipe link,int position) {
+        if(link==null || link.getTitle()==null || link.getTitle().isBlank() || link.getTitle().length()>200
+            || link.getUrl()==null || link.getUrl().length()>500 || link.getNotes()!=null && link.getNotes().length()>2000)
+            throw new com.familyrecipes.common.ApiException(400,"外链标题、地址或备注不合法（备注最多2000字）");
+        try {
+            var uri=java.net.URI.create(link.getUrl().trim());
+            if(!java.util.List.of("https","http").contains(uri.getScheme()) || uri.getHost()==null || uri.getUserInfo()!=null) throw new IllegalArgumentException();
+            link.setUrl(uri.toString());
+        } catch(Exception e) { throw new com.familyrecipes.common.ApiException(400,"外部链接必须是有效的HTTP或HTTPS地址"); }
+        link.setSource(com.familyrecipes.util.ExternalLinkParser.sourceForUrl(link.getUrl()));
+        link.setSortOrder(position);
+    }
+
     private void validateMedia(Recipe recipe, List<CookingStep> steps, List<ExternalRecipe> links) {
-        if(links!=null && links.size()>1) throw new com.familyrecipes.common.ApiException(400,"每篇收藏仅保存一个来源，不同教程请分别收藏");
+        if (links != null) {
+            if (links.size()>30) throw new com.familyrecipes.common.ApiException(400,"最多添加30个外部链接");
+            for(int i=0;i<links.size();i++) normalizeLink(links.get(i),i);
+        }
         if(recipe.getImages()!=null) {
             if(recipe.getImages().size()>30) throw new com.familyrecipes.common.ApiException(400,"最多30张图片");
             int position=0;
@@ -91,6 +107,7 @@ public class RecipeService {
                                List<CookingStep> steps,
                                List<Long> cookUserIds,
                                List<ExternalRecipe> externalRecipes) {
+        if (recipe.getVisibility() == null) recipe.setVisibility("public");
         access.validateSharing(recipe);
         if(recipe.getCookingTime()!=null && (recipe.getCookingTime()<1 || recipe.getCookingTime()>10080)) throw new com.familyrecipes.common.ApiException(400,"耗时须为1至10080分钟");
         if(steps!=null && (steps.size()>100 || steps.stream().anyMatch(step->step.getDescription()==null || step.getDescription().isBlank() || step.getDescription().length()>10000))) throw new com.familyrecipes.common.ApiException(400,"请填写每一步的做法，最多100步");
@@ -247,6 +264,7 @@ public class RecipeService {
         recipe.setIngredients(recipeIngredientMapper.findByRecipeId(recipeId));
         recipe.setSteps(cookingStepMapper.findByRecipeId(recipeId));
         recipe.setExternalRecipes(externalRecipeMapper.findByRecipeId(recipeId));
+        recipe.getExternalRecipes().forEach(l->l.setSource(com.familyrecipes.util.ExternalLinkParser.sourceForUrl(l.getUrl())));
         recipe.setCooks(recipeCookMapper.findCooksByRecipeId(recipeId));
 
         // 设置当前用户是否收藏
@@ -360,8 +378,9 @@ public class RecipeService {
     public void addExternalRecipe(ExternalRecipe externalRecipe) {
         access.requireEdit(externalRecipe.getRecipeId(), externalRecipe.getAddedBy());
         media.requireOwned(externalRecipe.getThumbnail(), externalRecipe.getAddedBy());
-        if(!externalRecipeMapper.findByRecipeId(externalRecipe.getRecipeId()).isEmpty())
-            throw new com.familyrecipes.common.ApiException(409,"此收藏已有来源，请新建另一篇收藏");
+        var existing=externalRecipeMapper.findByRecipeId(externalRecipe.getRecipeId());
+        if(existing.size()>=30) throw new com.familyrecipes.common.ApiException(400,"最多添加30个外部链接");
+        normalizeLink(externalRecipe,existing.stream().mapToInt(l->l.getSortOrder()==null?0:l.getSortOrder()).max().orElse(-1)+1);
         externalRecipeMapper.insert(externalRecipe);
     }
 

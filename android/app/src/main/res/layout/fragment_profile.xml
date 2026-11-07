@@ -23,7 +23,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="家肴"
+                android:text="@string/ui_9049e90515"
                 android:textColor="@color/primary"
                 android:textSize="32sp"
                 android:textStyle="bold"
@@ -36,10 +36,10 @@
                 app:boxStrokeColor="@color/primary">
 
                 <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/et_email"
+        android:fontFamily="sans-serif-medium"        android:textColorHint="@color/text_hint"        android:textColor="@color/text_primary"                    android:id="@+id/et_email"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="邮箱"
+                    android:hint="@string/ui_3bc5e602b2"
                     android:inputType="textEmailAddress" />
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -56,10 +56,10 @@
                     android:layout_weight="1"
                     android:layout_height="wrap_content">
                     <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/et_verification_code"
+        android:fontFamily="sans-serif-medium"        android:textColorHint="@color/text_hint"        android:textColor="@color/text_primary"                        android:id="@+id/et_verification_code"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="邮箱验证码（6位）"
+                        android:hint="@string/ui_268b1e2ba8"
                         android:inputType="number"
                         android:maxLength="6" />
                 </com.google.android.material.textfield.TextInputLayout>
@@ -68,7 +68,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:text="获取验证码" />
+                    android:text="@string/ui_d369f43aac" />
             </LinearLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -80,10 +80,10 @@
                 app:boxStrokeColor="@color/primary">
 
                 <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/et_username"
+        android:fontFamily="sans-serif-medium"        android:textColorHint="@color/text_hint"        android:textColor="@color/text_primary"                    android:id="@+id/et_username"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="用户名（可选，留空自动生成）"
+                    android:hint="@string/ui_ae2246a838"
                     android:inputType="text" />
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -95,10 +95,10 @@
                 app:endIconMode="password_toggle">
 
                 <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/et_password"
+        android:fontFamily="sans-serif-medium"        android:textColorHint="@color/text_hint"        android:textColor="@color/text_primary"                    android:id="@+id/et_password"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="密码（至少8位）"
+                    android:hint="@string/ui_08b94b8c0f"
                     android:inputType="textPassword" />
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -106,7 +106,7 @@
                 android:id="@+id/btn_login"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
-                android:text="登录"
+                android:text="@string/ui_402d19e50f"
                 android:textSize="16sp"
                 app:cornerRadius="8dp" />
 
@@ -115,7 +115,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="还没有账号？立即注册"
+                android:text="@string/ui_d8f9fa703c"
                 android:textColor="@color/primary"
                 android:textSize="14sp" />
 
@@ -142,7 +142,7 @@
                 android:gravity="center_vertical"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
-                android:background="@color/primary">
+                android:background="@color/toolbar_background">
 
                 <!-- 左侧占位，保持右侧图标在右边 -->
                 <View
@@ -156,7 +156,7 @@
                     android:layout_width="44dp"
                     android:layout_height="44dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="扫一扫"
+                    android:contentDescription="@string/ui_402b79ad66"
                     android:padding="10dp"
                     android:src="@drawable/ic_scan_square"
                     android:tint="@color/white" />
@@ -167,7 +167,7 @@
                     android:layout_width="44dp"
                     android:layout_height="44dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="编辑资料"
+                    android:contentDescription="@string/ui_17cd044e7c"
                     android:padding="10dp"
                     android:src="@drawable/ic_edit"
                     android:tint="@color/white"
@@ -179,7 +179,7 @@
                     android:layout_width="44dp"
                     android:layout_height="44dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="设置"
+                    android:contentDescription="@string/ui_e366ccf155"
                     android:padding="10dp"
                     android:src="@drawable/ic_settings"
                     android:tint="@color/white"
@@ -191,7 +191,7 @@
                     android:layout_width="44dp"
                     android:layout_height="44dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="分享"
+                    android:contentDescription="@string/ui_c31f48f84e"
                     android:padding="10dp"
                     android:src="@drawable/ic_share"
                     android:tint="@color/white"
@@ -227,7 +227,7 @@
                             android:layout_width="64dp"
                             android:layout_height="64dp"
                             android:background="@drawable/ic_profile"
-                            android:contentDescription="头像" />
+                            android:contentDescription="@string/ui_4c50eef3bd" />
 
                         <LinearLayout
                             android:layout_width="0dp"
@@ -240,7 +240,7 @@
                                 android:id="@+id/tv_username"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="家肴用户"
+                                android:text="@string/ui_2878420820"
                                 android:textColor="@color/black"
                                 android:textSize="20sp"
                                 android:textStyle="bold" />
@@ -285,7 +285,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="4dp"
-                                android:text="收藏"
+                                android:text="@string/ui_ae336cd047"
                                 android:textColor="@color/gray"
                                 android:textSize="14sp" />
                         </LinearLayout>
@@ -318,7 +318,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="4dp"
-                                android:text="作品"
+                                android:text="@string/ui_69724359e2"
                                 android:textColor="@color/gray"
                                 android:textSize="14sp" />
                         </LinearLayout>
@@ -363,7 +363,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="16dp"
                             android:layout_weight="1"
-                            android:text="我的名片码"
+                            android:text="@string/ui_4183a88537"
                             android:textColor="@color/black"
                             android:textSize="16sp" />
 
@@ -400,7 +400,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="16dp"
                             android:layout_weight="1"
-                            android:text="我的好友"
+                            android:text="@string/ui_6555ef98b5"
                             android:textColor="@color/black"
                             android:textSize="16sp" />
 
@@ -437,7 +437,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="16dp"
                             android:layout_weight="1"
-                            android:text="我加入的群"
+                            android:text="@string/ui_47c75f2e6b"
                             android:textColor="@color/black"
                             android:textSize="16sp" />
 
@@ -474,7 +474,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="16dp"
                             android:layout_weight="1"
-                            android:text="我创建的群"
+                            android:text="@string/ui_059d992c84"
                             android:textColor="@color/black"
                             android:textSize="16sp" />
 
@@ -488,16 +488,16 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <Button android:id="@+id/btn_reminders" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="食材提醒设置" />
-            <Button android:id="@+id/btn_media_trash" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="图片垃圾箱" />
+            <Button android:id="@+id/btn_reminders" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/ui_ebd0e06460" />
+            <Button android:id="@+id/btn_media_trash" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/ui_c3af9f8f1d" />
             <!-- 退出登录按钮 -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_logout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_margin="16dp"
-                android:text="退出登录"
-                android:textColor="@color/white"
+                android:text="@string/ui_44efd179aa"
+                android:textColor="@color/on_primary"
                 app:backgroundTint="#F44336"
                 app:cornerRadius="8dp" />
 

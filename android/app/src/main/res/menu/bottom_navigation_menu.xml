@@ -4,11 +4,11 @@
     <item
         android:id="@+id/nav_home"
         android:icon="@drawable/ic_recipe"
-        android:title="首页" />
+        android:title="@string/menu_home" />
     <item
         android:id="@+id/nav_fridge"
         android:icon="@drawable/ic_fridge"
-        android:title="库存" />
+        android:title="@string/menu_stock" />
     <item
         android:id="@+id/nav_add"
         android:icon="@drawable/ic_add_circle"
@@ -17,9 +17,9 @@
     <item
         android:id="@+id/nav_message"
         android:icon="@drawable/ic_message"
-        android:title="消息" />
+        android:title="@string/menu_messages" />
     <item
         android:id="@+id/nav_profile"
         android:icon="@drawable/ic_profile"
-        android:title="我的" />
+        android:title="@string/menu_profile" />
 </menu>

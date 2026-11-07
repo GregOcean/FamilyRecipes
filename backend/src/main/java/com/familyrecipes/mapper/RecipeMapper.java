@@ -11,7 +11,8 @@ import java.util.Map;
 @Mapper
 public interface RecipeMapper {
     String MEAL_SHARED = "EXISTS (SELECT 1 FROM meal_arrangement ma JOIN meal_share ms ON ms.meal_id=ma.id JOIN group_member mg ON mg.group_id=ms.group_id WHERE mg.user_id=#{viewerId} AND JSON_CONTAINS(ma.dishes, JSON_OBJECT('recipe_id', r.id)))";
-    String VISIBLE = "(" + "(r.visibility = 'public' OR r.creator_id = #{viewerId} OR (r.visibility = 'group' AND EXISTS (SELECT 1 FROM group_member gm WHERE gm.user_id = #{viewerId} AND (gm.group_id = r.owner_group_id OR JSON_CONTAINS(COALESCE(r.shared_group_ids, '[]'), CAST(gm.group_id AS JSON))))))" + " OR " + MEAL_SHARED + ")";
+    String CHAT_SHARED = "EXISTS (SELECT 1 FROM recipe_chat_share cs JOIN group_member cg ON cg.group_id=cs.group_id WHERE cs.recipe_id=r.id AND cg.user_id=#{viewerId})";
+    String VISIBLE = "(" + "(r.visibility = 'public' OR r.creator_id = #{viewerId} OR (r.visibility = 'group' AND EXISTS (SELECT 1 FROM group_member gm WHERE gm.user_id = #{viewerId} AND (gm.group_id = r.owner_group_id OR JSON_CONTAINS(COALESCE(r.shared_group_ids, '[]'), CAST(gm.group_id AS JSON))))))" + " OR " + MEAL_SHARED + " OR " + CHAT_SHARED + ")";
 
     @Select("SELECT COUNT(*) > 0 FROM recipe r WHERE r.id = #{id} AND " + VISIBLE)
     boolean isVisible(@Param("id") Long id, @Param("viewerId") Long viewerId);

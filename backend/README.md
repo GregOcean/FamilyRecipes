@@ -105,3 +105,7 @@ Android 真机测试：登录两个账号，验证私有/公开菜谱、库存�
 ## 邮箱验证码
 
 本地 Docker Compose 同时启动 Mailpit（SMTP `127.0.0.1:1025`，网页 `http://localhost:8025`）。本机验证码邮件仅进入测试箱，不会投递到真实邮箱。当前注册必须填写验证码；登录仍使用邮箱和密码。真实发信配置、限流规则见 [邮箱验证码迭代记录](../docs/iterations/2026-11-01-foundation-review/06-email-registration.md)。
+
+## 更新现有云服务器
+
+旧服务器线索、如何找回启动方式、当前版本配置及数据库注意事项见 [DigitalOcean 现有部署核对与更新](../docs/deployment/digitalocean.md)。不要直接沿用旧 APK 上传脚本：当前 debug 包连接本机后端。

@@ -1,5 +1,6 @@
 package com.familyrecipes.android.ui.adapter
 
+import com.familyrecipes.android.ui.design.UiStrings
 import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -20,25 +21,25 @@ class FridgeAdapter(
 
     inner class ViewHolder(val binding: ItemFridgeBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(item: FridgeItem) {
-            binding.tvName.text = item.ingredient?.name ?: "未知食材"
-            binding.tvAmount.text = "数量：" + (item.amount?.takeIf { it.isNotBlank() } ?: "未填写") + (item.ownerUsername?.let { " · 预留给 $it" } ?: "")
-            binding.tvExpiryDate.text = "到期：${item.expiryDate}"
-            binding.tvStorage.text = "位置：${item.storageLocation ?: "未设置"}"
-            binding.tvCategory.text = (item.categoryOverrideName ?: item.ingredient?.category ?: "待分类") + " · " + (item.storageLocation ?: "未设置")
+            binding.tvName.text = item.ingredient?.name ?: UiStrings.s(com.familyrecipes.android.R.string.ui_5ab356bba3)
+            binding.tvAmount.text = UiStrings.s(com.familyrecipes.android.R.string.ui_4b123f5f93) + (item.amount?.takeIf { it.isNotBlank() } ?: UiStrings.s(com.familyrecipes.android.R.string.ui_5c6881399f)) + (item.ownerUsername?.let { UiStrings.f(com.familyrecipes.android.R.string.reserved_value, it) } ?: "")
+            binding.tvExpiryDate.text = UiStrings.f(com.familyrecipes.android.R.string.expiry_value, item.expiryDate)
+            binding.tvStorage.text = "位置：${item.storageLocation ?: UiStrings.s(com.familyrecipes.android.R.string.ui_fe2d26a257)}"
+            binding.tvCategory.text = (item.categoryOverrideName ?: item.ingredient?.category ?: "待分类") + " · " + (item.storageLocation ?: UiStrings.s(com.familyrecipes.android.R.string.ui_fe2d26a257))
             
             // 根据状态设置颜色
             when (item.status) {
                 FridgeItem.STATUS_EXPIRED -> {
-                    binding.tvStatus.text = "已过期"
+                    binding.tvStatus.text = UiStrings.s(com.familyrecipes.android.R.string.ui_4d5ccd0118)
                     binding.tvStatus.setTextColor(Color.RED)
                 }
                 FridgeItem.STATUS_EXPIRING -> {
-                    binding.tvStatus.text = "即将过期"
+                    binding.tvStatus.text = UiStrings.s(com.familyrecipes.android.R.string.ui_ac148b4c87)
                     binding.tvStatus.setTextColor(Color.parseColor("#FF9800"))
                 }
-                FridgeItem.STATUS_CONSUMED -> { binding.tvStatus.text="已吃完";binding.tvStatus.setTextColor(com.familyrecipes.android.ui.design.Ui.muted) }
+                FridgeItem.STATUS_CONSUMED -> { binding.tvStatus.text=UiStrings.s(com.familyrecipes.android.R.string.ui_d813eea6b6);binding.tvStatus.setTextColor(com.familyrecipes.android.ui.design.Ui.muted) }
                 else -> {
-                    binding.tvStatus.text = "正常"
+                    binding.tvStatus.text = UiStrings.s(com.familyrecipes.android.R.string.ui_fd6e80f1e0)
                     binding.tvStatus.setTextColor(Color.parseColor("#4CAF50"))
                 }
             }

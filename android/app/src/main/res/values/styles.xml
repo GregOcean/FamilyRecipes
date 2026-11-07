@@ -7,5 +7,10 @@
         <item name="itemPaddingBottom">4dp</item>
         <item name="elevation">8dp</item>
     </style>
+    <style name="ReadableEditText" parent="Widget.AppCompat.EditText">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textColorHint">@color/text_hint</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
 </resources>
 

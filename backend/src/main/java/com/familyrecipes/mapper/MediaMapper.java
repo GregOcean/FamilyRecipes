@@ -18,6 +18,8 @@ public interface MediaMapper {
     int fridgeReferences(@Param("url")String url,@Param("viewerId")Long viewerId);
     @Select("SELECT COUNT(*) FROM message m JOIN group_member gm ON gm.group_id=m.group_id WHERE gm.user_id=#{viewerId} AND m.message_type='sticker' AND m.content=#{url}")
     int stickerReferences(@Param("url")String url,@Param("viewerId")Long viewerId);
+    @Select("SELECT COUNT(*) FROM user u JOIN group_member a ON a.user_id=u.id JOIN group_member b ON b.group_id=a.group_id WHERE u.avatar=#{url} AND b.user_id=#{viewerId}")
+    int avatarReferences(@Param("url") String url, @Param("viewerId") Long viewerId);
     @Select("SELECT (SELECT COUNT(*) FROM recipe WHERE cover_image=#{url}) + (SELECT COUNT(*) FROM recipe_image WHERE url=#{url}) + (SELECT COUNT(*) FROM cooking_step WHERE image=#{url}) + (SELECT COUNT(*) FROM external_recipe WHERE thumbnail=#{url}) + (SELECT COUNT(*) FROM fridge_item WHERE image_url=#{url}) + (SELECT COUNT(*) FROM message WHERE message_type='sticker' AND content=#{url}) + (SELECT COUNT(*) FROM user WHERE avatar=#{url}) + (SELECT COUNT(*) FROM group_chat WHERE avatar=#{url}) + (SELECT COUNT(*) FROM cooking_history WHERE JSON_VALID(images) AND JSON_CONTAINS(images,JSON_QUOTE(#{url})))")
     int references(String url);
     @Select("SELECT filename FROM media_file WHERE filename>#{after} AND purged_at IS NULL AND (deleted_at IS NOT NULL OR created_at < NOW() - INTERVAL 1 DAY) ORDER BY filename LIMIT 500")

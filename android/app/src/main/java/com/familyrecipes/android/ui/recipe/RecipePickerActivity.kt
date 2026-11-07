@@ -1,5 +1,6 @@
 package com.familyrecipes.android.ui.recipe
 
+import com.familyrecipes.android.ui.design.UiStrings
 import android.os.Bundle
 import android.widget.FrameLayout
 import android.widget.LinearLayout
@@ -10,7 +11,7 @@ class RecipePickerActivity : AppCompatActivity() {
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
         val box = Ui.box(this, 0)
-        box.addView(Ui.button(this, "返回菜单") { finish() })
+        box.addView(Ui.back(this) { finish() })
         val frame = FrameLayout(this).apply { id = android.R.id.content + 101 }
         box.addView(frame, LinearLayout.LayoutParams(-1, 0, 1f))
         setContentView(box)

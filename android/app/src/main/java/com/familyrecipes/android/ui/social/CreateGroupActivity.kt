@@ -1,5 +1,6 @@
 package com.familyrecipes.android.ui.social
 
+import com.familyrecipes.android.ui.design.UiStrings
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -83,12 +84,12 @@ class CreateGroupActivity : AppCompatActivity() {
             // 表单验证
             when {
                 name.isEmpty() -> {
-                    Toast.makeText(this, "请输入群名称", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, UiStrings.s(com.familyrecipes.android.R.string.ui_5b6af8959a), Toast.LENGTH_SHORT).show()
                     binding.etGroupName.requestFocus()
                     return@setOnClickListener
                 }
                 description.isEmpty() -> {
-                    Toast.makeText(this, "请输入群介绍", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, UiStrings.s(com.familyrecipes.android.R.string.ui_0156231b04), Toast.LENGTH_SHORT).show()
                     binding.etGroupDescription.requestFocus()
                     return@setOnClickListener
                 }
@@ -105,7 +106,7 @@ class CreateGroupActivity : AppCompatActivity() {
     private fun createGroup(name: String, description: String) {
         // 禁用按钮，防止重复点击
         binding.btnCreate.isEnabled = false
-        binding.btnCreate.text = "创建中..."
+        binding.btnCreate.text = UiStrings.s(com.familyrecipes.android.R.string.ui_b26107b6c5)
 
         lifecycleScope.launch {
             try {
@@ -121,7 +122,7 @@ class CreateGroupActivity : AppCompatActivity() {
                 if (response.isSuccessful && response.body()?.code == 200) {
                     Toast.makeText(
                         this@CreateGroupActivity,
-                        "群聊创建成功",
+                        UiStrings.s(com.familyrecipes.android.R.string.ui_730321fcf0),
                         Toast.LENGTH_SHORT
                     ).show()
 
@@ -129,14 +130,14 @@ class CreateGroupActivity : AppCompatActivity() {
                     setResult(RESULT_OK)
                     finish()
                 } else {
-                    val message = response.body()?.message ?: "创建失败"
+                    val message = response.body()?.message ?: UiStrings.s(com.familyrecipes.android.R.string.ui_a889286a51)
                     Toast.makeText(
                         this@CreateGroupActivity,
                         message,
                         Toast.LENGTH_SHORT
                     ).show()
                     binding.btnCreate.isEnabled = true
-                    binding.btnCreate.text = "立即创建"
+                    binding.btnCreate.text = UiStrings.s(com.familyrecipes.android.R.string.ui_9fd0002489)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -146,7 +147,7 @@ class CreateGroupActivity : AppCompatActivity() {
                     Toast.LENGTH_SHORT
                 ).show()
                 binding.btnCreate.isEnabled = true
-                binding.btnCreate.text = "立即创建"
+                binding.btnCreate.text = UiStrings.s(com.familyrecipes.android.R.string.ui_9fd0002489)
             }
         }
     }

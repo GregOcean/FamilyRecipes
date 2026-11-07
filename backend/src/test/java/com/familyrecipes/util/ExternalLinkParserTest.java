@@ -73,5 +73,24 @@ public class ExternalLinkParserTest {
         result = ExternalLinkParser.parse(null);
         assertNull(result);
     }
+
+    @Test void identifiesPlatformsFromRealHostOnly() {
+        String[][] cases = {
+            {"https://channels.weixin.qq.com/test", "微信视频号"},
+            {"https://v.douyin.com/test", "抖音"},
+            {"https://xhslink.com/test", "小红书"},
+            {"https://www.xiachufang.com/recipe/1", "下厨房"},
+            {"https://youtu.be/test", "YouTube"},
+            {"https://www.youtube.com/watch?v=1", "YouTube"},
+            {"https://www.instagram.com/reel/test", "Instagram"},
+            {"https://fb.watch/test", "Facebook"},
+            {"https://example.com/?url=youtube.com", "网络"},
+            {"https://youtube.com.example.com/test", "网络"},
+            {"https://youtube.com@example.com/test", "网络"}
+        };
+        for (var entry : cases)
+            assertEquals(entry[1], ExternalLinkParser.sourceForUrl(entry[0]), entry[0]);
+        assertEquals("网络", ExternalLinkParser.parse("小红书 https://example.com/test").getSource());
+    }
 }
 

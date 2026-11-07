@@ -18,7 +18,7 @@
         android:background="@drawable/bg_circle"
         android:backgroundTint="@color/primary_light"
         android:padding="12dp"
-        android:contentDescription="群头像" />
+        android:contentDescription="@string/ui_2c70d9a949" />
 
     <!-- 群信息 -->
     <LinearLayout
@@ -40,7 +40,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="群名称"
+                android:text="@string/ui_0aebdb41cd"
                 android:textColor="@color/text_primary"
                 android:textSize="16sp"
                 android:textStyle="bold"
@@ -52,7 +52,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
-                android:text="3人"
+                android:text="@string/ui_632b1a665a"
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp" />
         </LinearLayout>
@@ -62,7 +62,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="群简介"
+            android:text="@string/ui_41b792a4b1"
             android:textColor="@color/text_secondary"
             android:textSize="14sp"
             android:maxLines="1"

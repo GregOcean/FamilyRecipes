@@ -10,16 +10,16 @@
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/white"
+        android:background="@color/surface"
         android:elevation="4dp">
 
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@color/white"
+            android:background="@color/surface"
             app:navigationIcon="@drawable/ic_close"
-            app:title="添加菜谱"
+            app:title="@string/ui_a3944a9bc4"
             app:titleTextColor="@color/text_primary">
 
             <com.google.android.material.button.MaterialButton
@@ -31,9 +31,9 @@
                 android:minWidth="80dp"
                 android:paddingStart="20dp"
                 android:paddingEnd="20dp"
-                android:text="发布"
+                android:text="@string/ui_83611abd5f"
                 android:textSize="15sp"
-                android:textColor="@color/white"
+                android:textColor="@color/on_primary"
                 app:backgroundTint="@color/primary"
                 app:cornerRadius="20dp" />
 
@@ -57,12 +57,12 @@
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="菜名"
+                android:hint="@string/ui_76eb8e6731"
                 app:boxBackgroundMode="outline"
                 app:boxStrokeColor="@color/primary">
 
                 <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/et_recipe_title"
+        android:fontFamily="sans-serif-medium"        android:textColorHint="@color/text_hint"        android:textColor="@color/text_primary"                    android:id="@+id/et_recipe_title"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="text"
@@ -83,12 +83,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:hint="分享你的下厨心得：替代食材、调料搭配、火候窍门，或这道菜背后的生活小故事..."
+                android:hint="@string/ui_469511b82e"
                 app:boxBackgroundMode="outline"
                 app:boxStrokeColor="@color/primary">
 
                 <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/et_recipe_content"
+        android:fontFamily="sans-serif-medium"        android:textColorHint="@color/text_hint"        android:textColor="@color/text_primary"                    android:id="@+id/et_recipe_content"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="top"
@@ -108,7 +108,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="外部做法链接"
+                    android:text="@string/ui_b2cea874e0"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -147,7 +147,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="8dp"
-                            android:text="添加外部做法链接"
+                            android:text="@string/ui_88d24f25df"
                             android:textColor="@color/text_secondary"
                             android:textSize="14sp" />
 
@@ -167,7 +167,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="# 标签"
+                    android:text="@string/ui_7899c78f75"
                     android:textColor="@color/text_primary"
                     android:textSize="16sp"
                     android:textStyle="bold" />
@@ -177,14 +177,14 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:hint="输入标签，用#开头，空格分隔（如：#午餐 #家常菜 #快手）"
+                    android:hint="@string/ui_687b10a956"
                     app:boxBackgroundMode="outline"
                     app:boxStrokeColor="@color/primary"
                     app:helperText="示例：#早餐 #健康 #素食"
                     app:helperTextTextColor="@color/text_secondary">
 
                     <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/et_tags"
+        android:fontFamily="sans-serif-medium"        android:textColorHint="@color/text_hint"        android:textColor="@color/text_primary"                        android:id="@+id/et_tags"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="text"
@@ -211,7 +211,7 @@
                         android:layout_height="24dp"
                         android:src="@drawable/ic_lock"
                         android:tint="@color/text_secondary"
-                        android:contentDescription="权限" />
+                        android:contentDescription="@string/ui_ba6e91fa9e" />
                     
                     <LinearLayout
                         android:layout_width="0dp"
@@ -224,7 +224,7 @@
                             android:id="@+id/tv_permission_title"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="可见范围"
+                            android:text="@string/ui_f964950720"
                             android:textColor="@color/text_primary"
                             android:textSize="16sp" />
                         
@@ -233,7 +233,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:text="当前厨房可见"
+                            android:text="@string/ui_c0b80e2244"
                             android:textColor="@color/text_secondary"
                             android:textSize="14sp" />
                     </LinearLayout>
@@ -243,7 +243,7 @@
                         android:layout_height="20dp"
                         android:src="@drawable/ic_arrow_drop_down"
                         android:tint="@color/text_secondary"
-                        android:contentDescription="展开" />
+                        android:contentDescription="@string/ui_e2edde5adb" />
                 </LinearLayout>
 
             </LinearLayout>

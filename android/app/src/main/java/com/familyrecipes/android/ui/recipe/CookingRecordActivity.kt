@@ -1,5 +1,6 @@
 package com.familyrecipes.android.ui.recipe
 
+import com.familyrecipes.android.ui.design.UiStrings
 import android.net.Uri
 import android.os.Bundle
 import android.widget.*
@@ -63,16 +64,16 @@ class CookingRecordActivity : AppCompatActivity() {
     override fun onCreate(b: Bundle?) {
         super.onCreate(b)
         val box = Ui.box(this)
-        box.addView(Ui.button(this, "返回 · 保留草稿") { finish() })
-        box.addView(Ui.text(this, "记录这次做菜", 24f, true))
-        date = Ui.field(this, "做菜日期 YYYY-MM-DD", java.time.LocalDate.now().toString())
+        box.addView(Ui.button(this, UiStrings.s(com.familyrecipes.android.R.string.ui_5960795a3e)) { finish() })
+        box.addView(Ui.text(this, UiStrings.s(com.familyrecipes.android.R.string.ui_00f9d79879), 24f, true))
+        date = Ui.field(this, UiStrings.s(com.familyrecipes.android.R.string.ui_a24fefda6e), java.time.LocalDate.now().toString())
         box.addView(date)
-        note = Ui.field(this, "过程、用量调整和下次的心得", multi = true)
+        note = Ui.field(this, UiStrings.s(com.familyrecipes.android.R.string.ui_930ee7d242), multi = true)
         box.addView(note)
         photos = Ui.box(this, 0)
         box.addView(photos)
-        box.addView(Ui.button(this, "添加过程 / 成品照片") { if (!busy) pick.launch("image/*") })
-        box.addView(Ui.button(this, "保存记录", true) { save() })
+        box.addView(Ui.button(this, UiStrings.s(com.familyrecipes.android.R.string.ui_df7b52aa75)) { if (!busy) pick.launch("image/*") })
+        box.addView(Ui.button(this, UiStrings.s(com.familyrecipes.android.R.string.ui_c76ca04b2c), true) { save() })
         setContentView(Ui.scroll(this, box))
         listOf(note, date).forEach { it.doAfterTextChanged { draft() } }
         lifecycleScope.launch {
@@ -115,7 +116,7 @@ class CookingRecordActivity : AppCompatActivity() {
                 .load(com.familyrecipes.android.util.MediaImages.model(url))
                 .into(image)
             photos.addView(
-                Ui.button(this, "移除照片") {
+                Ui.button(this, UiStrings.s(com.familyrecipes.android.R.string.ui_6328552cc5)) {
                     if (!busy) {
                         urls.remove(url)
                         drawPhotos()
@@ -128,11 +129,11 @@ class CookingRecordActivity : AppCompatActivity() {
     private fun save() {
         if (busy) return
         if (note.text.isBlank()) {
-            note.error = "请写一点心得"
+            note.error = UiStrings.s(com.familyrecipes.android.R.string.ui_7d0c2258af)
             return
         }
         if (runCatching { java.time.LocalDate.parse(date.text.toString()) }.isFailure) {
-            date.error = "日期格式 YYYY-MM-DD"
+            date.error = UiStrings.s(com.familyrecipes.android.R.string.ui_1986f96841)
             return
         }
         busy = true

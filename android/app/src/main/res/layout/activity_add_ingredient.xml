@@ -7,12 +7,12 @@
 
     <!-- Toolbar -->
     <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar"
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"        android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="@color/primary"
+        android:background="@color/toolbar_background"
         app:navigationIcon="@drawable/ic_back"
-        app:title="添加食材"
+        app:title="@string/ui_bec13f19cb"
         app:titleTextColor="@color/white" />
 
     <ScrollView
@@ -44,8 +44,8 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="💡 使用提示"
-                        android:textColor="@color/white"
+                        android:text="@string/ui_eb0bd897b7"
+                        android:textColor="@color/text_primary"
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
@@ -53,8 +53,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="• 食材名称是必填项，识别失败将无法录入\n• 支持自动识别数量和保质期信息\n• 可使用输入法语音录入，方便快速记录\n• 可添加照片方便查找"
-                        android:textColor="@color/white"
+                        android:text="@string/ui_6874c6b801"
+                        android:textColor="@color/text_primary"
                         android:textSize="13sp"
                         android:lineSpacingExtra="2dp" />
                 </LinearLayout>
@@ -65,13 +65,15 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                android:hint="食材信息"
+                android:hint="@string/ui_f128a11b4c"
+                app:expandedHintEnabled="false"
+                app:helperText="@string/ui_6a809b48a8"
                 app:counterEnabled="true"
                 app:counterMaxLength="500"
                 app:boxBackgroundMode="outline">
 
                 <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/et_ingredient_info"
+        android:fontFamily="sans-serif-medium"        android:textColorHint="@color/text_hint"        android:textColor="@color/text_primary"                    android:id="@+id/et_ingredient_info"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="top|start"
@@ -80,14 +82,14 @@
                     android:maxLength="500"
                     android:minLines="6"
                     android:scrollbars="vertical"
-                    android:hint="示例：\n• 鸡肉\n• 牛奶两周后过期\n• 草莓7天内要吃完\n• 酸奶两袋，还有5天过期" />
+ />
             </com.google.android.material.textfield.TextInputLayout>
 
             <!-- 图片区域 -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="食材照片（可选）"
+                android:text="@string/ui_cef4782236"
                 android:textColor="@color/text_primary"
                 android:textSize="16sp"
                 android:textStyle="bold" />
@@ -97,7 +99,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:layout_marginBottom="12dp"
-                android:text="添加照片方便家人快速找到食材"
+                android:text="@string/ui_ccfa4ec20f"
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
 
@@ -113,7 +115,7 @@
                     android:layout_height="200dp"
                     android:scaleType="centerCrop"
                     android:visibility="gone"
-                    android:contentDescription="食材照片预览" />
+                    android:contentDescription="@string/ui_2dca6419b0" />
 
                 <ImageButton
                     android:id="@+id/btn_remove_image"
@@ -122,7 +124,7 @@
                     android:layout_gravity="top|end"
                     android:layout_margin="8dp"
                     android:background="@drawable/circle_background_dark"
-                    android:contentDescription="删除图片"
+                    android:contentDescription="@string/ui_3875ccae23"
                     android:padding="6dp"
                     android:src="@drawable/ic_close"
                     android:tint="@color/white"
@@ -134,7 +136,7 @@
                 android:id="@+id/btn_add_image"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="📷 添加照片"
+                android:text="@string/ui_d0289db553"
                 android:textSize="15sp"
                 app:icon="@drawable/ic_add_circle"
                 app:iconGravity="textStart"
@@ -151,7 +153,8 @@
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
         android:padding="16dp"
-        android:text="保存"
+        android:text="@string/ui_be5fbbe34c"
+        android:textColor="@color/on_primary"
         android:textSize="16sp" />
 
 </LinearLayout>

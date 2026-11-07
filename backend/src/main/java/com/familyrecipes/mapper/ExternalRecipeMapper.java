@@ -10,17 +10,17 @@ import java.util.List;
 @Mapper
 public interface ExternalRecipeMapper {
 
-    @Select("SELECT * FROM external_recipe WHERE recipe_id = #{recipeId}")
+    @Select("SELECT * FROM external_recipe WHERE recipe_id = #{recipeId} ORDER BY sort_order, id")
     List<ExternalRecipe> findByRecipeId(Long recipeId);
 
-    @Insert("INSERT INTO external_recipe(recipe_id, title, url, source, thumbnail, added_by) " +
-            "VALUES(#{recipeId}, #{title}, #{url}, #{source}, #{thumbnail}, #{addedBy})")
+    @Insert("INSERT INTO external_recipe(recipe_id, title, url, source, thumbnail, added_by, notes, sort_order) " +
+            "VALUES(#{recipeId}, #{title}, #{url}, #{source}, #{thumbnail}, #{addedBy}, #{notes}, #{sortOrder})")
     int insert(ExternalRecipe externalRecipe);
 
     @Delete("DELETE FROM external_recipe WHERE id = #{id}")
     int delete(Long id);
     
-    @Delete("DELETE FROM external_recipe WHERE recipe_id = #{recipeId}")
+    @Delete("DELETE FROM external_recipe WHERE recipe_id = #{recipeId} ORDER BY sort_order, id")
     int deleteByRecipeId(Long recipeId);
 }
 

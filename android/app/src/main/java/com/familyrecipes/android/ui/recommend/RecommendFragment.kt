@@ -1,5 +1,6 @@
 package com.familyrecipes.android.ui.recommend
 
+import com.familyrecipes.android.ui.design.UiStrings
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -61,7 +62,7 @@ class RecommendFragment : Fragment(), SearchableFragment {
     
     private fun openRecipeDetail(recipe: Recipe) {
         if (recipe.id == null) {
-            Toast.makeText(requireContext(), "菜谱ID无效", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), UiStrings.s(com.familyrecipes.android.R.string.ui_a6b4953271), Toast.LENGTH_SHORT).show()
             return
         }
         
@@ -79,10 +80,10 @@ class RecommendFragment : Fragment(), SearchableFragment {
     
     private fun setupListeners() {
         binding.btnRandomRecommend.setOnClickListener {
-            androidx.appcompat.app.AlertDialog.Builder(requireContext()).setTitle("推荐方式")
-                .setItems(arrayOf("发现：按偏好换一批","当前厨房：现有食材 + 家人会做")) { _,index ->
+            androidx.appcompat.app.AlertDialog.Builder(requireContext()).setTitle(UiStrings.s(com.familyrecipes.android.R.string.ui_9c9495d8a1))
+                .setItems(arrayOf(UiStrings.s(com.familyrecipes.android.R.string.ui_f9352c8c09),UiStrings.s(com.familyrecipes.android.R.string.ui_9a8544afbf))) { _,index ->
                     mode=if(index==0) "discovery" else "inventory"
-                    binding.btnRandomRecommend.text=if(index==0) "发现 · 换一批" else "库存 + 会做 · 换一批"
+                    binding.btnRandomRecommend.text=if(index==0) UiStrings.s(com.familyrecipes.android.R.string.ui_74127479b9) else UiStrings.s(com.familyrecipes.android.R.string.ui_a64965a7fc)
                     loadRecommendations()
                 }.show()
         }
@@ -166,7 +167,7 @@ class RecommendFragment : Fragment(), SearchableFragment {
                             } else if (ingredientCount > 0) {
                                 "找到 ${ingredientCount} 个食材（可在食材页面查看）"
                             } else {
-                                "未找到结果"
+                                UiStrings.s(com.familyrecipes.android.R.string.ui_14254561ee)
                             }
                             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                         }
@@ -175,15 +176,15 @@ class RecommendFragment : Fragment(), SearchableFragment {
                     recipeAdapter.notifyDataSetChanged()
                     
                     if (recipes.isEmpty() && !keyword.isNullOrEmpty()) {
-                        Toast.makeText(context, "没有找到相关结果", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, UiStrings.s(com.familyrecipes.android.R.string.ui_11548282f0), Toast.LENGTH_SHORT).show()
                     }
                 } else {
-                    Toast.makeText(context, "加载失败", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, UiStrings.s(com.familyrecipes.android.R.string.ui_866b795eae), Toast.LENGTH_SHORT).show()
                 }
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Toast.makeText(context, "网络错误: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, UiStrings.f(com.familyrecipes.android.R.string.network_error_value, e.message), Toast.LENGTH_SHORT).show()
                 e.printStackTrace()
             } finally {
                 if(revision==generation) _binding?.swipeRefresh?.isRefreshing = false

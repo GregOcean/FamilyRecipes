@@ -8,8 +8,8 @@
 
     <!-- 应用图标 -->
     <ImageView
-        android:layout_width="100dp"
-        android:layout_height="100dp"
+        android:layout_width="180dp"
+        android:layout_height="180dp"
         android:src="@drawable/ic_app_logo"
         android:contentDescription="@string/app_name" />
 
@@ -18,8 +18,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:text="家肴"
-        android:textColor="@android:color/white"
+        android:text="@string/ui_9049e90515"
+        android:textColor="@color/primary"
         android:textSize="48sp"
         android:textStyle="bold"
         android:letterSpacing="0.1"
@@ -30,8 +30,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="记录家的味道"
-        android:textColor="#B3FFFFFF"
+        android:text="@string/ui_3c46bf18ab"
+        android:textColor="@color/text_secondary"
         android:textSize="16sp" />
 
 </LinearLayout>

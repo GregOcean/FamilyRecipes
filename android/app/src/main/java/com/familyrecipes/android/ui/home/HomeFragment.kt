@@ -1,5 +1,6 @@
 package com.familyrecipes.android.ui.home
 
+import com.familyrecipes.android.ui.design.UiStrings
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -42,8 +43,8 @@ class HomeFragment : Fragment() {
         // 连接TabLayout和ViewPager2
         TabLayoutMediator(binding.tabLayout, binding.viewPager) { tab, position ->
             tab.text = when (position) {
-                0 -> "推荐"
-                1 -> "菜谱"
+                0 -> UiStrings.s(com.familyrecipes.android.R.string.ui_3f9810121c)
+                1 -> UiStrings.s(com.familyrecipes.android.R.string.ui_ad237159d7)
                 else -> ""
             }
         }.attach()

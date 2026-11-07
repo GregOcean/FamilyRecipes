@@ -11,9 +11,9 @@
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="@color/white"
+        android:background="@color/surface"
         android:elevation="4dp"
-        app:title="我的名片码"
+        app:title="@string/ui_4183a88537"
         app:titleTextColor="@color/black" />
 
     <ScrollView
@@ -33,7 +33,7 @@
                 android:id="@+id/tv_username"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="家肴用户"
+                android:text="@string/ui_2878420820"
                 android:textColor="@color/black"
                 android:textSize="24sp"
                 android:textStyle="bold" />
@@ -59,7 +59,7 @@
                     android:id="@+id/iv_qr_code"
                     android:layout_width="300dp"
                     android:layout_height="300dp"
-                    android:contentDescription="二维码"
+                    android:contentDescription="@string/ui_22b03c024d"
                     android:padding="16dp"
                     android:scaleType="fitCenter" />
 
@@ -71,7 +71,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 android:gravity="center"
-                android:text="扫描二维码，添加我为好友"
+                android:text="@string/ui_f57bd367c4"
                 android:textColor="@color/gray"
                 android:textSize="16sp" />
 
@@ -81,7 +81,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:layout_marginTop="32dp"
-                android:text="保存二维码"
+                android:text="@string/ui_cd4fbcefd3"
                 android:textSize="16sp"
                 app:cornerRadius="8dp" />
 

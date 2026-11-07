@@ -1,5 +1,6 @@
 package com.familyrecipes.android.ui.recipe
 
+import com.familyrecipes.android.ui.design.UiStrings
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
@@ -123,25 +124,25 @@ class RecipeListFragment : Fragment(), SearchableFragment {
         val root = Ui.box(ctx)
         val tabs = Ui.row(ctx)
         discoveryButton =
-            Ui.button(ctx, "发现") {
+            Ui.button(ctx, UiStrings.s(com.familyrecipes.android.R.string.ui_fc4d75f6cb)) {
                 scope = "discovery"
                 load()
             }
         mineButton =
-            Ui.button(ctx, "我的菜谱") {
+            Ui.button(ctx, UiStrings.s(com.familyrecipes.android.R.string.ui_2f8ba39ad4)) {
                 scope = "mine"
                 load()
             }
         tabs.addView(discoveryButton, LinearLayout.LayoutParams(0, -2, 1f))
         tabs.addView(mineButton, LinearLayout.LayoutParams(0, -2, 1f))
         root.addView(tabs)
-        search = Ui.field(ctx, "搜菜名、食材、口味", keyword)
+        search = Ui.field(ctx, UiStrings.s(com.familyrecipes.android.R.string.ui_5981cc43fb), keyword)
         root.addView(search)
         val filters = Ui.row(ctx)
         filters.addView(
             Ui.select(
                 ctx,
-                listOf("口味不限", "酸", "辣", "酸辣", "清淡", "鲜香"),
+                listOf(UiStrings.s(com.familyrecipes.android.R.string.ui_568d968eee), "酸", "辣", "酸辣", "清淡", "鲜香").map{UiStrings.domain(it)},
                 listOf("", "酸", "辣", "酸辣", "清淡", "鲜香").indexOf(taste).coerceAtLeast(0)) { n ->
                     val v = listOf("", "酸", "辣", "酸辣", "清淡", "鲜香")[n]
                     if (v != taste) {
@@ -153,7 +154,7 @@ class RecipeListFragment : Fragment(), SearchableFragment {
         filters.addView(
             Ui.select(
                 ctx,
-                listOf("耗时不限", "15分钟内", "30分钟内"),
+                listOf(UiStrings.s(com.familyrecipes.android.R.string.ui_1c6a1a8b39), UiStrings.s(com.familyrecipes.android.R.string.ui_a996573fd0), UiStrings.s(com.familyrecipes.android.R.string.ui_1826fa4a7b)),
                 when (minutes) {
                     15 -> 1
                     30 -> 2
@@ -169,7 +170,7 @@ class RecipeListFragment : Fragment(), SearchableFragment {
         filters.addView(
             Ui.select(
                 ctx,
-                listOf("食材不限", "食材齐全", "最多缺两样"),
+                listOf(UiStrings.s(com.familyrecipes.android.R.string.ui_2722a62702), UiStrings.s(com.familyrecipes.android.R.string.ui_f92d315989), UiStrings.s(com.familyrecipes.android.R.string.ui_0402920ca9)),
                 when (missing) {
                     0 -> 1
                     2 -> 2
@@ -189,7 +190,7 @@ class RecipeListFragment : Fragment(), SearchableFragment {
         mine.addView(
             Ui.select(
                 ctx,
-                listOf("全部来源", "我创建的", "我收藏的", "共享给我的"),
+                listOf(UiStrings.s(com.familyrecipes.android.R.string.ui_99b7a390f3), UiStrings.s(com.familyrecipes.android.R.string.ui_1b7ffa2f43), UiStrings.s(com.familyrecipes.android.R.string.ui_47b582adb2), UiStrings.s(com.familyrecipes.android.R.string.ui_752589b25d)),
                 listOf("all", "created", "favorites", "shared").indexOf(origin).coerceAtLeast(0)) {
                     n ->
                     val v = listOf("all", "created", "favorites", "shared")[n]
@@ -201,7 +202,7 @@ class RecipeListFragment : Fragment(), SearchableFragment {
             LinearLayout.LayoutParams(0, -2, 1f))
         mine.addView(
             CheckBox(ctx).apply {
-                text = "我会做"
+                text = UiStrings.s(com.familyrecipes.android.R.string.ui_d3617a614a)
                 isChecked = known
                 setOnCheckedChangeListener { _, v ->
                     known = v
@@ -209,9 +210,9 @@ class RecipeListFragment : Fragment(), SearchableFragment {
                 }
             })
         root.addView(mine)
-        status = Ui.text(ctx, "正在加载…", 16f)
+        status = Ui.text(ctx, UiStrings.s(com.familyrecipes.android.R.string.ui_37dc7bfce2), 16f)
         shuffle =
-            Ui.button(ctx, "换一批") {
+            Ui.button(ctx, UiStrings.s(com.familyrecipes.android.R.string.ui_0e0b0ddfeb)) {
                 seed = java.util.UUID.randomUUID().toString()
                 load()
             }
@@ -221,10 +222,10 @@ class RecipeListFragment : Fragment(), SearchableFragment {
         root.addView(heading)
         list = Ui.box(ctx, 0)
         root.addView(Ui.scroll(ctx, list), LinearLayout.LayoutParams(-1, 0, 1f))
-        more = Ui.button(ctx, "加载更多") { load(true) }
+        more = Ui.button(ctx, UiStrings.s(com.familyrecipes.android.R.string.ui_7728154995)) { load(true) }
         root.addView(more)
         confirm =
-            Ui.button(ctx, "加入已选（${picked.size} 道）", true) {
+            Ui.button(ctx, UiStrings.f(com.familyrecipes.android.R.string.selected_count, picked.size), true) {
                 requireActivity()
                     .setResult(
                         Activity.RESULT_OK,
@@ -256,7 +257,7 @@ class RecipeListFragment : Fragment(), SearchableFragment {
                     total = cache.total
                     page = cache.page
                     draw()
-                    status.text = "上次的搜索结果 · 正在刷新"
+                    status.text = UiStrings.s(com.familyrecipes.android.R.string.ui_2df6c46856)
                 }
             } finally {
                 cacheReady = true
@@ -282,9 +283,9 @@ class RecipeListFragment : Fragment(), SearchableFragment {
             .forEach { (b, active) ->
                 b.backgroundTintList =
                     android.content.res.ColorStateList.valueOf(if (active) Ui.blue else Ui.pale)
-                b.setTextColor(if (active) android.graphics.Color.WHITE else Ui.blue)
+                b.setTextColor(if (active) Ui.onBlue else Ui.blue)
             }
-        status.text = (if (scope == "mine") "我的菜谱" else "发现") + " · 加载中…"
+        status.text = (if (scope == "mine") UiStrings.s(com.familyrecipes.android.R.string.ui_2f8ba39ad4) else UiStrings.s(com.familyrecipes.android.R.string.ui_fc4d75f6cb)) + UiStrings.s(com.familyrecipes.android.R.string.ui_fa2393258d)
         job =
             viewLifecycleOwner.lifecycleScope.launch {
                 try {
@@ -328,11 +329,11 @@ class RecipeListFragment : Fragment(), SearchableFragment {
                             .apply()
                     if (revision != generation) return@launch
                     status.text =
-                        "${if(keyword.isBlank())if(scope=="mine")"我的菜谱" else "今天想吃什么" else "搜索结果"} · 共 $total 道"
+                        UiStrings.f(com.familyrecipes.android.R.string.recipe_results_count, UiStrings.s(if(keyword.isNotBlank()) com.familyrecipes.android.R.string.search_results_title else if(scope=="mine") com.familyrecipes.android.R.string.ui_2f8ba39ad4 else com.familyrecipes.android.R.string.discover_title), total)
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    status.text = "${e.message} · 点击重试" + if (rows.isNotEmpty()) "（保留上次结果）" else ""
+                    status.text = UiStrings.f(com.familyrecipes.android.R.string.retry_error_value, e.message) + if (rows.isNotEmpty()) UiStrings.s(com.familyrecipes.android.R.string.ui_57bcca8c05) else ""
                     status.setOnClickListener { load() }
                 }
             }
@@ -341,7 +342,7 @@ class RecipeListFragment : Fragment(), SearchableFragment {
     private fun draw() {
         val c = requireContext()
         list.removeAllViews()
-        if (rows.isEmpty()) list.addView(Ui.text(c, "没有匹配的菜谱，试试放宽条件。"))
+        if (rows.isEmpty()) list.addView(Ui.text(c, UiStrings.s(com.familyrecipes.android.R.string.ui_705ea281fb)))
         rows.chunked(2).forEach { pair ->
             val line = Ui.row(c)
             pair.forEach { r ->
@@ -368,7 +369,7 @@ class RecipeListFragment : Fragment(), SearchableFragment {
                                 48f)
                             .apply {
                                 gravity = android.view.Gravity.CENTER
-                                setBackgroundColor(listOf(Ui.pale,0xfffff1cf.toInt(),0xffe9f5e9.toInt(),0xfff7e8e3.toInt())[(r.id?:0L).rem(4).toInt()])
+                                setBackgroundColor(listOf(Ui.pale,Ui.warm,Ui.green,Ui.warm)[(r.id?:0L).rem(4).toInt()])
                             }
                     card.addView(
                         art,
@@ -388,12 +389,12 @@ class RecipeListFragment : Fragment(), SearchableFragment {
                     Ui.text(
                         c,
                         listOfNotNull(
-                                r.cookingTime?.let { "${it}分钟" },
+                                r.cookingTime?.let { UiStrings.f(com.familyrecipes.android.R.string.minutes_value, it) },
                                 r.tags
                                     ?.filter { it.tagType == "taste" }
                                     ?.joinToString("、") { it.tagValue }
                                     ?.takeIf { it.isNotBlank() },
-                                if (r.isFavorite == true) "已收藏" else null)
+                                if (r.isFavorite == true) UiStrings.s(com.familyrecipes.android.R.string.ui_934ebd87e6) else null)
                             .joinToString(" · "),
                         14f).apply { setPadding(c.dp(12),c.dp(4),c.dp(12),c.dp(12));setTextColor(Ui.muted) })
                 card.setOnClickListener {
@@ -403,13 +404,13 @@ class RecipeListFragment : Fragment(), SearchableFragment {
                 if (picking)
                     card.addView(
                         CheckBox(c).apply {
-                            text = "选择"
+                            text = UiStrings.s(com.familyrecipes.android.R.string.ui_153fa67a7f)
                             isChecked = picked.containsKey(r.id)
                             setOnCheckedChangeListener { _, v ->
                                 r.id?.let {
                                     if (v) picked[it] = MealDish(it, r.name) else picked.remove(it)
                                 }
-                                confirm.text = "加入已选（${picked.size} 道）"
+                                confirm.text = UiStrings.f(com.familyrecipes.android.R.string.selected_count, picked.size)
                             }
                         })
                 line.addView(

@@ -13,7 +13,7 @@
         android:layout_height="20dp"
         android:src="@drawable/ic_history"
         android:layout_gravity="center_vertical"
-        android:contentDescription="历史记录图标"
+        android:contentDescription="@string/ui_2ba22d9710"
         app:tint="@color/gray" />
 
     <TextView
@@ -36,7 +36,7 @@
         android:src="@drawable/ic_close"
         android:layout_gravity="center_vertical"
         android:padding="2dp"
-        android:contentDescription="删除"
+        android:contentDescription="@string/ui_2f4aaddde3"
         app:tint="@color/gray" />
 </LinearLayout>
 

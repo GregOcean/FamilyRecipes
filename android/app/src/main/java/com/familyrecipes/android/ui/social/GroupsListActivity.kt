@@ -1,5 +1,6 @@
 package com.familyrecipes.android.ui.social
 
+import com.familyrecipes.android.ui.design.UiStrings
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -96,10 +97,10 @@ class GroupsListActivity : AppCompatActivity() {
                         binding.tvEmpty.visibility = View.GONE
                     }
                 } else {
-                    Toast.makeText(this@GroupsListActivity, "加载失败", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@GroupsListActivity, UiStrings.s(com.familyrecipes.android.R.string.ui_866b795eae), Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                Toast.makeText(this@GroupsListActivity, "网络错误: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@GroupsListActivity, UiStrings.f(com.familyrecipes.android.R.string.network_error_value, e.message), Toast.LENGTH_SHORT).show()
                 e.printStackTrace()
             } finally {
                 binding.swipeRefresh.isRefreshing = false
@@ -133,7 +134,7 @@ class GroupsAdapter(
         val group = groups[position]
         
         holder.tvName.text = group.name
-        holder.tvDescription.text = group.description ?: "暂无简介"
+        holder.tvDescription.text = group.description ?: UiStrings.s(com.familyrecipes.android.R.string.ui_1f2d6b1b2c)
         holder.tvMemberCount.text = "${group.memberCount ?: 0}人"
         
         // 设置默认头像

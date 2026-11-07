@@ -1,5 +1,6 @@
 package com.familyrecipes.android.ui.search
 
+import com.familyrecipes.android.ui.design.UiStrings
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
@@ -59,7 +60,7 @@ class SearchResultAdapter(
 
         fun bind(item: SearchItem, onClick: (SearchItem) -> Unit) {
             binding.tvRecipeName.text = item.name
-            binding.tvRecipeDescription.text = item.description ?: "暂无描述"
+            binding.tvRecipeDescription.text = item.description ?: UiStrings.s(com.familyrecipes.android.R.string.ui_8c3ec9dfd5)
 
             // 加载封面图片
             if (!item.coverImageUrl.isNullOrEmpty()) {
@@ -79,10 +80,10 @@ class SearchResultAdapter(
                 "easy" -> "简单"
                 "medium" -> "中等"
                 "hard" -> "困难"
-                else -> "未知"
+                else -> UiStrings.s(com.familyrecipes.android.R.string.ui_1622dc9b6b)
             }
             binding.tvDifficulty.text = difficultyText
-            binding.tvCookTime.text = item.cookTime?.let { "${it}分钟" } ?: "未知"
+            binding.tvCookTime.text = item.cookTime?.let { UiStrings.f(com.familyrecipes.android.R.string.minutes_value, it) } ?: UiStrings.s(com.familyrecipes.android.R.string.ui_1622dc9b6b)
 
             binding.root.setOnClickListener { onClick(item) }
         }

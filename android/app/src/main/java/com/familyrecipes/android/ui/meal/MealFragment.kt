@@ -1,5 +1,6 @@
 package com.familyrecipes.android.ui.meal
 
+import com.familyrecipes.android.ui.design.UiStrings
 import android.content.Intent
 import android.os.Bundle
 import android.view.*
@@ -26,7 +27,7 @@ class MealFragment : Fragment() {
         tab = s?.getString("tab") ?: tab
         val root = Ui.box(requireContext())
         val row = Ui.row(requireContext())
-        listOf("prep" to "备菜", "order" to "点菜", "draft" to "草稿").forEach { (key, title) ->
+        listOf("prep" to UiStrings.s(com.familyrecipes.android.R.string.ui_90e2746c75), "order" to UiStrings.s(com.familyrecipes.android.R.string.ui_d85522beda), "draft" to UiStrings.s(com.familyrecipes.android.R.string.ui_22b4334f91)).forEach { (key, title) ->
             val button=Ui.button(requireContext(), title) {showTab(key)}
             tabButtons[key]=button
             row.addView(
@@ -35,9 +36,9 @@ class MealFragment : Fragment() {
         }
         root.addView(row)
         val section=Ui.row(requireContext())
-        heading=Ui.text(requireContext(),"准备做的菜",21f,true)
+        heading=Ui.text(requireContext(),UiStrings.s(com.familyrecipes.android.R.string.ui_e92d29c51a),21f,true)
         section.addView(heading,LinearLayout.LayoutParams(0,-2,1f))
-        addButton=Ui.button(requireContext(),"＋ 新建备菜") {
+        addButton=Ui.button(requireContext(),UiStrings.s(com.familyrecipes.android.R.string.ui_f9616f9a11)) {
             startActivity(Intent(requireContext(),MealEditorActivity::class.java).putExtra("kind",if(tab=="prep")"prep" else "order"))
         }
         section.addView(addButton);root.addView(section)
@@ -66,16 +67,16 @@ class MealFragment : Fragment() {
 
     private fun load() {
         if (!::list.isInitialized) return
-        heading.text=when(tab){"prep"->"准备做的菜";"order"->"想吃的菜单";else->"随时接着写"}
-        addButton.text=if(tab=="prep")"＋ 新建备菜" else "＋ 新建点菜"
+        heading.text=when(tab){"prep"->UiStrings.s(com.familyrecipes.android.R.string.ui_e92d29c51a);"order"->UiStrings.s(com.familyrecipes.android.R.string.ui_3368ec1127);else->UiStrings.s(com.familyrecipes.android.R.string.ui_82bb31b616)}
+        addButton.text=if(tab=="prep")UiStrings.s(com.familyrecipes.android.R.string.ui_f9616f9a11) else UiStrings.s(com.familyrecipes.android.R.string.ui_880468380a)
         addButton.visibility=if(tab=="draft")View.GONE else View.VISIBLE
-        tabButtons.forEach{(key,b)->b.setTextColor(if(key==tab)android.graphics.Color.WHITE else Ui.blue);b.backgroundTintList=android.content.res.ColorStateList.valueOf(if(key==tab)Ui.blue else Ui.pale)}
+        tabButtons.forEach{(key,b)->b.setTextColor(if(key==tab)Ui.onBlue else Ui.blue);b.backgroundTintList=android.content.res.ColorStateList.valueOf(if(key==tab)Ui.blue else Ui.pale)}
         job?.cancel()
         job =
             viewLifecycleOwner.lifecycleScope.launch {
                 try {
                     list.removeAllViews()
-                    list.addView(Ui.text(requireContext(), "加载中…"))
+                    list.addView(Ui.text(requireContext(), UiStrings.s(com.familyrecipes.android.R.string.ui_fb4ca1cf1b)))
                     if (tab == "draft") {
                         DraftWrites.flush()
                         val records =
@@ -99,7 +100,7 @@ class MealFragment : Fragment() {
                                         .getOrNull()
                                         .orEmpty()
                                 list.addView(
-                                    Ui.button(requireContext(), title.ifBlank { "未命名草稿" }) {
+                                    Ui.button(requireContext(), title.ifBlank { UiStrings.s(com.familyrecipes.android.R.string.ui_91b34afa6c) }) {
                                         val target =
                                             if (d.key.startsWith("meal:"))
                                                 MealEditorActivity::class.java
@@ -119,9 +120,9 @@ class MealFragment : Fragment() {
                                     })
                             }
                         if (list.childCount == 0)
-                            list.addView(Ui.text(requireContext(), "还没有草稿，编辑时会自动保存。"))
+                            list.addView(Ui.text(requireContext(), UiStrings.s(com.familyrecipes.android.R.string.ui_0b67983743)))
                     } else {
-                        val kitchen = PreferenceManager.currentKitchenId ?: error("请先选择厨房")
+                        val kitchen = PreferenceManager.currentKitchenId ?: error(UiStrings.s(com.familyrecipes.android.R.string.ui_eb006cd6f1))
                         val rows =
                             Ui.data(ApiClient.getService().meals(kitchen)).filter { it.kind == tab }
                         list.removeAllViews()
@@ -133,7 +134,7 @@ class MealFragment : Fragment() {
                                     requireContext(),
                                     listOfNotNull(m.mealDate, m.meal?.takeIf { it.isNotBlank() })
                                         .joinToString(" · ")
-                                        .ifBlank { "时间未定" },
+                                        .ifBlank { UiStrings.s(com.familyrecipes.android.R.string.ui_7dc2d8a222) },
                                     14f))
                             card.addView(
                                 Ui.text(requireContext(), m.dishes.joinToString("、") { it.name }))
@@ -141,8 +142,8 @@ class MealFragment : Fragment() {
                                 Ui.text(
                                     requireContext(),
                                     if (m.ownerId == PreferenceManager.userId)
-                                        "我创建 · 采购 ${m.shopping.size} 项"
-                                    else "分享给我的",
+                                        UiStrings.f(com.familyrecipes.android.R.string.my_shopping_count, m.shopping.size)
+                                    else UiStrings.s(com.familyrecipes.android.R.string.ui_11d0c6e5bc),
                                     14f))
                             card.setOnClickListener {
                                 startActivity(
@@ -155,13 +156,13 @@ class MealFragment : Fragment() {
                             list.addView(
                                 Ui.text(
                                     requireContext(),
-                                    "还没有${if(tab=="prep")"备菜计划" else "点菜菜单"}，可以独自创建，也可以之后分享。"))
+                                    UiStrings.s(if(tab=="prep")com.familyrecipes.android.R.string.empty_prep else com.familyrecipes.android.R.string.empty_order)))
                     }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
                     list.removeAllViews()
-                    list.addView(Ui.button(requireContext(), "${e.message} · 重试") { load() })
+                    list.addView(Ui.button(requireContext(), UiStrings.f(com.familyrecipes.android.R.string.retry_error_value, e.message)) { load() })
                 }
             }
     }

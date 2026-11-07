@@ -1,48 +1,49 @@
 package com.familyrecipes.android.ui.social
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
-import android.view.LayoutInflater
+import android.text.Spanned
 import android.view.View
-import android.view.ViewGroup
-import android.widget.ImageView
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.familyrecipes.android.R
-import com.familyrecipes.android.data.local.PreferenceManager
-import com.familyrecipes.android.data.model.Message
-import com.familyrecipes.android.data.remote.ApiClient
-import com.familyrecipes.android.databinding.ActivityGroupChatBinding
-import com.familyrecipes.android.websocket.WebSocketManager
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.*
-
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.RequestBody.Companion.asRequestBody
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.familyrecipes.android.R
 import com.familyrecipes.android.data.local.*
+import com.familyrecipes.android.data.model.*
+import com.familyrecipes.android.data.remote.ApiClient
+import com.familyrecipes.android.databinding.ActivityGroupChatBinding
+import com.familyrecipes.android.ui.design.Ui
+import com.familyrecipes.android.ui.design.UiStrings
+import com.familyrecipes.android.ui.recipe.RecipePickerActivity
+import com.familyrecipes.android.websocket.WebSocketManager
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.gson.Gson
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.CancellationException
-/** Durable chat: WebSocket is a wake-up hint; database cursors define delivery. */
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.asRequestBody
+
+/** Durable REST delivery; WebSocket only wakes the cursor-based receiver. */
 class GroupChatActivity : AppCompatActivity() {
     private lateinit var binding: ActivityGroupChatBinding
     private val messages = mutableListOf<Message>()
     private lateinit var adapter: MessageAdapter
+    private var members = emptyList<GroupMember>()
     private var groupId = 0L
     private val account = LocalStore.account
     private val userId = PreferenceManager.userId
     private val json = Gson()
     private var restoring = true
     private var draftRevision = 0
+    private var choosingMembers = false
+    private var syncJob: Job? = null
     private val ws by lazy { WebSocketManager.getInstance() }
     companion object {
         const val EXTRA_GROUP_ID = "group_id"
@@ -50,68 +51,92 @@ class GroupChatActivity : AppCompatActivity() {
         const val EXTRA_MEMBER_COUNT = "member_count"
         var visibleGroup: Long? = null
     }
-    private val notificationPermission=registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { }
-    private val stickerPicker = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
+    private fun s(id: Int) = getString(id)
+    private val recipePicker = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if(result.resultCode == Activity.RESULT_OK) {
+            val dishes = runCatching { json.fromJson(result.data?.getStringExtra("dishes"), Array<MealDish>::class.java).orEmpty().toList() }.getOrDefault(emptyList())
+            if(dishes.isNotEmpty()) confirmShare(dishes.joinToString("、") { it.name }) {
+                dishes.forEach { dish -> dish.recipeId?.let { id ->
+                    ChatRepository.enqueue(account, groupId, "菜谱：${dish.name}\nfamilyrecipes://recipe/$id", "recipe_share", id)
+                } }
+            }
+        }
+    }
+    private val stickerPicker = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if(uri != null) lifecycleScope.launch {
             try {
                 val file = java.io.File.createTempFile("sticker", ".png", cacheDir)
                 try {
-                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    withContext(Dispatchers.IO) {
                         contentResolver.openInputStream(uri)!!.use { input -> file.outputStream().use { input.copyTo(it) } }
                     }
-                    val body = okhttp3.MultipartBody.Part.createFormData("file", file.name,
-                        file.asRequestBody("image/*".toMediaType()))
-                    val response = ApiClient.getService().uploadImage(body, "sticker")
-                    check(response.isSuccessful && response.body()?.code == 200)
-                    ChatRepository.enqueue(account, groupId, response.body()!!.data!!, "sticker")
-                    sync()
+                    val body = okhttp3.MultipartBody.Part.createFormData("file", file.name, file.asRequestBody("image/*".toMediaType()))
+                    val url = Ui.data(ApiClient.getService().uploadImage(body, "sticker"))
+                    ChatRepository.enqueue(account, groupId, url, "sticker")
+                    requestSync()
                 } finally { file.delete() }
             } catch(e: CancellationException) { throw e }
-              catch(e: Exception) { toast("表情包未发送，请重试") }
+              catch(e: Exception) { Ui.toast(this@GroupChatActivity, e) }
         }
     }
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+    override fun onCreate(state: Bundle?) {
+        super.onCreate(state)
         binding = ActivityGroupChatBinding.inflate(layoutInflater); setContentView(binding.root)
         groupId = intent.getLongExtra(EXTRA_GROUP_ID, 0)
-        if(groupId == 0L) { finish(); return }
+        if(groupId <= 0) { finish(); return }
         binding.toolbar.setNavigationOnClickListener { finish() }
         binding.tvGroupName.text = intent.getStringExtra(EXTRA_GROUP_NAME)
-        binding.btnSearch.visibility = View.GONE
-        binding.btnSettings.contentDescription = "重试待发送消息"
-        binding.btnSettings.setOnClickListener {
-            androidx.appcompat.app.AlertDialog.Builder(this).setItems(arrayOf("重试待发送消息","允许后台消息通知")) { _,index ->
-                if(index==0) lifecycleScope.launch { sync() }
-                else if(android.os.Build.VERSION.SDK_INT>=33) notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-            }.show()
+        binding.btnMembers.setOnClickListener { showMembers(false) }
+        binding.tvGroupName.setOnClickListener { showMembers(false) }
+        binding.btnMention.setOnClickListener { showMembers(true) }
+        binding.btnSticker.setOnClickListener { showEmoji() }
+        binding.etMessage.setOnTouchListener { _, event ->
+            if(event.action == android.view.MotionEvent.ACTION_DOWN) hideEmoji()
+            false
         }
-        binding.btnSticker.setOnClickListener { stickerPicker.launch("image/*") }
-        adapter = MessageAdapter(messages, userId)
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if(binding.emojiPanel.visibility == View.VISIBLE) hideEmoji() else finish()
+            }
+        })
+        binding.btnShare.setOnClickListener { showShare() }
+        binding.tvSync.setOnClickListener { requestSync() }
+        adapter = MessageAdapter(messages, userId, ::pendingAction)
         binding.rvMessages.layoutManager = LinearLayoutManager(this).apply { stackFromEnd = true }
         binding.rvMessages.adapter = adapter
+        lifecycleScope.launch { loadMembers() }
         val dao = LocalStore.instance.records()
         lifecycleScope.launch {
             val revision = draftRevision
             val draft = dao.get(account, "draft", "chat:$groupId")
-            if(revision == draftRevision) binding.etMessage.setText(draft.orEmpty())
+            if(revision == draftRevision) {
+                binding.etMessage.setText(ChatMentions.decode(draft.orEmpty()))
+                binding.etMessage.setSelection(binding.etMessage.length())
+            }
             restoring = false
         }
-        binding.etMessage.doAfterTextChanged {
+        binding.etMessage.doAfterTextChanged { text ->
             draftRevision++
-            if(!restoring) DraftWrites.put(account, "chat:$groupId", it.toString())
+            if(!restoring) {
+                DraftWrites.put(account, "chat:$groupId", ChatMentions.encode(text ?: ""))
+                val cursor = binding.etMessage.selectionStart
+                if(cursor > 0 && text?.getOrNull(cursor - 1) in listOf('@', '＠') && !choosingMembers)
+                    showMembers(true, cursor - 1)
+            }
         }
         binding.btnSend.setOnClickListener {
-            val content = binding.etMessage.text.toString().trim()
+            val content = ChatMentions.encode(binding.etMessage.text).trim()
             if(content.isBlank()) return@setOnClickListener
+            if(content.length > 4000) { toast(s(R.string.chat_length)); return@setOnClickListener }
             binding.btnSend.isEnabled = false
             lifecycleScope.launch {
                 try {
                     DraftWrites.flush()
                     ChatRepository.enqueue(account, groupId, content)
-                    if(binding.etMessage.text.toString().trim() == content) binding.etMessage.setText("")
-                    sync()
+                    if(ChatMentions.encode(binding.etMessage.text).trim() == content) binding.etMessage.setText("")
+                    requestSync()
                 } catch(e: CancellationException) { throw e }
-                  catch(e: Exception) { toast("消息已保留，联网后重试") }
+                  catch(e: Exception) { Ui.toast(this@GroupChatActivity, e) }
                 finally { binding.btnSend.isEnabled = true }
             }
         }
@@ -122,126 +147,192 @@ class GroupChatActivity : AppCompatActivity() {
                         rows.map { json.fromJson(it.json, Message::class.java) }.sortedBy { it.id } to
                             pending.map { json.fromJson(it.json, PendingMessage::class.java) }.filter { it.groupId == groupId }
                     }.collect { (history, pending) ->
+                        val atBottom = !binding.rvMessages.canScrollVertically(1)
+                        val previousTail=messages.lastOrNull()?.let { it.clientMessageId ?: it.id?.toString() }
+                        val knownIds = history.mapNotNull { it.clientMessageId }.toSet()
                         messages.clear(); messages.addAll(history)
-                        pending.forEach { messages.add(Message(id=null, groupId=groupId, senderId=userId,
-                            content=if(it.type=="sticker") "[表情包] 待发送" else "${it.content}\n${it.error ?: "待发送"}",
-                            messageType="text", createdAt=null, sender=null, clientMessageId=it.clientId)) }
+                        pending.filter { it.clientId !in knownIds }.forEach { item ->
+                            messages.add(Message(id=null, groupId=groupId, senderId=userId,
+                                content=item.content, messageType=if(item.type == "sticker") "sticker" else "text",
+                                createdAt=null, sender=null, clientMessageId=item.clientId, localError=item.error))
+                        }
                         adapter.notifyDataSetChanged()
-                        if(messages.isNotEmpty()) binding.rvMessages.scrollToPosition(messages.size-1)
+                        val tail=messages.lastOrNull()
+                        val sentNew=tail?.senderId==userId && (tail.clientMessageId ?: tail.id?.toString())!=previousTail
+                        if((atBottom || sentNew) && messages.isNotEmpty()) binding.rvMessages.scrollToPosition(messages.lastIndex)
                         history.lastOrNull()?.id?.let { id ->
                             try { ApiClient.getService().markAsRead(mapOf("groupId" to groupId, "messageId" to id)) }
                             catch(e: CancellationException) { throw e } catch(_: Exception) { }
                         }
                     }
                 }
-                launch { while(true) { sync(); delay(10000) } }
-                launch { ws.messageFlow.collect { if(it.groupId == groupId) sync() } }
+                launch { while(true) { requestSync(); delay(10000) } }
+                launch { ws.messageFlow.collect { if(it.groupId == groupId) requestSync() } }
             }
         }
     }
     override fun onStart() { super.onStart(); visibleGroup=groupId; ws.connect(groupId,userId) }
     override fun onStop() { visibleGroup=null; ws.disconnect(); super.onStop() }
-    private suspend fun sync() {
-        try { ChatRepository.sync(account, groupId) }
-        catch(e: CancellationException) { throw e }
-        catch(_: Exception) { /* Persistent outbox remains visible; periodic sync retries. */ }
-    }
-    private fun toast(text: String) { Toast.makeText(this,text,Toast.LENGTH_SHORT).show() }
-}
-
-/**
- * 消息适配器
- */
-class MessageAdapter(
-    private val messages: List<Message>,
-    private val currentUserId: Long
-) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-
-    companion object {
-        const val VIEW_TYPE_SENT = 1
-        const val VIEW_TYPE_RECEIVED = 2
-        private val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-    }
-
-    override fun getItemViewType(position: Int): Int {
-        return if (messages[position].senderId == currentUserId) {
-            VIEW_TYPE_SENT
-        } else {
-            VIEW_TYPE_RECEIVED
-        }
-    }
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        return if (viewType == VIEW_TYPE_SENT) {
-            val view = LayoutInflater.from(parent.context)
-                .inflate(R.layout.item_message_sent, parent, false)
-            SentMessageViewHolder(view)
-        } else {
-            val view = LayoutInflater.from(parent.context)
-                .inflate(R.layout.item_message_received, parent, false)
-            ReceivedMessageViewHolder(view)
-        }
-    }
-
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        val message = messages[position]
-        
-        when (holder) {
-            is SentMessageViewHolder -> {
-                holder.tvMessage.text = if(message.messageType == "sticker") "" else message.content
-                android.text.util.Linkify.addLinks(holder.tvMessage, android.text.util.Linkify.WEB_URLS)
-                android.text.util.Linkify.addLinks(holder.tvMessage,java.util.regex.Pattern.compile("familyrecipes://meal/[0-9]+"),null)
-                holder.tvMessage.movementMethod=android.text.method.LinkMovementMethod.getInstance()
-                holder.ivSticker.visibility = if(message.messageType == "sticker") View.VISIBLE else View.GONE
-                if(message.messageType == "sticker") com.bumptech.glide.Glide.with(holder.itemView)
-                    .load(com.familyrecipes.android.util.MediaImages.model(message.content))
-                    .signature(com.bumptech.glide.signature.ObjectKey(PreferenceManager.userId)).into(holder.ivSticker)
-                holder.tvTime.text = formatTime(message.createdAt)
-            }
-            is ReceivedMessageViewHolder -> {
-                holder.tvMessage.text = if(message.messageType == "sticker") "" else message.content
-                android.text.util.Linkify.addLinks(holder.tvMessage, android.text.util.Linkify.WEB_URLS)
-                android.text.util.Linkify.addLinks(holder.tvMessage,java.util.regex.Pattern.compile("familyrecipes://meal/[0-9]+"),null)
-                holder.tvMessage.movementMethod=android.text.method.LinkMovementMethod.getInstance()
-                holder.ivSticker.visibility = if(message.messageType == "sticker") View.VISIBLE else View.GONE
-                if(message.messageType == "sticker") com.bumptech.glide.Glide.with(holder.itemView)
-                    .load(com.familyrecipes.android.util.MediaImages.model(message.content))
-                    .signature(com.bumptech.glide.signature.ObjectKey(PreferenceManager.userId)).into(holder.ivSticker)
-                holder.tvTime.text = formatTime(message.createdAt)
-                holder.tvSenderName.text = message.sender?.username ?: "未知用户"
+    private fun requestSync() {
+        if(syncJob?.isActive == true) return
+        syncJob = lifecycleScope.launch {
+            try {
+                ChatRepository.sync(account, groupId)
+                binding.tvSync.visibility = View.GONE
+            } catch(e: CancellationException) { throw e }
+              catch(e: Exception) {
+                binding.tvSync.text = s(R.string.chat_offline)
+                binding.tvSync.visibility = View.VISIBLE
+                android.util.Log.w("GroupChat", "Sync failed: ${e.javaClass.simpleName}")
             }
         }
     }
-
-    override fun getItemCount() = messages.size
-
-    private fun formatTime(dateString: String?): String {
-        if (dateString == null) return ""
-        try {
-            val date = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).parse(dateString)
-            return if (date != null) timeFormat.format(date) else ""
-        } catch (e: Exception) {
-            return ""
-        }
+    private suspend fun loadMembers(): Boolean {
+        return try {
+            val group = Ui.data(ApiClient.getService().getGroupDetail(groupId))
+            members = group.members.orEmpty()
+            binding.tvGroupName.text = getString(R.string.chat_group_count, group.name, members.size)
+            adapter.members = members
+            adapter.notifyDataSetChanged()
+            true
+        } catch(e: CancellationException) { throw e }
+          catch(_: Exception) { false }
     }
-
-    class SentMessageViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val ivSticker: ImageView = ImageView(view.context).also { image ->
-            (view.findViewById<TextView>(R.id.tv_message).parent as ViewGroup).addView(image, ViewGroup.LayoutParams(240,240))
-        }
-        val tvMessage: TextView = view.findViewById(R.id.tv_message)
-        val tvTime: TextView = view.findViewById(R.id.tv_time)
-        val ivAvatar: ImageView = view.findViewById(R.id.iv_avatar)
+    private fun sheet(title: String = ""): Pair<BottomSheetDialog, LinearLayout> {
+        val dialog = BottomSheetDialog(this)
+        val root = Ui.box(this)
+        if (title.isNotBlank()) root.addView(Ui.text(this, title, 22f, true))
+        dialog.setContentView(Ui.scroll(this, root))
+        dialog.show()
+        return dialog to root
     }
-
-    class ReceivedMessageViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val ivSticker: ImageView = ImageView(view.context).also { image ->
-            (view.findViewById<TextView>(R.id.tv_message).parent as ViewGroup).addView(image, ViewGroup.LayoutParams(240,240))
-        }
-        val tvMessage: TextView = view.findViewById(R.id.tv_message)
-        val tvTime: TextView = view.findViewById(R.id.tv_time)
-        val tvSenderName: TextView = view.findViewById(R.id.tv_sender_name)
-        val ivAvatar: ImageView = view.findViewById(R.id.iv_avatar)
+    private fun showMembers(mention: Boolean, typedAt: Int? = null) {
+        if(choosingMembers) return
+        choosingMembers = true
+        val (dialog, root) = sheet(s(if(mention) R.string.chat_mention else R.string.chat_members))
+        dialog.setOnDismissListener { choosingMembers = false }
+        val body = Ui.box(this, 0); root.addView(body)
+        fun load() { lifecycleScope.launch {
+            body.removeAllViews(); body.addView(Ui.text(this@GroupChatActivity, s(R.string.chat_loading)))
+            val success = loadMembers()
+            if(!dialog.isShowing) return@launch
+            body.removeAllViews()
+            if(!success) {
+                body.addView(Ui.button(this@GroupChatActivity, s(R.string.chat_failed_load)) { load() }); return@launch
+            }
+            body.addView(Ui.text(this@GroupChatActivity, s(R.string.chat_member_hint), 14f))
+            if(members.none { it.userId != userId }) body.addView(Ui.text(this@GroupChatActivity, s(R.string.chat_no_members)))
+            members.forEach { member ->
+                val id = member.userId ?: return@forEach
+                val name = member.nickname?.takeIf { it.isNotBlank() } ?: member.user?.username ?: getString(R.string.chat_member_fallback,id)
+                val row = Ui.row(this@GroupChatActivity)
+                row.addView(com.familyrecipes.android.ui.design.UserAvatar.create(this@GroupChatActivity, member.user?.username ?: name, member.user?.avatar), LinearLayout.LayoutParams(dp(44),dp(44)))
+                row.addView(Ui.button(this@GroupChatActivity, if(id == userId) "$name · ${s(R.string.chat_you)}" else "@$name") {
+                    if(id != userId) {
+                        val input = binding.etMessage
+                        val start = if(typedAt != null && input.text.getOrNull(typedAt) in listOf('@', '＠')) typedAt else input.selectionStart.coerceAtLeast(0)
+                        val end = if(start == typedAt) start + 1 else input.selectionEnd.coerceAtLeast(start)
+                        val label = "@$name"
+                        val inserted = android.text.SpannableStringBuilder("$label ")
+                        inserted.setSpan(MentionSpan(id,label),0,label.length,Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        input.text.replace(start,end,inserted); input.setSelection(start+inserted.length)
+                        dialog.dismiss(); input.requestFocus()
+                    }
+                }, LinearLayout.LayoutParams(0,-2,1f))
+                body.addView(row)
+            }
+        } }
+        load()
     }
+    private fun hideEmoji() {
+        binding.emojiPanel.visibility = View.GONE
+        binding.btnSticker.isSelected = false
+    }
+    private fun showEmoji() {
+        if(binding.emojiPanel.visibility == View.VISIBLE) { hideEmoji(); return }
+        (getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager)
+            .hideSoftInputFromWindow(binding.etMessage.windowToken, 0)
+        val root = binding.emojiContent
+        root.removeAllViews()
+        val emoji = listOf(
+            "😊","🥰","😂","🥺",
+            "😋","🤤","😍","🥳",
+            "👍","👏","❤️","😅",
+            "🍚","🍜","🥟","🍲",
+            "🥬","🥕","🥩","🍤"
+        )
+        emoji.chunked(4).forEach { line ->
+            val row = Ui.row(this)
+            line.forEach { face -> row.addView(Ui.button(this,face) {
+                val input=binding.etMessage
+                val start=input.selectionStart.coerceAtLeast(0)
+                val end=input.selectionEnd.coerceAtLeast(0)
+                input.text.replace(minOf(start,end),maxOf(start,end),face)
+                input.setSelection(minOf(start,end)+face.length)
+            }.apply { textSize=28f; contentDescription=face }, LinearLayout.LayoutParams(0,dp(56),1f)) }
+            root.addView(row)
+        }
+        root.addView(Ui.button(this,s(R.string.chat_upload_sticker)) { hideEmoji(); stickerPicker.launch("image/*") })
+        binding.emojiPanel.visibility=View.VISIBLE
+        binding.btnSticker.isSelected=true
+    }
+    private fun showShare() {
+        val (dialog, root)=sheet(s(R.string.chat_share))
+        root.addView(Ui.text(this,s(R.string.chat_share_hint),14f))
+        root.addView(Ui.entry(this,s(R.string.chat_share_order),s(R.string.chat_choose_meal),R.drawable.ic_ui_order) { dialog.dismiss(); chooseMeal("order") })
+        root.addView(Ui.entry(this,s(R.string.chat_share_prep),s(R.string.chat_choose_meal),R.drawable.ic_ui_prep) { dialog.dismiss(); chooseMeal("prep") })
+        root.addView(Ui.entry(this,s(R.string.chat_share_recipe),s(R.string.chat_share_hint),R.drawable.ic_recipe_simple) {
+            dialog.dismiss(); recipePicker.launch(Intent(this,RecipePickerActivity::class.java))
+        })
+    }
+    private fun chooseMeal(kind: String) {
+        val (dialog,root)=sheet(s(if(kind=="order") R.string.chat_share_order else R.string.chat_share_prep))
+        val body=Ui.box(this,0);root.addView(body)
+        fun load() { lifecycleScope.launch {
+            body.removeAllViews();body.addView(Ui.text(this@GroupChatActivity,s(R.string.chat_loading)))
+            try {
+                val kitchens=Ui.data(ApiClient.getService().getKitchens())
+                val meals=kitchens.flatMap { kitchen -> Ui.data(ApiClient.getService().meals(kitchen.id!!)) }
+                    .filter { it.ownerId==userId && it.kind==kind }.distinctBy { it.id }
+                if(!dialog.isShowing) return@launch
+                body.removeAllViews()
+                if(meals.isEmpty()) body.addView(Ui.text(this@GroupChatActivity,s(R.string.chat_no_meals)))
+                meals.forEach { meal ->
+                    val subtitle=listOfNotNull(kitchens.find{it.id==meal.kitchenId}?.name,meal.mealDate,meal.meal?.let{UiStrings.domain(it)})
+                        .filter{it.isNotBlank()}.joinToString(" · ")
+                    body.addView(Ui.entry(this@GroupChatActivity,meal.title,subtitle,R.drawable.ic_ui_order) {
+                        confirmShare(meal.title) {
+                            val prefix=if(kind=="order") "点菜" else "备菜"
+                            val content="$prefix：${meal.title}\n${meal.dishes.joinToString("、"){it.name}}\nfamilyrecipes://meal/${meal.id}"
+                            ChatRepository.enqueue(account,groupId,content,"meal_share",meal.id)
+                            dialog.dismiss()
+                        }
+                    })
+                }
+            } catch(e:CancellationException) { throw e }
+              catch(_:Exception) { body.removeAllViews();body.addView(Ui.button(this@GroupChatActivity,s(R.string.chat_failed_load)){load()}) }
+        } }
+        load()
+    }
+    private fun confirmShare(title: String, send: suspend () -> Unit) {
+        AlertDialog.Builder(this).setTitle(R.string.chat_send_confirm).setMessage("$title\n\n${s(R.string.chat_share_hint)}")
+            .setNegativeButton(R.string.chat_cancel,null).setPositiveButton(R.string.chat_send) { _,_ -> lifecycleScope.launch {
+                try { send(); requestSync() }
+                catch(e:CancellationException) { throw e }
+                catch(e:Exception) { Ui.toast(this@GroupChatActivity,e) }
+            } }.show()
+    }
+    private fun pendingAction(message: Message) {
+        val clientId=message.clientMessageId ?: return
+        val actions=arrayOf(s(R.string.chat_retry_action),s(R.string.chat_remove_pending))
+        AlertDialog.Builder(this).setTitle(if(message.localError == "network") s(R.string.chat_offline) else message.localError ?: s(R.string.chat_pending))
+            .setItems(actions) { _,which -> lifecycleScope.launch {
+                when(which) {
+                    0 -> requestSync()
+                    1 -> ChatRepository.removePending(account,clientId)
+                }
+            } }.show()
+    }
+    private fun dp(n:Int)=(resources.displayMetrics.density*n).toInt()
+    private fun toast(text:String) { Toast.makeText(this,text,Toast.LENGTH_SHORT).show() }
 }
-

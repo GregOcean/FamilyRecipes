@@ -1,5 +1,6 @@
 package com.familyrecipes.android.ui.fridge
 
+import com.familyrecipes.android.ui.design.UiStrings
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
@@ -72,7 +73,7 @@ class AddIngredientActivity : AppCompatActivity() {
                         binding.ivPreview.visibility=android.view.View.VISIBLE
                         binding.btnRemoveImage.visibility=android.view.View.VISIBLE
                     } catch(e:kotlinx.coroutines.CancellationException) { throw e }
-                      catch(_:Exception) { Toast.makeText(this@AddIngredientActivity,"图片读取失败",Toast.LENGTH_SHORT).show() }
+                      catch(_:Exception) { Toast.makeText(this@AddIngredientActivity,UiStrings.s(com.familyrecipes.android.R.string.ui_715a3f2df4),Toast.LENGTH_SHORT).show() }
                 }
             }
         }
@@ -99,7 +100,7 @@ class AddIngredientActivity : AppCompatActivity() {
 
         binding = ActivityAddIngredientBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        if(kitchenId==null) { android.widget.Toast.makeText(this,"请先选择厨房",android.widget.Toast.LENGTH_LONG).show();finish();return }
+        if(kitchenId==null) { android.widget.Toast.makeText(this,UiStrings.s(com.familyrecipes.android.R.string.ui_eb006cd6f1),android.widget.Toast.LENGTH_LONG).show();finish();return }
         binding.toolbar.inflateMenu(com.familyrecipes.android.R.menu.inventory_options)
         binding.toolbar.setOnMenuItemClickListener { chooseReservedFor(); true }
         binding.etIngredientInfo.isEnabled=false
@@ -150,9 +151,9 @@ class AddIngredientActivity : AppCompatActivity() {
      * 显示图片选择对话框
      */
     private fun showImagePickerDialog() {
-        val options = arrayOf("拍照", "从相册选择")
+        val options = arrayOf(UiStrings.s(com.familyrecipes.android.R.string.ui_bed9ec1e84), UiStrings.s(com.familyrecipes.android.R.string.ui_83c39abd16))
         AlertDialog.Builder(this)
-            .setTitle("选择图片来源")
+            .setTitle(UiStrings.s(com.familyrecipes.android.R.string.ui_67d5682523))
             .setItems(options) { _, which ->
                 when (which) {
                     0 -> takePicture()
@@ -167,17 +168,17 @@ class AddIngredientActivity : AppCompatActivity() {
      */
     private fun takePicture() {
         val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        
+
         // 创建临时文件
         val photoFile = createImageFile()
         currentPhotoPath = photoFile.absolutePath
-        
+
         val photoUri = FileProvider.getUriForFile(
             this,
             "${packageName}.fileprovider",
             photoFile
         )
-        
+
         intent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri)
         takePictureLauncher.launch(intent)
     }
@@ -207,29 +208,29 @@ class AddIngredientActivity : AppCompatActivity() {
         val inputText = binding.etIngredientInfo.text.toString().trim()
 
         if (inputText.isEmpty()) {
-            Toast.makeText(this, "请输入食材信息", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, UiStrings.s(com.familyrecipes.android.R.string.ui_9923b97d63), Toast.LENGTH_SHORT).show()
             return
         }
 
         binding.btnSave.isEnabled = false
-        binding.btnSave.text = "识别中..."
+        binding.btnSave.text = UiStrings.s(com.familyrecipes.android.R.string.ui_c5437f5fb7)
 
         lifecycleScope.launch {
             try {
                 // 1. 解析输入信息
                 val parseResult = IngredientParser.parse(inputText)
-                
+
                 // 2. 验证是否识别出食材名称
                 if (parseResult.ingredientName.isNullOrEmpty()) {
                     binding.btnSave.isEnabled = true
-                    binding.btnSave.text = "保存"
+                    binding.btnSave.text = UiStrings.s(com.familyrecipes.android.R.string.ui_be5fbbe34c)
                     showParseFailureDialog()
                     return@launch
                 }
-                
+
                 // 库存共享；预留对象仅用于标注。
                 showParseResultDialog(parseResult)
-                
+
             } catch (e: Exception) {
                 Toast.makeText(
                     this@AddIngredientActivity,
@@ -238,53 +239,53 @@ class AddIngredientActivity : AppCompatActivity() {
                 ).show()
                 e.printStackTrace()
                 binding.btnSave.isEnabled = true
-                binding.btnSave.text = "保存"
+                binding.btnSave.text = UiStrings.s(com.familyrecipes.android.R.string.ui_be5fbbe34c)
             }
         }
     }
-    
+
     /**
      * 显示解析失败对话框
      */
     private fun showParseFailureDialog() {
         AlertDialog.Builder(this)
-            .setTitle("❌ 无法识别食材")
-            .setMessage("无法从输入中识别出食材名称。\n\n请确保至少输入食材名称，例如：\n• 鸡蛋\n• 牛奶一瓶\n• 草莓7天内吃完")
-            .setPositiveButton("修改") { dialog, _ -> 
+            .setTitle(UiStrings.s(com.familyrecipes.android.R.string.ui_6346129bb0))
+            .setMessage(UiStrings.s(com.familyrecipes.android.R.string.ui_0c7e7ae95f))
+            .setPositiveButton(UiStrings.s(com.familyrecipes.android.R.string.ui_8347a927c0)) { dialog, _ ->
                 dialog.dismiss()
             }
             .show()
     }
-    
+
     /**
      * 显示解析结果确认对话框（带编辑功能）
      */
     private fun showParseResultDialog(parseResult: IngredientParser.ParseResult) {
         val dialogBinding = DialogEditParseResultBinding.inflate(LayoutInflater.from(this))
-        
+
         // 设置初始值
         dialogBinding.etIngredientName.setText(parseResult.ingredientName ?: "")
         dialogBinding.etAmount.setText(parseResult.amount ?: "")
         dialogBinding.etExpiryDays.setText(parseResult.expiryDays.toString())
         dialogBinding.etStorageLocation.setText(parseResult.storageLocation ?: "冰箱冷藏")
-        
+
         // 设置食材名称自动补全
         selectedInventoryCategory = parseResult.categoryId
         setupAutoComplete(dialogBinding)
-        
+
         // 设置存储位置下拉选择
         setupStorageLocationDropdown(dialogBinding)
-        
+
         // 设置保质期日历选择器
         setupExpiryDatePicker(dialogBinding)
-        
+
         // 创建对话框
         val dialog = AlertDialog.Builder(this)
             .setView(dialogBinding.root)
             .setCancelable(false)
             .create()
         dialog.setOnDismissListener { ingredientLookupJob?.cancel() }
-        
+
         // 监听保质期输入变化，显示/隐藏警告
         dialogBinding.etExpiryDays.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -293,19 +294,19 @@ class AddIngredientActivity : AppCompatActivity() {
                 val days = s.toString().toIntOrNull() ?: 0
                 if (days in 1..3) {
                     dialogBinding.warningContainer.visibility = View.VISIBLE
-                    dialogBinding.tvWarning.text = "保质期仅剩${days}天，请尽快食用！"
+                    dialogBinding.tvWarning.text = UiStrings.f(com.familyrecipes.android.R.string.expiry_days_warning, days)
                 } else {
                     dialogBinding.warningContainer.visibility = View.GONE
                 }
             }
         })
-        
+
         // 初始检查保质期
         if (parseResult.expiryDays in 1..3) {
             dialogBinding.warningContainer.visibility = View.VISIBLE
-            dialogBinding.tvWarning.text = "保质期仅剩${parseResult.expiryDays}天，请尽快食用！"
+            dialogBinding.tvWarning.text = UiStrings.f(com.familyrecipes.android.R.string.expiry_days_warning, parseResult.expiryDays)
         }
-        
+
         fun preserveParsedDraft() {
             parsedDraft=IngredientParser.ParseResult(dialogBinding.etIngredientName.text.toString(),
                 dialogBinding.etAmount.text.toString(),dialogBinding.etExpiryDays.text.toString().toIntOrNull() ?: 0,
@@ -320,9 +321,9 @@ class AddIngredientActivity : AppCompatActivity() {
             parsedDraft=null;saveDraft()
             dialog.dismiss()
             binding.btnSave.isEnabled = true
-            binding.btnSave.text = "保存"
+            binding.btnSave.text = UiStrings.s(com.familyrecipes.android.R.string.ui_be5fbbe34c)
         }
-        
+
         // 确认保存按钮
         dialogBinding.btnSave.setOnClickListener {
             val name = dialogBinding.etIngredientName.text.toString().trim()
@@ -330,29 +331,29 @@ class AddIngredientActivity : AppCompatActivity() {
             val expiryDaysStr = dialogBinding.etExpiryDays.text.toString().trim()
             val storageLocation = dialogBinding.etStorageLocation.text.toString().trim()
             val ownerUserId = reservedFor
-            
+
             // 验证输入
             if (name.isEmpty()) {
-                Toast.makeText(this, "请输入食材名称", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, UiStrings.s(com.familyrecipes.android.R.string.ui_2fbc875882), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            
+
             if (expiryDaysStr.isEmpty()) {
-                Toast.makeText(this, "请输入保质期", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, UiStrings.s(com.familyrecipes.android.R.string.ui_421b4b18d2), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            
+
             val expiryDays = expiryDaysStr.toIntOrNull()
             if (expiryDays == null || expiryDays <= 0) {
-                Toast.makeText(this, "保质期必须是大于0的整数", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, UiStrings.s(com.familyrecipes.android.R.string.ui_5caf5e3a24), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            
+
             if (expiryDays > 3650) {
-                Toast.makeText(this, "保质期不能超过10年（3650天）", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, UiStrings.s(com.familyrecipes.android.R.string.ui_13e858b0eb), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            
+
             // 创建修改后的结果
             val modifiedResult = IngredientParser.ParseResult(
                 ingredientName = name,
@@ -363,14 +364,14 @@ class AddIngredientActivity : AppCompatActivity() {
                 ownerUserId = ownerUserId,
                 categoryId = selectedInventoryCategory
             )
-            
+
             dialog.dismiss()
             performSave(modifiedResult)
         }
-        
+
         dialog.show()
     }
-    
+
     /**
      * 设置食材名称自动补全
      */
@@ -396,7 +397,7 @@ class AddIngredientActivity : AppCompatActivity() {
             dialogBinding.spinnerCategory.isEnabled = false
             if (reset) selectedInventoryCategory = null
             val name = input.text.toString().trim()
-            dialogBinding.tvIngredientMatch.text = if (name.isEmpty()) "请输入食材名称" else "正在查询食材库…"
+            dialogBinding.tvIngredientMatch.text = if (name.isEmpty()) UiStrings.s(com.familyrecipes.android.R.string.ui_2fbc875882) else UiStrings.s(com.familyrecipes.android.R.string.ui_6ba5301b0b)
             if (name.isEmpty()) return
             ingredientLookupJob = lifecycleScope.launch {
                 try {
@@ -423,7 +424,7 @@ class AddIngredientActivity : AppCompatActivity() {
                     dialogBinding.spinnerCategory.isEnabled = true
                     dialogBinding.tvIngredientMatch.text = if (matched)
                         "已匹配：${ingredient.name} · ${ingredient.category}（可调整本条库存分类）"
-                        else "新物品：请确认分类；不确定可选“待分类”"
+                        else UiStrings.s(com.familyrecipes.android.R.string.ui_c58dc542ee)
                     input.setAdapter(ArrayAdapter(this@AddIngredientActivity, android.R.layout.simple_dropdown_item_1line,
                         suggestions.body()?.data.orEmpty().map { it.name }))
                     if (input.hasFocus() && !matched && !suggestions.body()?.data.isNullOrEmpty()) input.showDropDown()
@@ -433,7 +434,7 @@ class AddIngredientActivity : AppCompatActivity() {
                     dialogBinding.btnSave.isEnabled = true
                 } catch (e: kotlinx.coroutines.CancellationException) { throw e }
                   catch (_: Exception) {
-                    dialogBinding.tvIngredientMatch.text = "食材库加载失败，点此重试（已保留输入）"
+                    dialogBinding.tvIngredientMatch.text = UiStrings.s(com.familyrecipes.android.R.string.ui_2bc418d3e3)
                 }
             }
         }
@@ -447,7 +448,7 @@ class AddIngredientActivity : AppCompatActivity() {
      */
     private fun setupStorageLocationDropdown(dialogBinding: DialogEditParseResultBinding) {
         val storageLocationView = dialogBinding.etStorageLocation
-        
+
         // 初始化适配器，使用常见存储位置列表
         val adapter = ArrayAdapter(
             this,
@@ -455,17 +456,17 @@ class AddIngredientActivity : AppCompatActivity() {
             CommonIngredients.STORAGE_LOCATIONS
         )
         storageLocationView.setAdapter(adapter)
-        
+
         // 设置阈值：输入1个字符后显示下拉
         storageLocationView.threshold = 1
-        
+
         Log.d("AddIngredient", "Storage location dropdown setup complete, total locations: ${CommonIngredients.STORAGE_LOCATIONS.size}")
-        
+
         // 点击输入框时，显示所有存储位置选项
         storageLocationView.setOnClickListener {
             storageLocationView.showDropDown()
         }
-        
+
         // 获取焦点时也显示下拉列表
         storageLocationView.setOnFocusChangeListener { _, hasFocus ->
             if (hasFocus) {
@@ -473,38 +474,38 @@ class AddIngredientActivity : AppCompatActivity() {
             }
         }
     }
-    
+
     /**
      * 设置保质期日历选择器
      */
     private fun setupExpiryDatePicker(dialogBinding: DialogEditParseResultBinding) {
         val expiryDaysInput = dialogBinding.etExpiryDays
         val textInputLayout = dialogBinding.tilExpiryDays
-        
+
         // 点击右侧日历图标时打开日期选择器
         textInputLayout.setEndIconOnClickListener {
             showDatePickerForExpiry(expiryDaysInput)
         }
-        
+
         // 长按输入框也可以打开日期选择器（提供额外的交互方式）
         expiryDaysInput.setOnLongClickListener {
             showDatePickerForExpiry(expiryDaysInput)
             true
         }
     }
-    
+
     /**
      * 显示日期选择器用于选择过期日期
      */
     private fun showDatePickerForExpiry(expiryDaysInput: com.google.android.material.textfield.TextInputEditText) {
         val calendar = java.util.Calendar.getInstance()
-        
+
         // 如果已经有天数，设置为对应的日期
         val currentDays = expiryDaysInput.text.toString().toIntOrNull()
         if (currentDays != null && currentDays > 0) {
             calendar.add(java.util.Calendar.DAY_OF_YEAR, currentDays)
         }
-        
+
         val datePickerDialog = android.app.DatePickerDialog(
             this,
             { _, year, month, dayOfMonth ->
@@ -512,25 +513,25 @@ class AddIngredientActivity : AppCompatActivity() {
                 val selectedCalendar = java.util.Calendar.getInstance()
                 selectedCalendar.set(year, month, dayOfMonth, 0, 0, 0)
                 selectedCalendar.set(java.util.Calendar.MILLISECOND, 0)
-                
+
                 val today = java.util.Calendar.getInstance()
                 today.set(java.util.Calendar.HOUR_OF_DAY, 0)
                 today.set(java.util.Calendar.MINUTE, 0)
                 today.set(java.util.Calendar.SECOND, 0)
                 today.set(java.util.Calendar.MILLISECOND, 0)
-                
+
                 val diffInMillis = selectedCalendar.timeInMillis - today.timeInMillis
                 val diffInDays = (diffInMillis / (1000 * 60 * 60 * 24)).toInt()
-                
+
                 if (diffInDays < 0) {
-                    Toast.makeText(this, "过期日期不能早于今天", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, UiStrings.s(com.familyrecipes.android.R.string.ui_53a656c5e7), Toast.LENGTH_SHORT).show()
                     expiryDaysInput.setText("1")
                 } else if (diffInDays == 0) {
-                    Toast.makeText(this, "今天过期，设置为1天", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, UiStrings.s(com.familyrecipes.android.R.string.ui_26eb926612), Toast.LENGTH_SHORT).show()
                     expiryDaysInput.setText("1")
                 } else {
                     expiryDaysInput.setText(diffInDays.toString())
-                    
+
                     // 显示友好的提示信息
                     val dateFormat = java.text.SimpleDateFormat("yyyy年MM月dd日", java.util.Locale.CHINA)
                     val dateStr = dateFormat.format(selectedCalendar.time)
@@ -541,32 +542,32 @@ class AddIngredientActivity : AppCompatActivity() {
             calendar.get(java.util.Calendar.MONTH),
             calendar.get(java.util.Calendar.DAY_OF_MONTH)
         )
-        
+
         // 设置日期选择器的最小日期为今天
         datePickerDialog.datePicker.minDate = System.currentTimeMillis()
-        
+
         // 设置最大日期为10年后
         val maxCalendar = java.util.Calendar.getInstance()
         maxCalendar.add(java.util.Calendar.YEAR, 10)
         datePickerDialog.datePicker.maxDate = maxCalendar.timeInMillis
-        
-        datePickerDialog.setTitle("选择过期日期")
+
+        datePickerDialog.setTitle(UiStrings.s(com.familyrecipes.android.R.string.ui_b44d2867ab))
         datePickerDialog.show()
     }
-    
+
     /**
      * 执行保存操作
      */
     private fun performSave(parseResult: IngredientParser.ParseResult) {
-        binding.btnSave.text = "保存中..."
-        
+        binding.btnSave.text = UiStrings.s(com.familyrecipes.android.R.string.ui_2a33020e5b)
+
         lifecycleScope.launch {
             try {
                 android.util.Log.d("AddIngredient", "========== 开始保存食材 ==========")
                 android.util.Log.d("AddIngredient", "食材名称: ${parseResult.ingredientName}")
                 android.util.Log.d("AddIngredient", "数量: ${parseResult.amount}")
                 android.util.Log.d("AddIngredient", "保质期: ${parseResult.expiryDays}天")
-                
+
                 // 1. 上传图片（如果有）
                 var imageUrl: String? = null
                 selectedImageUri?.let { uri ->
@@ -582,17 +583,17 @@ class AddIngredientActivity : AppCompatActivity() {
                 // 3. 计算过期日期
                 val expiryDate = IngredientParser.calculateExpiryDate(parseResult.expiryDays)
                 android.util.Log.d("AddIngredient", "过期日期: $expiryDate")
-                
+
                 // 3.5 检查用户ID
                 val currentUserId = PreferenceManager.userId
                 android.util.Log.d("AddIngredient", "当前用户ID: $currentUserId")
                 android.util.Log.d("AddIngredient", "是否已登录: ${PreferenceManager.isLoggedIn()}")
-                
+
                 if (currentUserId <= 0) {
                     android.util.Log.e("AddIngredient", "❌ 用户ID无效，无法添加食材")
-                    Toast.makeText(this@AddIngredientActivity, "用户未登录，请先登录", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@AddIngredientActivity, UiStrings.s(com.familyrecipes.android.R.string.ui_47bfe84b0c), Toast.LENGTH_LONG).show()
                     binding.btnSave.isEnabled = true
-                    binding.btnSave.text = "保存"
+                    binding.btnSave.text = UiStrings.s(com.familyrecipes.android.R.string.ui_be5fbbe34c)
                     return@launch
                 }
 
@@ -613,7 +614,7 @@ class AddIngredientActivity : AppCompatActivity() {
                     imageUrl = imageUrl,
                     ingredient = null
                 )
-                
+
                 android.util.Log.d("AddIngredient", "准备添加到冰箱:")
                 android.util.Log.d("AddIngredient", "  - 用户ID: ${fridgeItem.userId}")
                 android.util.Log.d("AddIngredient", "  - 食材ID: ${fridgeItem.ingredientId}")
@@ -626,13 +627,13 @@ class AddIngredientActivity : AppCompatActivity() {
 
                 if (response.isSuccessful && response.body()?.code == 200) {
                     android.util.Log.d("AddIngredient", "✅ 添加成功！")
-                    Toast.makeText(this@AddIngredientActivity, "添加成功！", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@AddIngredientActivity, UiStrings.s(com.familyrecipes.android.R.string.ui_d730bee903), Toast.LENGTH_SHORT).show()
                     setResult(Activity.RESULT_OK)
                     saved=true
                     DraftWrites.clear(account,draftKey)
                     finish()
                 } else {
-                    val errorMsg = response.body()?.message ?: "添加失败"
+                    val errorMsg = response.body()?.message ?: UiStrings.s(com.familyrecipes.android.R.string.ui_6452a05591)
                     android.util.Log.e("AddIngredient", "❌ 添加失败: $errorMsg")
                     Toast.makeText(
                         this@AddIngredientActivity,
@@ -644,13 +645,13 @@ class AddIngredientActivity : AppCompatActivity() {
                 android.util.Log.e("AddIngredient", "❌ 异常: ${e.message}", e)
                 Toast.makeText(
                     this@AddIngredientActivity,
-                    "网络错误: ${e.message}",
+                    UiStrings.f(com.familyrecipes.android.R.string.network_error_value, e.message),
                     Toast.LENGTH_LONG
                 ).show()
                 e.printStackTrace()
             } finally {
                 binding.btnSave.isEnabled = true
-                binding.btnSave.text = "保存"
+                binding.btnSave.text = UiStrings.s(com.familyrecipes.android.R.string.ui_be5fbbe34c)
                 android.util.Log.d("AddIngredient", "========== 保存流程结束 ==========")
             }
         }
@@ -672,11 +673,11 @@ class AddIngredientActivity : AppCompatActivity() {
                 val group=ApiClient.getService().getGroupDetail(requireNotNull(kitchen.groupId))
                 check(group.isSuccessful && group.body()?.code==200)
                 val members=group.body()?.data?.members.orEmpty()
-                val labels=arrayOf("全家共享（无预留）") + members.map { it.user?.username ?: "成员 ${it.userId}" }
-                androidx.appcompat.app.AlertDialog.Builder(this@AddIngredientActivity).setTitle("预留给谁（不影响编辑权限）")
+                val labels=arrayOf(UiStrings.s(com.familyrecipes.android.R.string.ui_e0d982c2fd)) + members.map { it.user?.username ?: "成员 ${it.userId}" }
+                androidx.appcompat.app.AlertDialog.Builder(this@AddIngredientActivity).setTitle(UiStrings.s(com.familyrecipes.android.R.string.ui_6cec1849f4))
                     .setItems(labels) { _, index -> reservedFor=if(index==0) null else members[index-1].userId;saveDraft() }.show()
             } catch(e: kotlinx.coroutines.CancellationException) { throw e }
-              catch(_: Exception) { android.widget.Toast.makeText(this@AddIngredientActivity,"成员加载失败",android.widget.Toast.LENGTH_SHORT).show() }
+              catch(_: Exception) { android.widget.Toast.makeText(this@AddIngredientActivity,UiStrings.s(com.familyrecipes.android.R.string.ui_d27ba70966),android.widget.Toast.LENGTH_SHORT).show() }
         }
     }
 
@@ -688,7 +689,7 @@ class AddIngredientActivity : AppCompatActivity() {
             val response = ApiClient.getService().uploadImage(body,"inventory")
             val url = response.body()?.data
             if (!response.isSuccessful || response.body()?.code != 200 || url.isNullOrBlank()) {
-                throw java.io.IOException("图片上传失败，库存尚未保存")
+                throw java.io.IOException(UiStrings.s(com.familyrecipes.android.R.string.ui_40e3aba8c8))
             }
             return url
         } finally { file.delete() }
@@ -702,7 +703,7 @@ class AddIngredientActivity : AppCompatActivity() {
         // Resolve exact name/alias and creation in one server operation; a failed search never creates a duplicate.
         val response = ApiClient.getService().createIngredient(Ingredient(id=null, name=name, category=null, categoryId=categoryId))
         if (!response.isSuccessful || response.body()?.code != 200)
-            throw Exception(com.familyrecipes.android.data.remote.ApiErrors.message(response, "食材保存失败"))
+            throw Exception(com.familyrecipes.android.data.remote.ApiErrors.message(response, UiStrings.s(com.familyrecipes.android.R.string.ui_1e1b18a33f)))
         return requireNotNull(response.body()?.data)
     }
 

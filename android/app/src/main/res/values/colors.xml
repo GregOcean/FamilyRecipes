@@ -9,10 +9,10 @@
     <color name="white">#FFFFFFFF</color>
     
     <!-- 家肴应用主题色 - 温暖的食物色调 -->
-    <color name="primary">#007CA9</color>           <!-- 温暖的橙红色 -->
+    <color name="primary">#006F98</color>           <!-- 温暖的橙红色 -->
     <color name="primary_dark">#006182</color>      <!-- 深橙色 -->
     <color name="primary_light">#E2F5FC</color>     <!-- 浅橙色 -->
-    <color name="accent">#007CA9</color>            <!-- 金黄色 -->
+    <color name="accent">#006F98</color>            <!-- 金黄色 -->
     <color name="accent_light">#FFF1BD</color>      <!-- 浅金黄 -->
     
     <!-- 辅助色 -->
@@ -49,4 +49,11 @@
     
     <!-- 启动图标背景色 -->
     <color name="ic_launcher_background">#FFFFFF</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="outline">#7B919F</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="toolbar_background">#006182</color>
+    <color name="warm_surface">#FFF1CF</color>
+    <color name="green_surface">#E9F5E9</color>
+    <color name="purple_surface">#EEEAFB</color>
 </resources>

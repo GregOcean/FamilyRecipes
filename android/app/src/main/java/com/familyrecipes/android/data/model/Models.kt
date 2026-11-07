@@ -158,7 +158,9 @@ data class ExternalRecipe(
     val source: String?,
     val thumbnail: String?,  // 缩略图URL
     @SerializedName("added_by") val addedBy: Long?,
-    @SerializedName("created_at") val createdAt: String?
+    @SerializedName("created_at") val createdAt: String?,
+    val notes: String? = null,
+    @SerializedName("sort_order") val sortOrder: Int = 0
 )
 
 /**
@@ -284,6 +286,7 @@ data class GroupMember(
  * 消息
  */
 data class Message(
+    val localError: String? = null,
     @SerializedName("client_message_id") val clientMessageId: String? = null,
     val id: Long?,
     @SerializedName("group_id") val groupId: Long?,

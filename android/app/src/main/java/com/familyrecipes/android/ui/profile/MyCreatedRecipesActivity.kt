@@ -1,5 +1,6 @@
 package com.familyrecipes.android.ui.profile
 
+import com.familyrecipes.android.ui.design.UiStrings
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
@@ -54,7 +55,7 @@ class MyCreatedRecipesActivity : AppCompatActivity() {
     
     private fun openRecipeDetail(recipe: Recipe) {
         if (recipe.id == null) {
-            Toast.makeText(this, "菜谱ID无效", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, UiStrings.s(com.familyrecipes.android.R.string.ui_a6b4953271), Toast.LENGTH_SHORT).show()
             return
         }
         
@@ -101,7 +102,7 @@ class MyCreatedRecipesActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 Toast.makeText(
                     this@MyCreatedRecipesActivity,
-                    "网络错误: ${e.message}",
+                    UiStrings.f(com.familyrecipes.android.R.string.network_error_value, e.message),
                     Toast.LENGTH_SHORT
                 ).show()
                 e.printStackTrace()
