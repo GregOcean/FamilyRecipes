@@ -8,6 +8,9 @@ import com.familyrecipes.android.FamilyRecipesApp
 object UiStrings {
     fun f(id:Int,vararg args:Any?):String = String.format(java.util.Locale.getDefault(),s(id),*args)
     fun domain(value:String):String = when(value) {
+        "甜" -> s(com.familyrecipes.android.R.string.taste_sweet)
+        "麻" -> s(com.familyrecipes.android.R.string.taste_numbing)
+        "咸" -> s(com.familyrecipes.android.R.string.taste_salty)
         "酸" -> s(com.familyrecipes.android.R.string.enum_778b84eb)
         "辣" -> s(com.familyrecipes.android.R.string.enum_2134a402)
         "酸辣" -> s(com.familyrecipes.android.R.string.enum_32525fa1)

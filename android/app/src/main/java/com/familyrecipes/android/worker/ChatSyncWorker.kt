@@ -16,9 +16,15 @@ class ChatSyncWorker(context:Context,params:WorkerParameters):CoroutineWorker(co
         val account=LocalStore.account
         val userId=PreferenceManager.userId
         try {
+            var invitationsFailed=false
+            try { FriendInvitations.sync() }
+            catch(e:CancellationException){throw e}
+            catch(_:Exception){invitationsFailed=true}
             val response=ApiClient.getService().getGroupsList()
             if(response.code()==401)return Result.success()
             if(!response.isSuccessful || response.body()?.code!=200)return Result.retry()
+            if(account!=LocalStore.account)return Result.success()
+            GroupCache.save(account,response.body()?.data.orEmpty())
             for(group in response.body()?.data.orEmpty()) {
                 if(account!=LocalStore.account)return Result.success()
                 val id=group.id ?: continue
@@ -34,7 +40,7 @@ class ChatSyncWorker(context:Context,params:WorkerParameters):CoroutineWorker(co
                     .setSmallIcon(com.familyrecipes.android.R.drawable.ic_notification).setContentTitle(group.name)
                     .setContentText(if(messages.any { com.familyrecipes.android.data.model.ChatContent.mentions(it.content,userId) }) com.familyrecipes.android.ui.design.UiStrings.s(com.familyrecipes.android.R.string.chat_mentioned) else com.familyrecipes.android.ui.design.UiStrings.f(com.familyrecipes.android.R.string.chat_notification,messages.size)).setAutoCancel(true).setContentIntent(pending).build())
             }
-            return Result.success()
+            return if(invitationsFailed) Result.retry() else Result.success()
         } catch(e:CancellationException) { throw e }
           catch(_:Exception) { return Result.retry() }
     }

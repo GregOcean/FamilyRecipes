@@ -2,21 +2,22 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#0088ad">
-<meta name="description" content="佳肴：收藏菜谱、整理食材，把今天想吃的变成一顿好饭。">
-<title>佳肴 · 今天吃点好的</title>
+<meta name="theme-color" content="#AA4930">
+<meta name="description" content="家肴：收藏菜谱、整理食材，把今天想吃的变成一顿好饭。">
+<link rel="icon" href="/app-logo.svg" type="image/svg+xml">
+<title>家肴 · 随时随地，家的味道</title>
 <style>
-:root{color-scheme:light;--ink:#123b50;--muted:#4c6876;--blue:#007da3;--line:#d8e7ec}
-*{box-sizing:border-box}body{margin:0;background:#f5fafc;color:var(--ink);font:18px/1.65 system-ui,-apple-system,"PingFang SC",sans-serif}
+:root{color-scheme:light;--ink:#302820;--muted:#69584C;--accent:#AA4930;--line:#E8D8C9}
+*{box-sizing:border-box}body{margin:0;background:#FFF9F2;color:var(--ink);font:18px/1.65 system-ui,-apple-system,"PingFang SC",sans-serif}
 .wrap{max-width:1080px;margin:auto;padding:0 28px}header{display:flex;align-items:center;justify-content:space-between;padding:26px 0;border-bottom:1px solid var(--line)}
-.brand{display:flex;align-items:center;gap:12px;font-size:24px;font-weight:750}.logo{background:var(--blue);color:white;border-radius:17px;width:52px;height:52px;display:grid;place-items:center;font-size:21px}
+.brand{display:flex;align-items:center;gap:12px;font-size:24px;font-weight:750}.logo{background:#FFF0E1;color:var(--ink);border-radius:17px;width:52px;height:52px;display:grid;place-items:center;font-size:21px;overflow:hidden}.logo img{width:100%;height:100%;display:block}
 header small{color:var(--muted);font-size:15px}.hero{display:grid;grid-template-columns:1.2fr 1fr;gap:60px;align-items:center;padding:76px 0 64px}
-.eyebrow{color:var(--blue);font-weight:650;font-size:16px}h1{font-size:clamp(38px,5vw,62px);letter-spacing:-2px;line-height:1.22;margin:20px 0}p{margin:14px 0;color:var(--muted)}.intro{max-width:510px;font-size:20px}
-.download{margin-top:32px}.button{display:inline-block;padding:15px 28px;border-radius:16px;background:var(--blue);color:white;text-decoration:none;font-weight:700;min-height:56px}
-.button[aria-disabled=true]{background:#506e7b;pointer-events:none}a:focus-visible,summary:focus-visible{outline:3px solid #ebaa23;outline-offset:5px}
-.meta{font-size:14px;max-width:480px;min-height:48px;margin-top:15px}.scene{background:#e1f3f8;padding:25px;border-radius:32px;transform:rotate(2deg)}
-.note{background:white;border:1px solid var(--line);padding:22px;border-radius:20px;margin-bottom:14px;box-shadow:0 8px 20px #123b5006}.note:last-child{margin-bottom:0}.note strong{display:block;font-size:20px}
-.note span{display:block;color:var(--muted);font-size:16px;margin-top:6px}.pill{font-size:13px!important;color:var(--blue)!important;margin-bottom:8px}
+.eyebrow{color:var(--accent);font-weight:650;font-size:16px}h1{font-size:clamp(38px,5vw,62px);letter-spacing:-2px;line-height:1.22;margin:20px 0}p{margin:14px 0;color:var(--muted)}.intro{max-width:510px;font-size:20px}
+.download{margin-top:32px}.button{display:inline-block;padding:15px 28px;border-radius:16px;background:var(--accent);color:white;text-decoration:none;font-weight:700;min-height:56px}
+.button[aria-disabled=true]{background:#79685B;pointer-events:none}a:focus-visible,summary:focus-visible{outline:3px solid #ebaa23;outline-offset:5px}
+.meta{font-size:14px;max-width:480px;min-height:48px;margin-top:15px}.scene{background:#FFE5D5;padding:25px;border-radius:32px;transform:rotate(2deg)}
+.note{background:white;border:1px solid var(--line);padding:22px;border-radius:20px;margin-bottom:14px;box-shadow:0 8px 20px #30282006}.note:last-child{margin-bottom:0}.note strong{display:block;font-size:20px}
+.note span{display:block;color:var(--muted);font-size:16px;margin-top:6px}.pill{font-size:13px!important;color:var(--accent)!important;margin-bottom:8px}
 .features{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;border-top:1px solid var(--line);padding:34px 0}h2{font-size:21px;margin:0}.features p{font-size:16px}
 details{border-top:1px solid var(--line);padding:22px 0}summary{cursor:pointer;font-size:18px;font-weight:650}details p{font-size:16px;max-width:760px}
 footer{padding:30px 0;color:var(--muted);font-size:14px;border-top:1px solid var(--line)}
@@ -25,11 +26,11 @@ footer{padding:30px 0;color:var(--muted);font-size:14px;border-top:1px solid var
 </style>
 </head>
 <body><div class="wrap">
-<header><div class="brand"><span class="logo" aria-hidden="true">佳肴</span>佳肴</div><small>你的日常厨房小帮手</small></header>
+<header><div class="brand"><span class="logo" aria-hidden="true"><img src="/app-logo.svg" alt="" width="52" height="52"></span>家肴</div><small>你的日常厨房小帮手</small></header>
 <main>
 <section class="hero">
 <div><span class="eyebrow">一个人吃好，也一起做好</span>
-<h1>今天吃点好的。</h1>
+<h1>随时随地，家的味道</h1>
 <p class="intro">把散落的菜谱收在一起，看看手边的食材，再把想吃的安排成一顿好饭。</p>
 <div class="download"><a id="download" class="button" aria-disabled="true">正在获取安装包…</a>
 <p id="release" class="meta" aria-live="polite">正在查询最新发布信息。</p>
@@ -45,7 +46,7 @@ footer{padding:30px 0;color:var(--muted);font-size:14px;border-top:1px solid var
 <div><h2>吃什么，一起商量</h2><p>在消息里分享菜谱、点菜和备菜，少一点来回确认。</p></div>
 </section>
 <details><summary>Android 手机如何安装或更新？</summary><p>下载 APK 后打开文件，按手机提示允许本次安装。如果已安装相同签名的版本，直接覆盖更新即可，无需先卸载。当前提供 Android 安装包，暂不提供 iPhone 版本。</p></details>
-</main><footer>佳肴 FamilyRecipes · 把日常的饭，做成喜欢的样子。</footer>
+</main><footer>家肴 FamilyRecipes · 把日常的饭，做成喜欢的样子。</footer>
 </div>
 <script>
 (async()=>{

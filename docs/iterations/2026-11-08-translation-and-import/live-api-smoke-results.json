@@ -1,0 +1,121 @@
+{
+  "date": "2026-11-08",
+  "scope": "Four direct provider API smoke tests using synthetic text and generated images. No production data writes or bulk translation. Not full Android end-to-end acceptance.",
+  "models": {
+    "translation": "glm-5.3-flash",
+    "vision": "glm-4.6v-flash"
+  },
+  "translation": [
+    {
+      "target": "en",
+      "source": "今晚六点半吃饭，做两人份。少放盐，不要放辣椒。孩子对花生过敏，不能加花生。牛奶放冷藏，肉放冷冻。用生抽，不要用老抽。",
+      "seconds": 1.85,
+      "translation": "Dinner tonight at 6:30, for two people. Use less salt, and don't add chili. My child is allergic to peanuts, so no peanuts can be added. Refrigerate the milk, and freeze the meat. Use light soy sauce, not dark soy sauce.",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 59,
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_tokens": 116,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "total_tokens": 175
+      }
+    },
+    {
+      "target": "zh",
+      "source": "Dinner is at 6:30 pm. Cook for two people. Use less salt, but do not omit it. Do not add peanuts: the child is allergic. Refrigerate the milk and freeze the meat. Use light soy sauce, not dark soy sauce.",
+      "seconds": 2.11,
+      "translation": "晚餐在下午6:30。做两人份。少放盐，但不要省略。不要加花生：孩子过敏。牛奶冷藏，肉类冷冻。用生抽，不要用老抽。",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 42,
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_tokens": 131,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "total_tokens": 173
+      }
+    }
+  ],
+  "vision": [
+    {
+      "task": "receipt",
+      "seconds": 14.29,
+      "output": "\n{\n \"receipt_date\": \"2026-11-08\",\n \"currency\": \"SGD\",\n \"purchased_items\": [\n  {\n   \"item\": \"MILK 1 L\",\n   \"quantity\": 2,\n   \"unit_package_size\": \"1 L\",\n   \"unit_price\": 3.50,\n   \"line_total\": 7.00,\n   \"expiry_date\": null\n  },\n  {\n   \"item\": \"EGGS 6 PACK\",\n   \"quantity\": 1,\n   \"unit_package_size\": \"6 PACK\",\n   \"unit_price\": 4.20,\n   \"line_total\": 4.20,\n   \"expiry_date\": null\n  },\n  {\n   \"item\": \"APPLES 1 KG\",\n   \"quantity\": 1,\n   \"unit_package_size\": \"1 KG\",\n   \"unit_price\": 5.00,\n   \"line_total\": 5.00,\n   \"expiry_date\": null\n  }\n ]\n}",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 750,
+        "completion_tokens_details": {
+          "reasoning_tokens": 538
+        },
+        "prompt_tokens": 962,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "total_tokens": 1712
+      },
+      "parsed_output": {
+        "receipt_date": "2026-11-08",
+        "currency": "SGD",
+        "purchased_items": [
+          {
+            "item": "MILK 1 L",
+            "quantity": 2,
+            "unit_package_size": "1 L",
+            "unit_price": 3.5,
+            "line_total": 7.0,
+            "expiry_date": null
+          },
+          {
+            "item": "EGGS 6 PACK",
+            "quantity": 1,
+            "unit_package_size": "6 PACK",
+            "unit_price": 4.2,
+            "line_total": 4.2,
+            "expiry_date": null
+          },
+          {
+            "item": "APPLES 1 KG",
+            "quantity": 1,
+            "unit_package_size": "1 KG",
+            "unit_price": 5.0,
+            "line_total": 5.0,
+            "expiry_date": null
+          }
+        ]
+      }
+    },
+    {
+      "task": "item",
+      "seconds": 11.78,
+      "output": "\n{\n  \"item\": \"PLAIN YOGURT\",\n  \"net_weight\": \"500 g\",\n  \"production_packed_date\": \"2026-11-06\",\n  \"expiry_date\": \"2026-11-20\",\n  \"expiry_source\": \"printed\",\n  \"storage_instructions\": \"KEEP REFRIGERATED AT 2-6 C\"\n}",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 166,
+        "completion_tokens_details": {
+          "reasoning_tokens": 84
+        },
+        "prompt_tokens": 969,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "total_tokens": 1135
+      },
+      "parsed_output": {
+        "item": "PLAIN YOGURT",
+        "net_weight": "500 g",
+        "production_packed_date": "2026-11-06",
+        "expiry_date": "2026-11-20",
+        "expiry_source": "printed",
+        "storage_instructions": "KEEP REFRIGERATED AT 2-6 C"
+      }
+    }
+  ],
+  "total_tokens": 3195
+}

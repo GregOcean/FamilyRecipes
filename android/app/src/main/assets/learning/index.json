@@ -1,0 +1,173 @@
+[
+  {
+    "title": "厨房准备",
+    "section": "beginner",
+    "file": "0.html",
+    "source": "https://github.com/Anduin2017/HowToCook/blob/308cc8b7dab1da84b20e7fafdf836a715437f582/tips/%E5%8E%A8%E6%88%BF%E5%87%86%E5%A4%87.md",
+    "revision": "308cc8b7dab1da84b20e7fafdf836a715437f582",
+    "license": "Unlicense",
+    "language": "zh"
+  },
+  {
+    "title": "如何洗碗",
+    "section": "beginner",
+    "file": "1.html",
+    "source": "https://github.com/Anduin2017/HowToCook/blob/308cc8b7dab1da84b20e7fafdf836a715437f582/tips/%E5%A6%82%E4%BD%95%E6%B4%97%E7%A2%97.md",
+    "revision": "308cc8b7dab1da84b20e7fafdf836a715437f582",
+    "license": "Unlicense",
+    "language": "zh"
+  },
+  {
+    "title": "如何选择现在吃什么",
+    "section": "beginner",
+    "file": "2.html",
+    "source": "https://github.com/Anduin2017/HowToCook/blob/308cc8b7dab1da84b20e7fafdf836a715437f582/tips/%E5%A6%82%E4%BD%95%E9%80%89%E6%8B%A9%E7%8E%B0%E5%9C%A8%E5%90%83%E4%BB%80%E4%B9%88.md",
+    "revision": "308cc8b7dab1da84b20e7fafdf836a715437f582",
+    "license": "Unlicense",
+    "language": "zh"
+  },
+  {
+    "title": "高压力锅",
+    "section": "beginner",
+    "file": "3.html",
+    "source": "https://github.com/Anduin2017/HowToCook/blob/308cc8b7dab1da84b20e7fafdf836a715437f582/tips/learn/%E9%AB%98%E5%8E%8B%E5%8A%9B%E9%94%85.md",
+    "revision": "308cc8b7dab1da84b20e7fafdf836a715437f582",
+    "license": "Unlicense",
+    "language": "zh"
+  },
+  {
+    "title": "空气炸锅",
+    "section": "beginner",
+    "file": "4.html",
+    "source": "https://github.com/Anduin2017/HowToCook/blob/308cc8b7dab1da84b20e7fafdf836a715437f582/tips/learn/%E7%A9%BA%E6%B0%94%E7%82%B8%E9%94%85.md",
+    "revision": "308cc8b7dab1da84b20e7fafdf836a715437f582",
+    "license": "Unlicense",
+    "language": "zh"
+  },
+  {
+    "title": "去腥",
+    "section": "beginner",
+    "file": "5.html",
+    "source": "https://github.com/Anduin2017/HowToCook/blob/308cc8b7dab1da84b20e7fafdf836a715437f582/tips/learn/%E5%8E%BB%E8%85%A5.md",
+    "revision": "308cc8b7dab1da84b20e7fafdf836a715437f582",
+    "license": "Unlicense",
+    "language": "zh"
+  },
+  {
+    "title": "食品安全",
+    "section": "beginner",
+    "file": "6.html",
+    "source": "https://github.com/Anduin2017/HowToCook/blob/308cc8b7dab1da84b20e7fafdf836a715437f582/tips/learn/%E9%A3%9F%E5%93%81%E5%AE%89%E5%85%A8.md",
+    "revision": "308cc8b7dab1da84b20e7fafdf836a715437f582",
+    "license": "Unlicense",
+    "language": "zh"
+  },
+  {
+    "title": "微波炉",
+    "section": "beginner",
+    "file": "7.html",
+    "source": "https://github.com/Anduin2017/HowToCook/blob/308cc8b7dab1da84b20e7fafdf836a715437f582/tips/learn/%E5%BE%AE%E6%B3%A2%E7%82%89.md",
+    "revision": "308cc8b7dab1da84b20e7fafdf836a715437f582",
+    "license": "Unlicense",
+    "language": "zh"
+  },
+  {
+    "title": "学习焯水",
+    "section": "beginner",
+    "file": "8.html",
+    "source": "https://github.com/Anduin2017/HowToCook/blob/308cc8b7dab1da84b20e7fafdf836a715437f582/tips/learn/%E5%AD%A6%E4%B9%A0%E7%84%AF%E6%B0%B4.md",
+    "revision": "308cc8b7dab1da84b20e7fafdf836a715437f582",
+    "license": "Unlicense",
+    "language": "zh"
+  },
+  {
+    "title": "学习炒与煎",
+    "section": "beginner",
+    "file": "9.html",
+    "source": "https://github.com/Anduin2017/HowToCook/blob/308cc8b7dab1da84b20e7fafdf836a715437f582/tips/learn/%E5%AD%A6%E4%B9%A0%E7%82%92%E4%B8%8E%E7%85%8E.md",
+    "revision": "308cc8b7dab1da84b20e7fafdf836a715437f582",
+    "license": "Unlicense",
+    "language": "zh"
+  },
+  {
+    "title": "学习凉拌",
+    "section": "beginner",
+    "file": "10.html",
+    "source": "https://github.com/Anduin2017/HowToCook/blob/308cc8b7dab1da84b20e7fafdf836a715437f582/tips/learn/%E5%AD%A6%E4%B9%A0%E5%87%89%E6%8B%8C.md",
+    "revision": "308cc8b7dab1da84b20e7fafdf836a715437f582",
+    "license": "Unlicense",
+    "language": "zh"
+  },
+  {
+    "title": "学习腌",
+    "section": "beginner",
+    "file": "11.html",
+    "source": "https://github.com/Anduin2017/HowToCook/blob/308cc8b7dab1da84b20e7fafdf836a715437f582/tips/learn/%E5%AD%A6%E4%B9%A0%E8%85%8C.md",
+    "revision": "308cc8b7dab1da84b20e7fafdf836a715437f582",
+    "license": "Unlicense",
+    "language": "zh"
+  },
+  {
+    "title": "学习用刀",
+    "section": "beginner",
+    "file": "12.html",
+    "source": "https://github.com/Anduin2017/HowToCook/blob/308cc8b7dab1da84b20e7fafdf836a715437f582/tips/learn/%E5%AD%A6%E4%B9%A0%E7%94%A8%E5%88%80.md",
+    "revision": "308cc8b7dab1da84b20e7fafdf836a715437f582",
+    "license": "Unlicense",
+    "language": "zh"
+  },
+  {
+    "title": "学习蒸",
+    "section": "beginner",
+    "file": "13.html",
+    "source": "https://github.com/Anduin2017/HowToCook/blob/308cc8b7dab1da84b20e7fafdf836a715437f582/tips/learn/%E5%AD%A6%E4%B9%A0%E8%92%B8.md",
+    "revision": "308cc8b7dab1da84b20e7fafdf836a715437f582",
+    "license": "Unlicense",
+    "language": "zh"
+  },
+  {
+    "title": "学习煮",
+    "section": "beginner",
+    "file": "14.html",
+    "source": "https://github.com/Anduin2017/HowToCook/blob/308cc8b7dab1da84b20e7fafdf836a715437f582/tips/learn/%E5%AD%A6%E4%B9%A0%E7%85%AE.md",
+    "revision": "308cc8b7dab1da84b20e7fafdf836a715437f582",
+    "license": "Unlicense",
+    "language": "zh"
+  },
+  {
+    "title": "辅料技巧",
+    "section": "advanced",
+    "file": "15.html",
+    "source": "https://github.com/Anduin2017/HowToCook/blob/308cc8b7dab1da84b20e7fafdf836a715437f582/tips/advanced/%E8%BE%85%E6%96%99%E6%8A%80%E5%B7%A7.md",
+    "revision": "308cc8b7dab1da84b20e7fafdf836a715437f582",
+    "license": "Unlicense",
+    "language": "zh"
+  },
+  {
+    "title": "高级专业术语",
+    "section": "advanced",
+    "file": "16.html",
+    "source": "https://github.com/Anduin2017/HowToCook/blob/308cc8b7dab1da84b20e7fafdf836a715437f582/tips/advanced/%E9%AB%98%E7%BA%A7%E4%B8%93%E4%B8%9A%E6%9C%AF%E8%AF%AD.md",
+    "revision": "308cc8b7dab1da84b20e7fafdf836a715437f582",
+    "license": "Unlicense",
+    "language": "zh"
+  },
+  {
+    "title": "糖色的炒制",
+    "section": "advanced",
+    "file": "17.html",
+    "source": "https://github.com/Anduin2017/HowToCook/blob/308cc8b7dab1da84b20e7fafdf836a715437f582/tips/advanced/%E7%B3%96%E8%89%B2%E7%9A%84%E7%82%92%E5%88%B6.md",
+    "revision": "308cc8b7dab1da84b20e7fafdf836a715437f582",
+    "license": "Unlicense",
+    "language": "zh"
+  },
+  {
+    "title": "油温判断技巧",
+    "section": "advanced",
+    "file": "18.html",
+    "source": "https://github.com/Anduin2017/HowToCook/blob/308cc8b7dab1da84b20e7fafdf836a715437f582/tips/advanced/%E6%B2%B9%E6%B8%A9%E5%88%A4%E6%96%AD%E6%8A%80%E5%B7%A7.md",
+    "revision": "308cc8b7dab1da84b20e7fafdf836a715437f582",
+    "license": "Unlicense",
+    "language": "zh"
+  }
+]

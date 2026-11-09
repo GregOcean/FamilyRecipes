@@ -303,6 +303,12 @@ public class RecipeController {
     /**
      * 获取标签选项
      */
+    @GetMapping("/tags/{tagType}/options")
+    public Result<List<java.util.Map<String,String>>> tagOptions(@PathVariable String tagType,HttpServletRequest request) {
+        return Result.success(recipeService.getTagValues(tagType,(Long)request.getAttribute("userId")).stream()
+            .map(value -> java.util.Map.of("value",value,"name",value)).toList());
+    }
+
     @GetMapping("/tags/{tagType}")
     public Result<List<String>> getTagValues(@PathVariable String tagType, HttpServletRequest request) {
         List<String> values = recipeService.getTagValues(tagType, (Long) request.getAttribute("userId"));

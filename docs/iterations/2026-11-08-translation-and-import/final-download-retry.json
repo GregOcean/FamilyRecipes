@@ -1,0 +1,80 @@
+{
+  "normalized": {
+    "records": 3718,
+    "sources": {
+      "HowToCook": 313,
+      "UniTools": 501,
+      "Wikibooks": 2904
+    },
+    "with_cover": 549,
+    "with_verified_step_photo": 0,
+    "note": "No popularity ranking or deduplication. Incomplete media explicitly retained as gaps; no invented steps/photos."
+  },
+  "wikibooks_failures": [
+    {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/f/fe/1-2-3-4_cake_slice_with_chocolate_sour_cream_icing.JPG?utm_source=en.wikibooks.org&utm_campaign=imageinfo&utm_content=original",
+      "error": "HTTPError: HTTP Error 429: Too Many Requests (015d12c)",
+      "status": 429,
+      "retry_after": "10",
+      "path": "wikibooks/images/1fa168cfeb470f471e501e4cbef592adbf23eb0f68585ba096c39e6b75224d7d.jpg"
+    },
+    {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/3/37/Nice_Cup_of_Tea.jpg?utm_source=en.wikibooks.org&utm_campaign=imageinfo&utm_content=original",
+      "error": "HTTPError: HTTP Error 429: Too Many Requests (015d12c)",
+      "status": 429,
+      "retry_after": "10",
+      "path": "wikibooks/images/0442952fd0aee3382c71b14a3ecaad64c783ab1583ac3ccb4b526caf2dce959d.jpg"
+    },
+    {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/8/84/Agedashi.jpg?utm_source=en.wikibooks.org&utm_campaign=imageinfo&utm_content=original",
+      "error": "HTTPError: HTTP Error 429: Too Many Requests (015d12c)",
+      "status": 429,
+      "retry_after": "10",
+      "path": "wikibooks/images/29fdbc321bb0c85cbbe09f0c262fa2ae49bd954c400cd44d09bddd2226dd046a.jpg"
+    },
+    {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/1/14/Chicken_Adobo.jpg?utm_source=en.wikibooks.org&utm_campaign=imageinfo&utm_content=original",
+      "error": "HTTPError: HTTP Error 429: Too Many Requests (015d12c)",
+      "status": 429,
+      "retry_after": "10",
+      "path": "wikibooks/images/958e041d886b7fe71368f0c9349eaf08a03af087f9ecbe0c819d5532139cf1fe.jpg"
+    },
+    {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/8/8d/Afghan_bread.jpg?utm_source=en.wikibooks.org&utm_campaign=imageinfo&utm_content=original",
+      "error": "HTTPError: HTTP Error 429: Too Many Requests (015d12c)",
+      "status": 429,
+      "retry_after": "10",
+      "path": "wikibooks/images/b27ba5ba485c3fb3e104e30a6c0eda49f9c17b60ed0b22a359888770aa1761c4.jpg"
+    },
+    {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/d/de/Aj%C3%AD_de_gallina_%28gourmet%29-b.jpg?utm_source=en.wikibooks.org&utm_campaign=imageinfo&utm_content=original",
+      "error": "HTTPError: HTTP Error 429: Too Many Requests (015d12c)",
+      "status": 429,
+      "retry_after": "10",
+      "path": "wikibooks/images/16ce95f602a58df05946ead6c64c145889f7c765f10776fd13772d0a2477b94f.jpg"
+    },
+    {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/9/93/Acorn_crust_salmon.jpg?utm_source=en.wikibooks.org&utm_campaign=imageinfo&utm_content=original",
+      "error": "HTTPError: HTTP Error 429: Too Many Requests (015d12c)",
+      "status": 429,
+      "retry_after": "10",
+      "path": "wikibooks/images/f190706bb086f1dedd8adbfb7f99986817c157b2203f001f533232edea0e2229.jpg"
+    },
+    {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/1/19/Affogato.JPG?utm_source=en.wikibooks.org&utm_campaign=imageinfo&utm_content=original",
+      "error": "HTTPError: HTTP Error 429: Too Many Requests (015d12c)",
+      "status": 429,
+      "retry_after": "10",
+      "path": "wikibooks/images/2911aa9919137298ddc4ca85ab85584fc75bdf2380ff3d24c40ba8c0ddd13659.jpg"
+    },
+    {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/1/15/Akamu_%28Pap%29_%28Ogi%29_%28cropped%29.jpg?utm_source=en.wikibooks.org&utm_campaign=imageinfo&utm_content=original",
+      "error": "HTTPError: HTTP Error 429: Too Many Requests (015d12c)",
+      "status": 429,
+      "retry_after": "10",
+      "path": "wikibooks/images/7f2cceb8dd3120def15071484edfdd7e9f885552d9599b3d1e87dca15311c432.jpg"
+    }
+  ],
+  "wikibooks_downloaded_image_references": 0,
+  "note": "Final checkpoint after stopping the older slow collector as well; no further collection left running."
+}

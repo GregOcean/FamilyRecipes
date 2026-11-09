@@ -41,7 +41,7 @@ class ManagementActivity : AppCompatActivity() {
                     Ui.data(ApiClient.getService().getKitchens()).forEach{k->
                         val card=Ui.card(this@ManagementActivity)
                         card.addView(Ui.text(this@ManagementActivity,k.name,20f,true))
-                        card.addView(Ui.text(this@ManagementActivity,k.groupName.orEmpty(),15f))
+                        card.addView(Ui.text(this@ManagementActivity,getString(com.familyrecipes.android.R.string.kitchen_group_label,k.groupName.orEmpty()),15f))
                         card.addView(Ui.button(this@ManagementActivity,if(k.id==PreferenceManager.currentKitchenId)UiStrings.s(com.familyrecipes.android.R.string.ui_33f8952802) else UiStrings.s(com.familyrecipes.android.R.string.ui_bde123ec96)){
                             PreferenceManager.saveCurrentKitchen(k.id,k.name);PreferenceManager.currentGroupId=k.groupId
                             startActivity(Intent(this@ManagementActivity,com.familyrecipes.android.ui.MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));finish()
@@ -97,6 +97,41 @@ class GroupSettingsActivity:AppCompatActivity(){
             val name=Ui.field(this@GroupSettingsActivity,UiStrings.s(com.familyrecipes.android.R.string.ui_acb4c1a177),state?.getString("name")?:group.name).apply{this.id=android.R.id.edit;isEnabled=group.managerId==PreferenceManager.userId};root.addView(name)
             if(name.isEnabled)root.addView(Ui.button(this@GroupSettingsActivity,UiStrings.s(com.familyrecipes.android.R.string.ui_160f1630cb),true){lifecycleScope.launch{try{Ui.ok(ApiClient.getService().updateGroup(id,mapOf("name" to name.text.toString().trim(),"description" to group.description.orEmpty())));finish()}catch(e:CancellationException){throw e}catch(e:Exception){Ui.toast(this@GroupSettingsActivity,e)}}})
             root.addView(Ui.button(this@GroupSettingsActivity,UiStrings.s(com.familyrecipes.android.R.string.ui_270de4e4d2)){startActivity(Intent(this@GroupSettingsActivity,GroupChatActivity::class.java).putExtra("group_id",id).putExtra("group_name",group.name).putExtra("member_count",group.memberCount?:1))})
+            root.addView(Ui.text(this@GroupSettingsActivity,getString(com.familyrecipes.android.R.string.group_kitchen_relation),15f))
+            run {
+                val add=Ui.button(this@GroupSettingsActivity,getString(com.familyrecipes.android.R.string.group_add_friends),true){}
+                add.setOnClickListener {
+                    add.isEnabled=false
+                    lifecycleScope.launch { try {
+                        val latest=Ui.data(ApiClient.getService().getGroupDetail(id))
+                        val members=latest.members.orEmpty().mapNotNull { it.userId }.toSet()
+                        val friends=Ui.data(ApiClient.getService().getFriendsList()).filter { it.friendId!=null && it.friendId !in members }
+                        val capacity=(latest.maxMembers?:10)-members.size
+                        if(capacity<=0){android.widget.Toast.makeText(this@GroupSettingsActivity,getString(com.familyrecipes.android.R.string.group_full),Toast.LENGTH_LONG).show();return@launch}
+                        if(friends.isEmpty()){android.widget.Toast.makeText(this@GroupSettingsActivity,getString(com.familyrecipes.android.R.string.group_no_candidates),Toast.LENGTH_LONG).show();return@launch}
+                        val selected=linkedSetOf<Long>()
+                        val dialog=androidx.appcompat.app.AlertDialog.Builder(this@GroupSettingsActivity)
+                            .setTitle(getString(com.familyrecipes.android.R.string.group_add_capacity,capacity))
+                            .setMultiChoiceItems(friends.map { "${it.nickname?:it.friend?.username?:it.friendId} · ID ${it.friendId}" }.toTypedArray(),BooleanArray(friends.size)) { d,index,checked ->
+                                val friendId=friends[index].friendId!!
+                                if(checked && selected.size>=capacity){(d as androidx.appcompat.app.AlertDialog).listView.setItemChecked(index,false)}
+                                else if(checked)selected.add(friendId) else selected.remove(friendId)
+                            }
+                            .setNegativeButton(android.R.string.cancel,null)
+                            .setPositiveButton(com.familyrecipes.android.R.string.group_add_friends,null).create()
+                        dialog.setOnShowListener { dialog.getButton(-1).setOnClickListener {
+                            if(selected.isEmpty())return@setOnClickListener
+                            dialog.getButton(-1).isEnabled=false
+                            lifecycleScope.launch {try {
+                                Ui.ok(ApiClient.getService().addGroupMembers(id,mapOf("userIds" to selected.toList())))
+                                dialog.dismiss();recreate()
+                            }catch(e:CancellationException){throw e}catch(e:Exception){Ui.toast(this@GroupSettingsActivity,e);dialog.getButton(-1).isEnabled=true}}
+                        }}
+                        dialog.show()
+                    }catch(e:CancellationException){throw e}catch(e:Exception){Ui.toast(this@GroupSettingsActivity,e)}finally{add.isEnabled=true}}
+                }
+                root.addView(add)
+            }
             root.addView(Ui.text(this@GroupSettingsActivity,UiStrings.s(com.familyrecipes.android.R.string.ui_ab5dea2979),21f,true))
             group.members.orEmpty().forEach{m->root.addView(Ui.text(this@GroupSettingsActivity,(m.user?.username?:m.nickname?:m.userId.toString())+if(m.userId==group.managerId)UiStrings.s(com.familyrecipes.android.R.string.ui_a804fa0231) else ""))}
             root.addView(Ui.text(this@GroupSettingsActivity,UiStrings.s(com.familyrecipes.android.R.string.ui_cf4324dcbc),21f,true))

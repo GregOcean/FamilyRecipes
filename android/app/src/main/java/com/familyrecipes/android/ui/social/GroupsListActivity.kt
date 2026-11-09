@@ -18,6 +18,10 @@ import com.familyrecipes.android.data.model.GroupChat
 import com.familyrecipes.android.data.remote.ApiClient
 import com.familyrecipes.android.databinding.ActivityGroupsListBinding
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import com.familyrecipes.android.data.local.*
+import com.familyrecipes.android.ui.design.Ui
 
 /**
  * 群组列表Activity
@@ -27,6 +31,7 @@ class GroupsListActivity : AppCompatActivity() {
     private lateinit var binding: ActivityGroupsListBinding
     private val groups = mutableListOf<GroupChat>()
     private lateinit var adapter: GroupsAdapter
+    private var loadJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -78,35 +83,31 @@ class GroupsListActivity : AppCompatActivity() {
     }
 
     private fun loadGroups() {
-        lifecycleScope.launch {
-            try {
-                binding.swipeRefresh.isRefreshing = true
-                val response = ApiClient.getService().getGroupsList()
-
-                if (response.isSuccessful && response.body()?.code == 200) {
-                    groups.clear()
-                    response.body()?.data?.let { groups.addAll(it) }
-                    adapter.notifyDataSetChanged()
-                    
-                    // 显示/隐藏空状态
-                    if (groups.isEmpty()) {
-                        binding.recyclerView.visibility = View.GONE
-                        binding.tvEmpty.visibility = View.VISIBLE
-                    } else {
-                        binding.recyclerView.visibility = View.VISIBLE
-                        binding.tvEmpty.visibility = View.GONE
-                    }
-                } else {
-                    Toast.makeText(this@GroupsListActivity, UiStrings.s(com.familyrecipes.android.R.string.ui_866b795eae), Toast.LENGTH_SHORT).show()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(this@GroupsListActivity, UiStrings.f(com.familyrecipes.android.R.string.network_error_value, e.message), Toast.LENGTH_SHORT).show()
-                e.printStackTrace()
-            } finally {
-                binding.swipeRefresh.isRefreshing = false
+        loadJob?.cancel()
+        loadJob = lifecycleScope.launch {
+            val account=LocalStore.account
+            fun render(items:List<GroupChat>) {
+                groups.clear(); groups.addAll(items); adapter.notifyDataSetChanged()
+                binding.recyclerView.visibility=if(groups.isEmpty()) View.GONE else View.VISIBLE
+                binding.tvEmpty.visibility=if(groups.isEmpty()) View.VISIBLE else View.GONE
             }
+            render(GroupCache.list(account))
+            try {
+                binding.swipeRefresh.isRefreshing=true
+                val fresh=Ui.data(ApiClient.getService().getGroupsList())
+                if(account!=LocalStore.account)return@launch
+                GroupCache.save(account,fresh);render(fresh)
+            } catch(e:CancellationException) { throw e }
+              catch(e:Exception) {
+                if(account==LocalStore.account) {
+                    val message=getString(if(groups.isEmpty()) R.string.groups_offline_empty else R.string.groups_offline_cached)
+                    binding.tvEmpty.text=message
+                    Toast.makeText(this@GroupsListActivity,message,Toast.LENGTH_SHORT).show()
+                }
+            } finally { binding.swipeRefresh.isRefreshing=false }
         }
     }
+
 }
 
 /**

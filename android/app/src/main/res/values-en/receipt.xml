@@ -1,0 +1,29 @@
+<resources>
+    <string name="receipt_title">Scan a receipt</string>
+    <string name="receipt_help">Choose or photograph a receipt, edit the results, then add to inventory. The image is sent to the recognition service, not saved as an inventory photo.</string>
+    <string name="receipt_gallery">Choose receipt and recognize</string>
+    <string name="receipt_camera">Photograph receipt and recognize</string>
+    <string name="receipt_working">Recognizing…</string>
+    <string name="receipt_empty">No food found. Try a clearer receipt.</string>
+    <string name="receipt_name">Food name</string>
+    <string name="receipt_quantity">Quantity and pack size</string>
+    <string name="receipt_days">Estimated days from today (editable)</string>
+    <string name="receipt_storage">Storage</string>
+    <string name="receipt_room">Room temperature</string>
+    <string name="receipt_cold">Refrigerated</string>
+    <string name="receipt_frozen">Frozen</string>
+    <string name="receipt_unspecified">Choose storage</string>
+    <string name="receipt_remove">Remove item</string>
+    <string name="receipt_save">Add to inventory</string>
+    <string name="receipt_retry">Retry inventory import</string>
+    <string name="receipt_saving">Adding to inventory…</string>
+    <string name="receipt_pending">Import not yet confirmed. Retrying will not duplicate items.</string>
+    <string name="receipt_invalid">Complete each name, quantity, storage method and 1–3650 days.</string>
+    <string name="receipt_success">Added %1$d items</string>
+    <string name="receipt_clear">Clear receipt draft</string>
+    <string name="receipt_replace">Replace the current receipt draft?</string>
+    <string name="receipt_failed">Recognition failed. Your image and draft are kept for retry.</string>
+    <string name="receipt_retry_scan">Recognize this receipt again</string>
+    <string name="receipt_image_error">Cannot read image. Choose a JPG or PNG receipt photo.</string>
+<string name="receipt_camera_permission">Camera access is needed to photograph a receipt. You can also choose from photos.</string>
+</resources>

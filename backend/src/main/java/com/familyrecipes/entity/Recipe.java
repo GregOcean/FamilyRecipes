@@ -28,7 +28,7 @@ public class Recipe {
     private LocalDateTime updatedAt;
     
     // 权限相关
-    private String visibility; // public-公开, private-仅自己, group-群组
+    private String visibility; // public-公开, group-群组（private 仅供迁移前旧数据读取）
     private String sharedGroupIds; // 分享的群组ID列表（JSON数组）
     private Long kitchenId;
     private List<RecipeImage> images;
@@ -49,7 +49,6 @@ public class Recipe {
      */
     public enum Visibility {
         PUBLIC("public", "公开可见"),
-        PRIVATE("private", "仅自己可见"),
         GROUP("group", "群组可见");
         
         private final String code;

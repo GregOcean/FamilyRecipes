@@ -22,7 +22,7 @@ class MealEditorActivity : AppCompatActivity() {
     private lateinit var key: String
     private lateinit var root: LinearLayout
     private lateinit var title: EditText
-    private lateinit var dishes: EditText
+    private lateinit var dishList: LinearLayout
     private lateinit var date: EditText
     private lateinit var shopping: EditText
     private var meal = ""
@@ -38,12 +38,8 @@ class MealEditorActivity : AppCompatActivity() {
                         .fromJson(r.data?.getStringExtra("dishes"), Array<MealDish>::class.java)
                         .orEmpty()
                         .toList()
-                model = model.copy(dishes = (model.dishes + added).distinctBy { it.name })
-                dishes.setText(
-                    (dishes.text.toString().split("、").filter { it.isNotBlank() } +
-                            added.map { it.name })
-                        .distinct()
-                        .joinToString("、"))
+                model=model.copy(dishes=MealDefaults.mergeDishes(model.dishes,added))
+                renderDishes()
                 draft()
             }
         }
@@ -60,7 +56,7 @@ class MealEditorActivity : AppCompatActivity() {
         model =
             MealArrangement(
                 id = id,
-                kitchenId = PreferenceManager.currentKitchenId,
+                kitchenId = intent.getLongExtra("kitchen_id",0).takeIf { it>0 } ?: PreferenceManager.currentKitchenId,
                 kind = intent.getStringExtra("kind") ?: "order")
         root = Ui.box(this)
         setContentView(Ui.scroll(this, root))
@@ -72,6 +68,13 @@ class MealEditorActivity : AppCompatActivity() {
                 model =
                     if (stored != null) Gson().fromJson(stored, MealArrangement::class.java)
                     else if (id != null) Ui.data(ApiClient.getService().meal(id)) else model
+                if(stored==null && id==null && model.kind=="order") {
+                    val next=MealDefaults.next(java.time.LocalDateTime.now())
+                    model=model.copy(title="${next.date} - ${UiStrings.domain(next.meal)}",mealDate=next.date.toString(),meal=next.meal)
+                }
+                if (id != null && model.ownerId != PreferenceManager.userId && stored == null) {
+                    model = Ui.data(ApiClient.getService().meal(id, original = false))
+                }
                 intent.getStringExtra("recipe_name")?.let {
                     if (model.dishes.isEmpty())
                         model =
@@ -106,8 +109,19 @@ class MealEditorActivity : AppCompatActivity() {
         val editable = model.ownerId == null || model.ownerId == PreferenceManager.userId
         title = Ui.field(this, UiStrings.s(com.familyrecipes.android.R.string.ui_8ee9f276a6), model.title)
         root.addView(title)
-        dishes = Ui.field(this, UiStrings.s(com.familyrecipes.android.R.string.ui_e4cfb95fab), model.dishes.joinToString("、") { it.name }, true)
-        root.addView(dishes)
+        root.addView(Ui.text(this,getString(com.familyrecipes.android.R.string.meal_dish_list),20f,true))
+        dishList=Ui.box(this,0);root.addView(dishList)
+        renderDishes()
+        if(editable)root.addView(Ui.button(this,getString(com.familyrecipes.android.R.string.meal_manual_add)) {
+            val input=Ui.field(this,getString(com.familyrecipes.android.R.string.meal_dish_name))
+            val dialog=androidx.appcompat.app.AlertDialog.Builder(this).setTitle(com.familyrecipes.android.R.string.meal_manual_add)
+                .setView(input).setNegativeButton(android.R.string.cancel,null).setPositiveButton(android.R.string.ok,null).create()
+            dialog.setOnShowListener {dialog.getButton(-1).setOnClickListener {
+                val name=input.text.toString().trim()
+                if(name.isBlank()){input.error=getString(com.familyrecipes.android.R.string.meal_dish_name);return@setOnClickListener}
+                model=model.copy(dishes=model.dishes+MealDish(name=name));renderDishes();draft();dialog.dismiss()
+            }};dialog.show()
+        })
         val choose =
             Ui.button(this, UiStrings.s(com.familyrecipes.android.R.string.ui_805cb9cde8)) {
                 picker.launch(Intent(this, RecipePickerActivity::class.java))
@@ -146,7 +160,7 @@ class MealEditorActivity : AppCompatActivity() {
                     })
             }
         }
-        listOf(title, dishes, date, shopping).forEach {
+        listOf(title, date, shopping).forEach {
             it.isEnabled = editable
             it.doAfterTextChanged { draft() }
         }
@@ -176,19 +190,43 @@ class MealEditorActivity : AppCompatActivity() {
         ready = true
     }
 
+    private fun renderDishes() {
+        dishList.removeAllViews()
+        val editable=model.ownerId==null || model.ownerId==PreferenceManager.userId
+        if(model.dishes.isEmpty())dishList.addView(Ui.text(this,getString(com.familyrecipes.android.R.string.meal_dishes_empty)))
+        model.dishes.forEachIndexed { index,dish ->
+            val card=Ui.card(this)
+            card.addView(Ui.text(this,"${index+1}. ${dish.name}",18f,true))
+            card.addView(Ui.text(this,getString(if(dish.recipeId!=null)com.familyrecipes.android.R.string.meal_recipe_linked else com.familyrecipes.android.R.string.meal_manual_dish),14f))
+            val actions=Ui.row(this)
+            if(dish.recipeId!=null)actions.addView(Ui.button(this,getString(com.familyrecipes.android.R.string.meal_open_recipe)) {
+                startActivity(Intent(this,com.familyrecipes.android.ui.recipe.RecipeDetailActivity::class.java).putExtra("recipe_id",dish.recipeId))
+            },LinearLayout.LayoutParams(0,-2,1f))
+            if(editable) {
+                actions.addView(Ui.button(this,getString(com.familyrecipes.android.R.string.meal_rename_dish)) {
+                    val input=Ui.field(this,getString(com.familyrecipes.android.R.string.meal_dish_name),dish.name)
+                    val dialog=androidx.appcompat.app.AlertDialog.Builder(this).setTitle(com.familyrecipes.android.R.string.meal_rename_dish)
+                        .setView(input).setNegativeButton(android.R.string.cancel,null).setPositiveButton(android.R.string.ok,null).create()
+                    dialog.setOnShowListener {dialog.getButton(-1).setOnClickListener {
+                        val name=input.text.toString().trim()
+                        if(name.isBlank()){input.error=getString(com.familyrecipes.android.R.string.meal_dish_name);return@setOnClickListener}
+                        model=model.copy(dishes=model.dishes.mapIndexed { i,d->if(i==index)d.copy(name=name) else d });renderDishes();draft();dialog.dismiss()
+                    }};dialog.show()
+                },LinearLayout.LayoutParams(0,-2,1f))
+                actions.addView(Ui.button(this,getString(com.familyrecipes.android.R.string.meal_remove_dish)) {
+                    model=model.copy(dishes=model.dishes.filterIndexed { i,_->i!=index });renderDishes();draft()
+                },LinearLayout.LayoutParams(0,-2,1f))
+            }
+            card.addView(actions);dishList.addView(card)
+        }
+    }
+
     private fun value() =
         model.copy(
             title = title.text.toString().trim(),
             mealDate = date.text.toString().trim().ifBlank { null },
             meal = meal.ifBlank { null },
-            dishes =
-                dishes.text
-                    .toString()
-                    .split(Regex("[、，,\\n]"))
-                    .map { it.trim() }
-                    .filter { it.isNotBlank() }
-                    .distinct()
-                    .map { n -> model.dishes.find { it.name == n } ?: MealDish(name = n) },
+            dishes = model.dishes,
             shopping =
                 shopping.text
                     .toString()
@@ -199,7 +237,7 @@ class MealEditorActivity : AppCompatActivity() {
                     .map { n -> model.shopping.find { it.name == n } ?: ShoppingItem(n) })
 
     private fun draft() {
-        if (ready && title.text.isBlank() && dishes.text.isBlank()) return
+        if (ready && title.text.isBlank() && model.dishes.isEmpty()) return
         if (ready &&
             !saved &&
             !busy &&
@@ -219,14 +257,14 @@ class MealEditorActivity : AppCompatActivity() {
             try {
                 val snapshot = value()
                 val stock =
-                    Ui.data(ApiClient.getService().getFridgeItems(snapshot.kitchenId))
+                    Ui.data(ApiClient.getService().getFridgeItems(snapshot.kitchenId, original = true))
                         .filter { it.status != "expired" }
                         .map { it.ingredientId }
                         .toSet()
                 val extra = mutableListOf<String>()
                 for (d in snapshot.dishes) {
                     d.recipeId?.let { id ->
-                        Ui.data(ApiClient.getService().getRecipeDetail(id))
+                        Ui.data(ApiClient.getService().getRecipeDetail(id, original = true))
                             .ingredients
                             .orEmpty()
                             .filter { it.ingredientId !in stock }

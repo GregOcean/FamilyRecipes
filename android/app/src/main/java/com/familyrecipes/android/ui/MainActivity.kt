@@ -21,13 +21,18 @@ import com.familyrecipes.android.ui.message.MessageFragment
 import com.familyrecipes.android.ui.profile.ProfileFragment
 import com.familyrecipes.android.ui.recipe.*
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.Lifecycle
+import com.familyrecipes.android.data.local.FriendInvitations
+import com.familyrecipes.android.data.local.LocalStore
 
 class MainActivity : AppCompatActivity() {
     private lateinit var drawer: DrawerLayout
     private lateinit var kitchenLabel: Button
     private lateinit var container: FrameLayout
     private lateinit var bottom: LinearLayout
+    private var invitationCount = 0
     private var selected = "recipes"
     private var currentKitchenName = UiStrings.s(com.familyrecipes.android.R.string.ui_056b3fdd26)
 
@@ -76,23 +81,36 @@ class MainActivity : AppCompatActivity() {
         shell.addView(container, LinearLayout.LayoutParams(-1, 0, 1f))
         bottom = Ui.row(this).apply { setBackgroundColor(Ui.surface) }
         shell.addView(bottom)
+        shell.addView(Ui.text(this,"${getString(R.string.app_version)} ${com.familyrecipes.android.BuildConfig.VERSION_NAME}",12f).apply {
+            gravity=Gravity.CENTER;setTextColor(Ui.muted)
+            setPadding(0,0,0,4.dp())
+        })
         drawer.addView(shell, DrawerLayout.LayoutParams(-1, -1))
         val panel = Ui.box(this)
         panel.addView(Ui.text(this, UiStrings.s(com.familyrecipes.android.R.string.ui_3e90c5117d), 24f, true))
         listOf(
+            getString(R.string.learning_beginner) to {startActivity(Intent(this,com.familyrecipes.android.ui.settings.LearningActivity::class.java).putExtra("section","beginner"))},
+            getString(R.string.learning_advanced) to {startActivity(Intent(this,com.familyrecipes.android.ui.settings.LearningActivity::class.java).putExtra("section","advanced"))},
+            getString(R.string.friends_title) to {if(com.familyrecipes.android.util.AuthUtil.requireLogin(this)) startActivity(Intent(this,com.familyrecipes.android.ui.social.FriendsListActivity::class.java))},
             UiStrings.s(com.familyrecipes.android.R.string.ui_d46695d56e) to {if(com.familyrecipes.android.util.AuthUtil.requireLogin(this)) startActivity(Intent(this,com.familyrecipes.android.ui.settings.ManagementActivity::class.java))},
             UiStrings.s(com.familyrecipes.android.R.string.ui_47fdc41702) to {if(com.familyrecipes.android.util.AuthUtil.requireLogin(this)) startActivity(Intent(this,com.familyrecipes.android.ui.settings.ManagementActivity::class.java).putExtra("groups",true))},
             UiStrings.s(com.familyrecipes.android.R.string.ui_402b79ad66) to {startActivity(Intent(this,com.familyrecipes.android.ui.social.ScanQRActivity::class.java))},
             UiStrings.s(com.familyrecipes.android.R.string.ui_e366ccf155) to {startActivity(Intent(this,com.familyrecipes.android.ui.settings.SettingsActivity::class.java))})
-            .forEach { (label, action) ->
+            .forEachIndexed { index, (label, action) ->
                 panel.addView(
                     Ui.button(this, label) {
                         drawer.closeDrawers()
                         action()
-                    }.apply { if(label==UiStrings.s(com.familyrecipes.android.R.string.ui_402b79ad66)){setIconResource(R.drawable.ic_scan_square);iconSize=24.dp()} })
+                    }.apply {
+                        val icons=listOf(R.drawable.ic_book_outline,R.drawable.ic_recommend,R.drawable.ic_friends,R.drawable.ic_ui_kitchen,R.drawable.ic_groups,R.drawable.ic_scan_square,R.drawable.ic_settings)
+                        setIconResource(icons[index]);iconSize=24.dp();iconPadding=16.dp()
+                        iconGravity=com.google.android.material.button.MaterialButton.ICON_GRAVITY_START
+                        gravity=Gravity.START or Gravity.CENTER_VERTICAL
+                        setPadding(16.dp(),8.dp(),16.dp(),8.dp())
+                    })
             }
         drawer.addView(
-            Ui.scroll(this, panel), DrawerLayout.LayoutParams(300.dp(), -1, Gravity.START))
+            Ui.scroll(this, panel), DrawerLayout.LayoutParams(minOf(260.dp(),(resources.displayMetrics.widthPixels*0.78f).toInt()), -1, Gravity.START))
         setContentView(drawer)
         selected =
             state?.getString("page")
@@ -105,6 +123,24 @@ class MainActivity : AppCompatActivity() {
         drawNavigation()
         if (state == null) showPage(selected)
         initializeKitchen()
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                val account=LocalStore.account
+                launch {
+                    LocalStore.instance.records().observe(account,"friend-invitations").collect {
+                        val count=if(PreferenceManager.isLoggedIn() && account==LocalStore.account)
+                            FriendInvitations.incoming(FriendInvitations.cached(account),PreferenceManager.userId).size else 0
+                        if(invitationCount!=count){invitationCount=count;drawNavigation()}
+                    }
+                }
+                launch {
+                    while(isActive) {
+                        try { FriendInvitations.sync() } catch(e:CancellationException){throw e} catch(_:Exception){}
+                        delay(10_000)
+                    }
+                }
+            }
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -156,7 +192,7 @@ class MainActivity : AppCompatActivity() {
             .forEach { (page, label, icon) ->
                 val b =
                     androidx.appcompat.widget.AppCompatButton(this).apply {
-                        text = label
+                        text = if(page=="messages" && invitationCount>0) "$label ($invitationCount)" else label
                         isAllCaps = false
                         textSize = if (page == "add") 28f else 16f
                         minimumWidth = 0

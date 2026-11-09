@@ -1,0 +1,7 @@
+<resources>
+    <string name="content_sources">内容来源与授权</string>
+    <string name="sources_intro">公开菜谱来自下列贡献者。内容经过格式整理；译文由机器生成。各条目与图片保留各自许可，改编版本应遵守相应许可。</string>
+    <string name="sources_more">加载更多</string>
+    <string name="sources_retry">加载失败，点击重试</string>
+    <string name="translation_note">内容按所选语言展示；翻译尚未完成时显示原文。编辑页面保留原始内容。</string>
+</resources>

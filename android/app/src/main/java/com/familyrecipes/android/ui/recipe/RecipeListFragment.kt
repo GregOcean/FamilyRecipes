@@ -31,6 +31,7 @@ class RecipeListFragment : Fragment(), SearchableFragment {
     private var scope = "discovery"
     private var origin = "all"
     private var taste = ""
+    private var cuisine = ""
     private var minutes: Int? = null
     private var missing: Int? = null
     private var known = false
@@ -49,7 +50,8 @@ class RecipeListFragment : Fragment(), SearchableFragment {
         val minutes: Int?,
         val missing: Int?,
         val known: Boolean,
-        val seed: String
+        val seed: String,
+        val cuisine: String? = null
     )
 
     private data class BrowserCache(
@@ -60,10 +62,10 @@ class RecipeListFragment : Fragment(), SearchableFragment {
     )
 
     private fun params() =
-        BrowserParams(scope, origin, keyword, taste, minutes, missing, known, seed)
+        BrowserParams(scope, origin, keyword, taste, minutes, missing, known, seed, cuisine)
 
     private val cacheKey
-        get() = "${PreferenceManager.currentKitchenId}:${if(picking)"picker" else "main"}"
+        get() = "${PreferenceManager.currentKitchenId}:${if(picking)"picker" else "main"}:${ApiClient.contentLanguage()}"
 
     private var cacheReady = false
     private val rows = mutableListOf<Recipe>()
@@ -78,6 +80,7 @@ class RecipeListFragment : Fragment(), SearchableFragment {
         known = state?.getBoolean("known") ?: arguments?.getBoolean("known") ?: false
         keyword = state?.getString("query").orEmpty()
         taste = state?.getString("taste").orEmpty()
+        cuisine = state?.getString("cuisine").orEmpty()
         minutes = state?.getInt("minutes")?.takeIf { it > 0 }
         missing = state?.getInt("missing", -1)?.takeIf { it >= 0 }
         seed = state?.getString("seed") ?: "0"
@@ -110,6 +113,7 @@ class RecipeListFragment : Fragment(), SearchableFragment {
         super.onSaveInstanceState(out)
         out.putString("scope", scope)
         out.putString("origin", origin)
+        out.putString("cuisine", cuisine)
         out.putString("query", keyword)
         out.putString("taste", taste)
         out.putInt("minutes", minutes ?: 0)
@@ -138,51 +142,55 @@ class RecipeListFragment : Fragment(), SearchableFragment {
         root.addView(tabs)
         search = Ui.field(ctx, UiStrings.s(com.familyrecipes.android.R.string.ui_5981cc43fb), keyword)
         root.addView(search)
-        val filters = Ui.row(ctx)
-        filters.addView(
-            Ui.select(
-                ctx,
-                listOf(UiStrings.s(com.familyrecipes.android.R.string.ui_568d968eee), "酸", "辣", "酸辣", "清淡", "鲜香").map{UiStrings.domain(it)},
-                listOf("", "酸", "辣", "酸辣", "清淡", "鲜香").indexOf(taste).coerceAtLeast(0)) { n ->
-                    val v = listOf("", "酸", "辣", "酸辣", "清淡", "鲜香")[n]
-                    if (v != taste) {
-                        taste = v
-                        load()
+        val filters = Ui.row(ctx).apply { gravity=Gravity.TOP }
+        fun filter(title:Int, value:String, choose:(Button)->Unit):Button {
+            val column=Ui.box(ctx,2)
+            column.addView(Ui.text(ctx,getString(title),14f,true).apply { gravity=Gravity.CENTER })
+            val button=Ui.button(ctx,value){}.apply {
+                textSize=14f;maxLines=2;minWidth=0;minimumWidth=0;minHeight=ctx.dp(56)
+                setPadding(ctx.dp(2),0,ctx.dp(2),0)
+                setOnClickListener { choose(this) }
+                contentDescription=getString(title)+": "+value
+            }
+            column.addView(button,LinearLayout.LayoutParams(-1,-2))
+            filters.addView(column,LinearLayout.LayoutParams(0,-2,1f))
+            return button
+        }
+        fun options(button:Button,title:Int,labels:List<String>,select:(Int)->Unit) {
+            PopupMenu(ctx,button).apply {
+                labels.forEachIndexed { index,label -> menu.add(0,index,index,label) }
+                setOnMenuItemClickListener {
+                    button.text=labels[it.itemId]
+                    button.contentDescription=getString(title)+": "+labels[it.itemId]
+                    select(it.itemId);true
+                }
+                show()
+            }
+        }
+        val all=getString(com.familyrecipes.android.R.string.filter_any)
+        filter(com.familyrecipes.android.R.string.filter_cuisine,cuisine.ifBlank { all }) { button ->
+            viewLifecycleOwner.lifecycleScope.launch {
+                button.isEnabled=false
+                try {
+                    val choices=listOf(TagOption("",all))+Ui.data(ApiClient.getService().getTagOptions("cuisine"))
+                    options(button,com.familyrecipes.android.R.string.filter_cuisine,choices.map { it.name }) {
+                        cuisine=choices[it].value;load()
                     }
-                },
-            LinearLayout.LayoutParams(0, -2, 1f))
-        filters.addView(
-            Ui.select(
-                ctx,
-                listOf(UiStrings.s(com.familyrecipes.android.R.string.ui_1c6a1a8b39), UiStrings.s(com.familyrecipes.android.R.string.ui_a996573fd0), UiStrings.s(com.familyrecipes.android.R.string.ui_1826fa4a7b)),
-                when (minutes) {
-                    15 -> 1
-                    30 -> 2
-                    else -> 0
-                }) { n ->
-                    val v = listOf(null, 15, 30)[n]
-                    if (v != minutes) {
-                        minutes = v
-                        load()
-                    }
-                },
-            LinearLayout.LayoutParams(0, -2, 1f))
-        filters.addView(
-            Ui.select(
-                ctx,
-                listOf(UiStrings.s(com.familyrecipes.android.R.string.ui_2722a62702), UiStrings.s(com.familyrecipes.android.R.string.ui_f92d315989), UiStrings.s(com.familyrecipes.android.R.string.ui_0402920ca9)),
-                when (missing) {
-                    0 -> 1
-                    2 -> 2
-                    else -> 0
-                }) { n ->
-                    val v = listOf(null, 0, 2)[n]
-                    if (v != missing) {
-                        missing = v
-                        load()
-                    }
-                },
-            LinearLayout.LayoutParams(0, -2, 1f))
+                }catch(e:CancellationException){throw e}catch(e:Exception){Ui.toast(ctx,e)}finally{button.isEnabled=true}
+            }
+        }
+        val tastes=listOf("", "酸", "辣", "酸辣", "清淡", "鲜香", "甜", "麻", "咸")
+        filter(com.familyrecipes.android.R.string.filter_taste,if(taste.isBlank())all else UiStrings.domain(taste)) { button ->
+            options(button,com.familyrecipes.android.R.string.filter_taste,tastes.map { if(it.isBlank())all else UiStrings.domain(it) }) { taste=tastes[it];load() }
+        }
+        val times=listOf(all,getString(com.familyrecipes.android.R.string.ui_a996573fd0),getString(com.familyrecipes.android.R.string.ui_1826fa4a7b))
+        filter(com.familyrecipes.android.R.string.filter_time,times[when(minutes){15->1;30->2;else->0}]) { button ->
+            options(button,com.familyrecipes.android.R.string.filter_time,times) { minutes=listOf(null,15,30)[it];load() }
+        }
+        val stocks=listOf(all,getString(com.familyrecipes.android.R.string.ui_f92d315989),getString(com.familyrecipes.android.R.string.ui_0402920ca9))
+        filter(com.familyrecipes.android.R.string.filter_stock,stocks[when(missing){0->1;2->2;else->0}]) { button ->
+            options(button,com.familyrecipes.android.R.string.filter_stock,stocks) { missing=listOf(null,0,2)[it];load() }
+        }
         root.addView(filters)
         val mine = Ui.row(ctx)
         mineFilters = mine
@@ -285,6 +293,7 @@ class RecipeListFragment : Fragment(), SearchableFragment {
                     android.content.res.ColorStateList.valueOf(if (active) Ui.blue else Ui.pale)
                 b.setTextColor(if (active) Ui.onBlue else Ui.blue)
             }
+        status.setOnClickListener(null)
         status.text = (if (scope == "mine") UiStrings.s(com.familyrecipes.android.R.string.ui_2f8ba39ad4) else UiStrings.s(com.familyrecipes.android.R.string.ui_fc4d75f6cb)) + UiStrings.s(com.familyrecipes.android.R.string.ui_fa2393258d)
         job =
             viewLifecycleOwner.lifecycleScope.launch {
@@ -304,7 +313,7 @@ class RecipeListFragment : Fragment(), SearchableFragment {
                                     missing,
                                     scope == "mine" && known,
                                     seed,
-                                    next))
+                                    next, cuisine))
                     if (revision != generation || kitchen != PreferenceManager.currentKitchenId)
                         return@launch
                     if (!append) rows.clear()
@@ -333,7 +342,8 @@ class RecipeListFragment : Fragment(), SearchableFragment {
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    status.text = UiStrings.f(com.familyrecipes.android.R.string.retry_error_value, e.message) + if (rows.isNotEmpty()) UiStrings.s(com.familyrecipes.android.R.string.ui_57bcca8c05) else ""
+                    if(revision!=generation)return@launch
+                    status.text = if(e is java.net.SocketTimeoutException) getString(com.familyrecipes.android.R.string.search_timeout) else UiStrings.f(com.familyrecipes.android.R.string.retry_error_value, e.message) + if (rows.isNotEmpty()) UiStrings.s(com.familyrecipes.android.R.string.ui_57bcca8c05) else ""
                     status.setOnClickListener { load() }
                 }
             }
@@ -392,7 +402,7 @@ class RecipeListFragment : Fragment(), SearchableFragment {
                                 r.cookingTime?.let { UiStrings.f(com.familyrecipes.android.R.string.minutes_value, it) },
                                 r.tags
                                     ?.filter { it.tagType == "taste" }
-                                    ?.joinToString("、") { it.tagValue }
+                                    ?.joinToString("、") { it.displayValue ?: it.tagValue }
                                     ?.takeIf { it.isNotBlank() },
                                 if (r.isFavorite == true) UiStrings.s(com.familyrecipes.android.R.string.ui_934ebd87e6) else null)
                             .joinToString(" · "),

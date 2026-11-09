@@ -46,13 +46,17 @@ class SettingsActivity: AppCompatActivity(){
         val languages=listOf("简体中文","English")
         val current=if(resources.configuration.locales[0].language=="en")1 else 0
         root.addView(Ui.select(this,languages,current){index->if(index!=current)AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(if(index==1)"en" else "zh-CN"))})
-        root.addView(Ui.text(this,UiStrings.s(com.familyrecipes.android.R.string.ui_47267ab387),14f))
+        root.addView(Ui.text(this,getString(com.familyrecipes.android.R.string.translation_note),14f))
         root.addView(Ui.text(this,UiStrings.s(com.familyrecipes.android.R.string.ui_974d3e30d5),20f,true))
         root.addView(Ui.button(this,UiStrings.s(com.familyrecipes.android.R.string.ui_3d1fffd959)){startActivity(Intent(Settings.ACTION_DISPLAY_SETTINGS))})
         root.addView(Ui.text(this,UiStrings.s(com.familyrecipes.android.R.string.ui_0054ea0793),14f))
         root.addView(Ui.text(this,UiStrings.s(com.familyrecipes.android.R.string.ui_c9fb762fc5),20f,true))
         root.addView(Ui.button(this,UiStrings.s(com.familyrecipes.android.R.string.ui_0439b015f3)){
             startActivity(if(android.os.Build.VERSION.SDK_INT>=26)Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE,packageName) else Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,android.net.Uri.parse("package:$packageName")))
+        })
+        root.addView(Ui.text(this,"${getString(com.familyrecipes.android.R.string.app_version)} ${com.familyrecipes.android.BuildConfig.VERSION_NAME} (${com.familyrecipes.android.BuildConfig.VERSION_CODE})",16f))
+        root.addView(Ui.button(this,getString(com.familyrecipes.android.R.string.about_title)) {
+            startActivity(Intent(this, AboutActivity::class.java))
         })
         val form=Ui.card(this);root.addView(form)
         fun load(){form.removeAllViews();form.addView(Ui.text(this,UiStrings.s(com.familyrecipes.android.R.string.ui_fb4ca1cf1b)));lifecycleScope.launch{try{

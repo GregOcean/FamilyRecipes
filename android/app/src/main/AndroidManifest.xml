@@ -37,6 +37,8 @@
         <activity android:name=".ui.settings.ManagementActivity" android:exported="false" />
         <activity android:name=".ui.settings.KitchenEditorActivity" android:exported="false" />
         <activity android:name=".ui.settings.GroupSettingsActivity" android:exported="false" />
+        <activity android:name=".ui.settings.ContentSourcesActivity" android:exported="false" />
+        <activity android:name=".ui.settings.AboutActivity" android:exported="false" />
         <activity android:name=".ui.settings.SettingsActivity" android:exported="false" />
         <activity android:name=".ui.recipe.RecipeHistoryActivity" android:exported="false" />
         <!-- 启动欢迎页 -->
@@ -89,6 +91,7 @@
             android:theme="@style/Theme.FamilyRecipes" />
         
         <!-- 添加食材Activity -->
+        <activity android:name=".ui.fridge.ReceiptActivity" android:exported="false" />
         <activity
             android:name=".ui.fridge.AddIngredientActivity"
             android:exported="false"
@@ -179,6 +182,7 @@
             <intent-filter><action android:name="android.intent.action.VIEW" /><category android:name="android.intent.category.DEFAULT" /><category android:name="android.intent.category.BROWSABLE" /><data android:scheme="familyrecipes" android:host="meal" /></intent-filter>
         </activity>
         <activity android:name=".ui.recipe.RecipeCollectionActivity" android:exported="false" />
+    <activity android:name=".ui.settings.LearningActivity" android:exported="false" />
     </application>
 
 </manifest>

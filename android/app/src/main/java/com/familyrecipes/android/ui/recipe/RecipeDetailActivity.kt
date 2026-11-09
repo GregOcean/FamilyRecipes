@@ -125,14 +125,10 @@ class RecipeDetailActivity : AppCompatActivity() {
         
         // 设置标签
         binding.chipGroup.removeAllViews()
-        recipe.tags?.forEach { tag ->
+        recipe.tags?.filter { it.tagValue.trim().removePrefix("#") !in listOf("", "待确认") }?.distinctBy { it.tagValue }?.forEach { tag ->
             val chip = com.google.android.material.chip.Chip(this).apply {
                 // 如果tagValue已经包含#，就不再添加；否则添加#
-                val displayText = if (tag.tagValue.startsWith("#")) {
-                    tag.tagValue
-                } else {
-                    "#${tag.tagValue}"
-                }
+                val displayText = "#${(tag.displayValue ?: tag.tagValue).removePrefix("#")}"
                 text = displayText
                 isClickable = true
                 isCheckable = false
@@ -170,7 +166,7 @@ class RecipeDetailActivity : AppCompatActivity() {
         binding.gallery.addView(ui.text(this,UiStrings.s(com.familyrecipes.android.R.string.ui_fea10d57e2),21f,true))
         recipe.steps.orEmpty().forEach{step->binding.gallery.addView(ui.text(this,"${step.stepNumber}. ${step.description}"));step.image?.let{url->val image=android.widget.ImageView(this).apply{adjustViewBounds=true};binding.gallery.addView(image);Glide.with(this).load(com.familyrecipes.android.util.MediaImages.model(url)).into(image)}}
         binding.gallery.addView(ui.button(this,UiStrings.s(com.familyrecipes.android.R.string.ui_ad1a148b7b)){
-            lifecycleScope.launch{try{val kitchen=PreferenceManager.currentKitchenId?:error(UiStrings.s(com.familyrecipes.android.R.string.ui_eb006cd6f1));val copy=ui.data(ApiClient.getService().adaptRecipe(recipeId,mapOf("kitchenId" to kitchen)));startActivity(android.content.Intent(this@RecipeDetailActivity,EditRecipeActivity::class.java).putExtra("recipe_id",copy.id))}catch(e:kotlinx.coroutines.CancellationException){throw e}catch(e:Exception){ui.toast(this@RecipeDetailActivity,e)}}
+            startActivity(android.content.Intent(this,EditRecipeActivity::class.java).putExtra("adapt_source_id",recipeId))
         })
         val known=recipe.cooks.orEmpty().any{it.id==currentUserId}
         binding.gallery.addView(ui.button(this,if(known)UiStrings.s(com.familyrecipes.android.R.string.ui_c07569f86e) else UiStrings.s(com.familyrecipes.android.R.string.ui_0191cf83a3)){
@@ -181,8 +177,8 @@ class RecipeDetailActivity : AppCompatActivity() {
         val history=android.widget.LinearLayout(this).apply{orientation=android.widget.LinearLayout.VERTICAL};binding.gallery.addView(history)
         lifecycleScope.launch{try{val records=ui.data(ApiClient.getService().cookingRecords(recipeId));history.addView(ui.text(this@RecipeDetailActivity,UiStrings.s(com.familyrecipes.android.R.string.ui_a40e588383),21f,true));records.forEach{r->history.addView(ui.text(this@RecipeDetailActivity,"${r.cookedAt.take(10)}\n${r.notes}"));com.google.gson.Gson().fromJson(r.images,Array<String>::class.java).orEmpty().forEach{url->val image=android.widget.ImageView(this@RecipeDetailActivity).apply{adjustViewBounds=true};history.addView(image);Glide.with(this@RecipeDetailActivity).load(com.familyrecipes.android.util.MediaImages.model(url)).into(image)}}}catch(e:kotlinx.coroutines.CancellationException){throw e}catch(e:Exception){history.addView(ui.text(this@RecipeDetailActivity,UiStrings.s(com.familyrecipes.android.R.string.ui_f24e502e92)))}}
         // 设置统计信息
-        binding.tvViewCount.text = "${recipe.viewCount ?: 0}"
-        binding.tvFavoriteCount.text = "${recipe.favoriteCount ?: 0}"
+        binding.tvViewCount.text = getString(R.string.recipe_views_compact, recipe.viewCount ?: 0)
+        binding.tvFavoriteCount.text = getString(R.string.recipe_favorites_compact, recipe.favoriteCount ?: 0)
         
         // 设置烹饪时间和难度
         if (recipe.cookingTime != null) {
@@ -293,7 +289,7 @@ class RecipeDetailActivity : AppCompatActivity() {
                             isFavorite = isFavorite,
                             favoriteCount = newCount
                         )
-                        binding.tvFavoriteCount.text = "$newCount"
+                        binding.tvFavoriteCount.text = getString(R.string.recipe_favorites_compact, newCount)
                     }
                     
                     // 设置 RESULT_OK 以便列表刷新
@@ -393,55 +389,21 @@ class RecipeDetailActivity : AppCompatActivity() {
     }
     
     /**
-     * 在浏览器中打开URL，避免被App拦截
+     * 使用完整链接打开系统默认的应用或浏览器
      */
     private fun openUrlInBrowser(url: String) {
         try {
-            android.util.Log.d("RecipeDetail", "尝试打开URL: $url")
-            
-            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
-            
-            // 添加标志，确保在新任务中打开
-            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-            
-            // 获取所有能处理此Intent的应用
-            val packageManager = packageManager
-            val activities = packageManager.queryIntentActivities(intent, 0)
-            
-            android.util.Log.d("RecipeDetail", "找到 ${activities.size} 个可以打开链接的应用")
-            
-            // 尝试找到浏览器应用（排除小红书等App）
-            val browsers = activities.filter { resolveInfo ->
-                val packageName = resolveInfo.activityInfo.packageName
-                // 排除已知的非浏览器应用
-                !packageName.contains("xiaohongshu") && 
-                !packageName.contains("xhs") &&
-                (packageName.contains("chrome") || 
-                 packageName.contains("browser") || 
-                 packageName.contains("firefox") ||
-                 packageName.contains("opera") ||
-                 packageName.contains("edge") ||
-                 packageName.contains("webview"))
-            }
-            
-            android.util.Log.d("RecipeDetail", "找到 ${browsers.size} 个浏览器应用")
-            
-            if (browsers.isNotEmpty()) {
-                // 如果找到浏览器，使用第一个浏览器
-                intent.setPackage(browsers[0].activityInfo.packageName)
-                android.util.Log.d("RecipeDetail", "使用浏览器: ${browsers[0].activityInfo.packageName}")
-                startActivity(intent)
-            } else {
-                // 如果没有找到浏览器，显示选择器
-                android.util.Log.d("RecipeDetail", "未找到浏览器，显示选择器")
-                val chooser = android.content.Intent.createChooser(intent, UiStrings.s(com.familyrecipes.android.R.string.ui_16407ac216))
-                startActivity(chooser)
-            }
+            val target = com.familyrecipes.android.util.ExternalLinkUrl.validate(url)
+            // Let Android route the complete deep link to the user's preferred app/browser.
+            // Never launch a package's home activity or reconstruct its query parameters.
+            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(target))
+                .addCategory(android.content.Intent.CATEGORY_BROWSABLE)
+            startActivity(intent)
         } catch (e: Exception) {
-            android.util.Log.e("RecipeDetail", UiStrings.s(com.familyrecipes.android.R.string.ui_72c1c093e4), e)
-            android.widget.Toast.makeText(this, "无法打开链接: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+            android.widget.Toast.makeText(this, UiStrings.s(R.string.ui_72c1c093e4), android.widget.Toast.LENGTH_LONG).show()
         }
     }
+
 }
 
 /**
@@ -487,6 +449,10 @@ class ExternalLinkDetailAdapter(
             holder.ivThumbnail.setImageResource(com.familyrecipes.android.R.drawable.placeholder_recipe)
         }
         
+        holder.itemView.setOnClickListener { onOpenClick(link.url) }
+        holder.tvTitle.setOnClickListener { onOpenClick(link.url) }
+        holder.tvSource.setOnClickListener { onOpenClick(link.url) }
+
         // 复制按钮
         holder.btnCopy.setOnClickListener {
             onCopyClick(link.url)

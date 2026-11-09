@@ -312,11 +312,13 @@ class FridgeFragment : Fragment(), SearchableFragment {
      * 点击食材，查看相关菜谱
      * 即使食材ID不存在或没有关联菜谱，也应优雅处理
      */
-    private fun navigateToRecipesByIngredient(item: FridgeItem) {
+    private fun navigateToRecipesByIngredient(selectedItem: FridgeItem) {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val account=com.familyrecipes.android.data.local.LocalStore.account
                 val dao=com.familyrecipes.android.data.local.LocalStore.instance.records()
+                val item = ApiClient.getService().getFridgeItems(selectedItem.kitchenId, original = true)
+                    .body()?.data?.find { it.id == selectedItem.id } ?: return@launch
                 val key="stock:${item.id}"
                 val draft=dao.get(account,"draft",key)?.let { com.google.gson.Gson().fromJson(it,FridgeItem::class.java) } ?: item
                 val kitchen=ApiClient.getService().getKitchens().body()?.data?.find { it.id==item.kitchenId } ?: return@launch

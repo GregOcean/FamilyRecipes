@@ -1,0 +1,1 @@
+<resources><string name="groups_offline_cached">暂时无法连接，显示本机缓存的群组 · 点此重试</string><string name="groups_offline_empty">暂时无法连接，尚无群组缓存。请联网加载一次后再使用离线聊天。</string></resources>

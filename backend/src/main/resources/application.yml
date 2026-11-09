@@ -2,6 +2,10 @@ server:
   port: 8080
 
 spring:
+  task:
+    scheduling:
+      pool:
+        size: 3
   mail:
     host: ${SMTP_HOST:127.0.0.1}
     port: ${SMTP_PORT:1025}
@@ -76,6 +80,33 @@ logging:
 
 
 app:
+  classification:
+    enabled: ${RECIPE_CLASSIFICATION_ENABLED:false}
+    poll-ms: ${RECIPE_CLASSIFICATION_POLL_MS:10000}
   email:
     from: ${SMTP_FROM:noreply@familyrecipes.test}
     code-secret: ${EMAIL_CODE_SECRET:${JWT_SECRET}}
+  translation:
+    enabled: ${TRANSLATION_ENABLED:false}
+    version: ${TRANSLATION_VERSION:v1}
+    poll-ms: ${TRANSLATION_POLL_MS:2000}
+  catalog:
+    admin-user-id: ${CATALOG_ADMIN_USER_ID:0}
+  ai:
+    routes:
+      translation:
+        url: ${TRANSLATION_LLM_URL:https://open.bigmodel.cn/api/paas/v4/chat/completions}
+        key: ${TRANSLATION_LLM_KEY:${ZHIPU_API_KEY:}}
+        model: ${TRANSLATION_LLM_MODEL:glm-5.3-flash}
+        reasoning-effort: ${TRANSLATION_REASONING_EFFORT:low}
+        timeout-seconds: 120
+        max-tokens: 8192
+      # Receipt and item-photo tasks share one end-to-end vision model.
+      vision:
+        url: ${VISION_LLM_URL:https://open.bigmodel.cn/api/paas/v4/chat/completions}
+        key: ${VISION_LLM_KEY:${ZHIPU_API_KEY:}}
+        model: ${VISION_LLM_MODEL:glm-4.6v-flash}
+        thinking-type: ${VISION_THINKING_TYPE:disabled}
+        reasoning-effort: ${VISION_REASONING_EFFORT:}
+        timeout-seconds: ${VISION_TIMEOUT_SECONDS:45}
+        max-tokens: ${VISION_MAX_TOKENS:2048}

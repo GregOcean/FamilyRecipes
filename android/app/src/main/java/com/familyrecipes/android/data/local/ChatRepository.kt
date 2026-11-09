@@ -82,6 +82,27 @@ object ChatRepository {
             cursor = next
             if(page.size < 200) break
         }
+        // Cursor sync does not revisit old messages; poll pending translations separately.
+        // Translation failures must never turn successful message delivery into a sync failure.
+        try {
+            val language = ApiClient.contentLanguage()
+            val candidates = dao.list(account, "chat:$groupId").map { json.fromJson(it.json, Message::class.java) }
+                .filter { it.id != null && it.messageType == "text" &&
+                    (it.translation?.language != language || it.translation.status !in listOf("ready", "original", "unchanged")) }
+                .sortedByDescending { it.id }.take(100)
+            if (candidates.isNotEmpty()) {
+                val response = ApiClient.getService().chatTranslations(ChatTranslationRequest(groupId, candidates.mapNotNull { it.id }))
+                checkAccount(account)
+                if (response.isSuccessful && response.body()?.code == 200) {
+                    val results = response.body()?.data.orEmpty()
+                    candidates.forEach { message ->
+                        results[message.id.toString()]?.let { translation ->
+                            if (translation != message.translation) dao.put(LocalRecord(account, "chat:$groupId", message.id.toString(), json.toJson(message.copy(translation = translation))))
+                        }
+                    }
+                }
+            }
+        } catch (e: CancellationException) { throw e } catch (_: Exception) { /* Retry on next sync. */ }
         incoming
     }
 }

@@ -9,14 +9,26 @@ import retrofit2.http.*
  * API接口定义
  */
 interface ApiService {
-    @GET("/api/recipes/browse") suspend fun browseRecipes(@Query("kitchenId") kitchenId:Long?,@Query("scope") scope:String="discovery",@Query("origin") origin:String="all",@Query("keyword") keyword:String="",@Query("taste") taste:String="",@Query("minutes") minutes:Int?=null,@Query("missing") missing:Int?=null,@Query("known") known:Boolean=false,@Query("seed") seed:String="0",@Query("page") page:Int=1):Response<ApiResponse<PageResult<Recipe>>>
+    @Multipart
+    @POST("/api/receipts/recognize")
+    suspend fun recognizeReceipt(@Query("kitchenId") kitchenId: Long, @Part image: okhttp3.MultipartBody.Part): Response<ApiResponse<List<ReceiptItem>>>
+    @POST("/api/receipts/import")
+    suspend fun importReceipt(@Body request: ReceiptImportRequest): Response<ApiResponse<Int>>
+
+    @GET("/api/catalog/sources")
+    suspend fun contentSources(@Query("afterId") afterId: Long): Response<ApiResponse<List<com.google.gson.JsonObject>>>
+
+    @POST("/api/messages/translations")
+    suspend fun chatTranslations(@Body request: ChatTranslationRequest): Response<ApiResponse<Map<String, ChatTranslation>>>
+
+    @GET("/api/recipes/browse") suspend fun browseRecipes(@Query("kitchenId") kitchenId:Long?,@Query("scope") scope:String="discovery",@Query("origin") origin:String="all",@Query("keyword") keyword:String="",@Query("taste") taste:String="",@Query("minutes") minutes:Int?=null,@Query("missing") missing:Int?=null,@Query("known") known:Boolean=false,@Query("seed") seed:String="0",@Query("page") page:Int=1,@Query("cuisine") cuisine:String=""):Response<ApiResponse<PageResult<Recipe>>>
     @POST("/api/recipes/{id}/adapt") suspend fun adaptRecipe(@Path("id") id:Long,@Body body:Map<String,Long>):Response<ApiResponse<Recipe>>
     @PUT("/api/recipes/{id}/known") suspend fun setKnown(@Path("id") id:Long,@Body body:Map<String,Boolean>):Response<ApiResponse<Unit>>
     @GET("/api/recipes/{id}/records") suspend fun cookingRecords(@Path("id") id:Long):Response<ApiResponse<List<CookingRecord>>>
     @POST("/api/recipes/{id}/records") suspend fun saveCookingRecord(@Path("id") id:Long,@Body record:CookingRecord):Response<ApiResponse<Unit>>
     @POST("/api/fridge/items/{id}/status") suspend fun changeStockStatus(@Path("id") id:Long,@Body body:Map<String,String>):Response<ApiResponse<Unit>>
     @GET("/api/meals") suspend fun meals(@Query("kitchenId") kitchenId:Long):Response<ApiResponse<List<MealArrangement>>>
-    @GET("/api/meals/{id}") suspend fun meal(@Path("id") id:Long):Response<ApiResponse<MealArrangement>>
+    @GET("/api/meals/{id}") suspend fun meal(@Path("id") id:Long, @Header("X-Content-Original") original:Boolean = true):Response<ApiResponse<MealArrangement>>
     @POST("/api/meals") suspend fun saveMeal(@Body meal:MealArrangement):Response<ApiResponse<MealArrangement>>
     @POST("/api/meals/{id}/share") suspend fun shareMeal(@Path("id") id:Long,@Body body:ChatShareRequest):Response<ApiResponse<Message>>
 
@@ -64,7 +76,7 @@ interface ApiService {
     suspend fun deleteRecipe(@Path("id") id: Long): Response<ApiResponse<Unit>>
 
     @GET("/api/recipes/{id}")
-    suspend fun getRecipeDetail(@Path("id") id: Long): Response<ApiResponse<Recipe>>
+    suspend fun getRecipeDetail(@Path("id") id: Long, @Header("X-Content-Original") original: Boolean = false): Response<ApiResponse<Recipe>>
 
     @GET("/api/recipes/search")
     suspend fun searchRecipes(
@@ -118,6 +130,9 @@ interface ApiService {
     @GET("/api/recipes/recently-cooked")
     suspend fun getRecentlyCooked(@Query("limit") limit: Int = 10): Response<ApiResponse<List<Recipe>>>
 
+    @GET("/api/recipes/tags/{tagType}/options")
+    suspend fun getTagOptions(@Path("tagType") tagType: String): Response<ApiResponse<List<TagOption>>>
+
     @GET("/api/recipes/tags/{tagType}")
     suspend fun getTagValues(@Path("tagType") tagType: String): Response<ApiResponse<List<String>>>
 
@@ -138,10 +153,10 @@ interface ApiService {
     suspend fun deleteFridgeItem(@Path("id") id: Long): Response<ApiResponse<Unit>>
 
     @GET("/api/fridge/items")
-    suspend fun getFridgeItems(@Query("kitchenId") kitchenId: Long? = com.familyrecipes.android.data.local.PreferenceManager.currentKitchenId): Response<ApiResponse<List<FridgeItem>>>
+    suspend fun getFridgeItems(@Query("kitchenId") kitchenId: Long? = com.familyrecipes.android.data.local.PreferenceManager.currentKitchenId, @Header("X-Content-Original") original:Boolean = false): Response<ApiResponse<List<FridgeItem>>>
     
     @GET("/api/fridge/items/consumed")
-    suspend fun getConsumedItems(@Query("kitchenId") kitchenId: Long? = com.familyrecipes.android.data.local.PreferenceManager.currentKitchenId): Response<ApiResponse<List<FridgeItem>>>
+    suspend fun getConsumedItems(@Query("kitchenId") kitchenId: Long? = com.familyrecipes.android.data.local.PreferenceManager.currentKitchenId, @Header("X-Content-Original") original:Boolean = false): Response<ApiResponse<List<FridgeItem>>>
 
     @GET("/api/fridge/items/expiring")
     suspend fun getExpiringItems(): Response<ApiResponse<List<FridgeItem>>>
@@ -194,6 +209,12 @@ interface ApiService {
     suspend fun uploadImages(@Part files: List<MultipartBody.Part>): Response<ApiResponse<List<String>>>
 
     // ========== 好友相关 ==========
+    @GET("/api/friends/search")
+    suspend fun searchFriends(@Query("query") query:String): Response<ApiResponse<List<FriendSearchUser>>>
+    @GET("/api/friends/invitations")
+    suspend fun friendInvitations(): Response<ApiResponse<List<FriendInvitation>>>
+    @POST("/api/friends/invitations/{sender}/respond")
+    suspend fun respondFriend(@Path("sender") sender:Long,@Body body:Map<String,Boolean>): Response<ApiResponse<Unit>>
     @POST("/api/friends/add")
     suspend fun addFriend(@Body request: Map<String, Long>): Response<ApiResponse<Unit>>
 
@@ -228,7 +249,7 @@ interface ApiService {
     @POST("/api/groups/{groupId}/members")
     suspend fun addGroupMembers(
         @Path("groupId") groupId: Long,
-        @Body request: Map<String, List<Long>>
+        @Body request: Map<String, @JvmSuppressWildcards List<Long>>
     ): Response<ApiResponse<Unit>>
 
     @DELETE("/api/groups/{groupId}/members/{memberId}")

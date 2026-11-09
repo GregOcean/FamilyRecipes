@@ -30,9 +30,9 @@ public class RecipeAccessService {
         if(recipe.getKitchenId()!=null) recipe.setOwnerGroupId(kitchens.requireMember(recipe.getKitchenId(),recipe.getCreatorId()).getGroupId());
         if (recipe.getName() == null || recipe.getName().isBlank() || recipe.getName().length() > 100)
             throw new ApiException(400, "菜名不能为空且最多100字");
-        if (recipe.getVisibility() == null) recipe.setVisibility("private");
-        if (!Set.of("public", "private", "group").contains(recipe.getVisibility()))
-            throw new ApiException(400, "可见性不合法");
+        if (recipe.getVisibility() == null) recipe.setVisibility("public");
+        if (!Set.of("public", "group").contains(recipe.getVisibility()))
+            throw new ApiException(400, "菜谱仅支持公开或群组可见，请更新应用并重新选择");
         try {
             List<Long> ids = recipe.getSharedGroupIds() == null ? List.of() :
                 json.readValue(recipe.getSharedGroupIds(), new TypeReference<List<Long>>() {});

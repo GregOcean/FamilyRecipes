@@ -75,7 +75,7 @@ public interface RecipeMapper {
     
     // 按关键词搜索菜谱（用于全局搜索）
     @Select("SELECT r.* FROM recipe r WHERE (name LIKE CONCAT('%', #{keyword}, '%') " +
-            "OR description LIKE CONCAT('%', #{keyword}, '%')) AND " + VISIBLE)
+            "OR description LIKE CONCAT('%', #{keyword}, '%') OR (EXISTS(SELECT 1 FROM content_translations ct WHERE ct.source_hash=SHA2(r.name,256) AND ct.kind='content' AND ct.status='ready' AND ct.translated_text LIKE CONCAT('%',#{keyword},'%')) OR EXISTS(SELECT 1 FROM content_translations ct WHERE ct.source_hash=SHA2(r.description,256) AND ct.kind='content' AND ct.status='ready' AND ct.translated_text LIKE CONCAT('%',#{keyword},'%')))) AND " + VISIBLE)
     List<Recipe> searchByKeyword(@Param("keyword") String keyword, @Param("viewerId") Long viewerId);
     
     // 按tag精确搜索菜谱

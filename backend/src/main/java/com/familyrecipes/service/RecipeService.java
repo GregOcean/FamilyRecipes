@@ -53,6 +53,7 @@ public class RecipeService {
     @Autowired private MediaService media;
     @Autowired private KitchenService kitchens;
     @Autowired private RecipeImageMapper images;
+    @Autowired private org.springframework.jdbc.core.JdbcTemplate db;
 
     private void normalizeLink(ExternalRecipe link,int position) {
         if(link==null || link.getTitle()==null || link.getTitle().isBlank() || link.getTitle().length()>200
@@ -112,6 +113,18 @@ public class RecipeService {
         if(recipe.getCookingTime()!=null && (recipe.getCookingTime()<1 || recipe.getCookingTime()>10080)) throw new com.familyrecipes.common.ApiException(400,"耗时须为1至10080分钟");
         if(steps!=null && (steps.size()>100 || steps.stream().anyMatch(step->step.getDescription()==null || step.getDescription().isBlank() || step.getDescription().length()>10000))) throw new com.familyrecipes.common.ApiException(400,"请填写每一步的做法，最多100步");
         if(recipe.getId()==null && recipe.getSourceRecipeId()!=null){access.requireRead(recipe.getSourceRecipeId(),recipe.getCreatorId());recipe.setSourceRecipeName(recipeMapper.findById(recipe.getSourceRecipeId()).getName());}
+        // An adaptation is created only on explicit save. Copy only media belonging to
+        // the readable source; arbitrary other users' URLs still fail ownership checks.
+        if (recipe.getSourceRecipeId()!=null) {
+            var sourceUrls=mediaUrls(recipe.getSourceRecipeId());
+            Map<String,String> copies=new HashMap<>();
+            java.util.function.Function<String,String> copy=url -> url!=null && sourceUrls.contains(url)
+                ? copies.computeIfAbsent(url,u->media.copyForOwner(u,recipe.getCreatorId())) : url;
+            recipe.setCoverImage(copy.apply(recipe.getCoverImage()));
+            if(recipe.getImages()!=null) recipe.getImages().forEach(i->i.setUrl(copy.apply(i.getUrl())));
+            if(steps!=null) steps.forEach(i->i.setImage(copy.apply(i.getImage())));
+            if(externalRecipes!=null) externalRecipes.forEach(i->i.setThumbnail(copy.apply(i.getThumbnail())));
+        }
         validateMedia(recipe, steps, externalRecipes);
         // 插入菜谱
         recipeMapper.insert(recipe);
@@ -119,6 +132,7 @@ public class RecipeService {
         
         log.info("创建菜谱成功，ID: {}, 名称: {}", recipeId, recipe.getName());
 
+        tags = RecipeClassification.complete(recipe.getName(), tags);
         // 插入标签
         if (tags != null) {
             log.info("开始插入标签，数量: {}", tags.size());
@@ -165,6 +179,12 @@ public class RecipeService {
             images.delete(recipeId);
             for(RecipeImage image:recipe.getImages()) images.insert(recipeId,image);
         }
+        if(recipe.getSourceRecipeId()!=null) db.update(
+            "INSERT INTO recipe_provenance(recipe_id,source_identity,metadata) "
+            + "SELECT ?,SHA2(CONCAT(source_identity,':adaptation:',?),256),"
+            + "JSON_SET(metadata,'$.adapted_from_recipe_id',?,'$.adapted_by_user_id',?,"
+            + "'$.modifications',CONCAT(COALESCE(JSON_UNQUOTE(JSON_EXTRACT(metadata,'$.modifications')),''),' User adaptation.')) "
+            + "FROM recipe_provenance WHERE recipe_id=?",recipeId,recipeId,recipe.getSourceRecipeId(),recipe.getCreatorId(),recipe.getSourceRecipeId());
         return getRecipeDetail(recipeId, recipe.getCreatorId());
     }
 
@@ -178,6 +198,7 @@ public class RecipeService {
                                List<Long> cookUserIds,
                                List<ExternalRecipe> externalRecipes) {
         access.requireEdit(recipe.getId(), recipe.getCreatorId());
+        tags = RecipeClassification.complete(recipe.getName(), tags);
         var previousUrls=mediaUrls(recipe.getId());
         access.validateSharing(recipe);
         if(recipe.getCookingTime()!=null && (recipe.getCookingTime()<1 || recipe.getCookingTime()>10080)) throw new com.familyrecipes.common.ApiException(400,"耗时须为1至10080分钟");
@@ -185,6 +206,7 @@ public class RecipeService {
         if(recipe.getId()==null && recipe.getSourceRecipeId()!=null){access.requireRead(recipe.getSourceRecipeId(),recipe.getCreatorId());recipe.setSourceRecipeName(recipeMapper.findById(recipe.getSourceRecipeId()).getName());}
         validateMedia(recipe, steps, externalRecipes);
         recipeMapper.update(recipe);
+        db.update("DELETE FROM recipe_classification WHERE recipe_id=?", recipe.getId());
         Long recipeId = recipe.getId();
 
         // 删除并重新插入标签
@@ -282,6 +304,7 @@ public class RecipeService {
     public Recipe viewRecipe(Long id, Long userId) {
         Recipe recipe = getRecipeDetail(id, userId);
         recipeMapper.incrementViewCount(id);
+        if(userId!=null) db.update("INSERT INTO recipe_view_history(user_id,recipe_id,viewed_at) VALUES(?,?,NOW()) ON DUPLICATE KEY UPDATE viewed_at=NOW()",userId,id);
         recipe.setViewCount((recipe.getViewCount() == null ? 0 : recipe.getViewCount()) + 1);
         return recipe;
     }

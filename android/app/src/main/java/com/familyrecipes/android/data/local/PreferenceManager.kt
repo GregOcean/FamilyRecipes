@@ -57,6 +57,8 @@ object PreferenceManager {
 
     // 清除登录信息
     fun clearUserData() {
+        androidx.core.app.NotificationManagerCompat.from(com.familyrecipes.android.FamilyRecipesApp.instance)
+            .cancel("friend-invitations:${LocalStore.account}",1)
         com.familyrecipes.android.websocket.WebSocketManager.getInstance().disconnect()
         prefs.edit().apply {
             remove("current_group_id")

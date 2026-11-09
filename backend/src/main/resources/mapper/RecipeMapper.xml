@@ -18,7 +18,8 @@
             AND (r.visibility = 'public' OR r.creator_id = #{viewerId} OR (r.visibility = 'group' AND EXISTS (SELECT 1 FROM group_member gm WHERE gm.user_id = #{viewerId} AND (gm.group_id = r.owner_group_id OR JSON_CONTAINS(COALESCE(r.shared_group_ids, '[]'), CAST(gm.group_id AS JSON))))))
             <if test="keyword != null and keyword != ''">
                 AND (r.name LIKE CONCAT('%', #{keyword}, '%')
-                OR r.description LIKE CONCAT('%', #{keyword}, '%'))
+                OR r.description LIKE CONCAT('%', #{keyword}, '%')
+                OR (EXISTS(SELECT 1 FROM content_translations ct WHERE ct.source_hash=SHA2(r.name,256) AND ct.kind='content' AND ct.status='ready' AND ct.translated_text LIKE CONCAT('%',#{keyword},'%')) OR EXISTS(SELECT 1 FROM content_translations ct WHERE ct.source_hash=SHA2(r.description,256) AND ct.kind='content' AND ct.status='ready' AND ct.translated_text LIKE CONCAT('%',#{keyword},'%'))))
             </if>
             <if test="tagType != null and tagValue != null">
                 AND EXISTS (
@@ -92,7 +93,8 @@
             AND (r.visibility = 'public' OR r.creator_id = #{viewerId} OR (r.visibility = 'group' AND EXISTS (SELECT 1 FROM group_member gm WHERE gm.user_id = #{viewerId} AND (gm.group_id = r.owner_group_id OR JSON_CONTAINS(COALESCE(r.shared_group_ids, '[]'), CAST(gm.group_id AS JSON))))))
             <if test="keyword != null and keyword != ''">
                 AND (r.name LIKE CONCAT('%', #{keyword}, '%')
-                OR r.description LIKE CONCAT('%', #{keyword}, '%'))
+                OR r.description LIKE CONCAT('%', #{keyword}, '%')
+                OR (EXISTS(SELECT 1 FROM content_translations ct WHERE ct.source_hash=SHA2(r.name,256) AND ct.kind='content' AND ct.status='ready' AND ct.translated_text LIKE CONCAT('%',#{keyword},'%')) OR EXISTS(SELECT 1 FROM content_translations ct WHERE ct.source_hash=SHA2(r.description,256) AND ct.kind='content' AND ct.status='ready' AND ct.translated_text LIKE CONCAT('%',#{keyword},'%'))))
             </if>
             <if test="tagType != null and tagValue != null">
                 AND EXISTS (

@@ -22,6 +22,19 @@ public class FriendshipController {
     @Autowired
     private FriendshipService friendshipService;
     
+    @GetMapping("/search")
+    public Result<List<Map<String,Object>>> search(@RequestParam String query,HttpServletRequest r) {
+        return Result.success(friendshipService.search((Long)r.getAttribute("userId"),query));
+    }
+    @GetMapping("/invitations")
+    public Result<List<Map<String,Object>>> invitations(HttpServletRequest r) {
+        return Result.success(friendshipService.invitations((Long)r.getAttribute("userId")));
+    }
+    @PostMapping("/invitations/{sender}/respond")
+    public Result<Void> respond(@PathVariable Long sender,@RequestBody Map<String,Boolean> body,HttpServletRequest r) {
+        if(!body.containsKey("accept") || body.get("accept")==null) throw new com.familyrecipes.common.ApiException(400,"请选择接受或拒绝");
+        friendshipService.respond((Long)r.getAttribute("userId"),sender,body.get("accept"));return Result.success();
+    }
     /**
      * 添加好友
      */

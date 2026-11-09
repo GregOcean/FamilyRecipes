@@ -41,6 +41,7 @@ class EditRecipeActivity : AppCompatActivity() {
     private lateinit var ingredientField:EditText
     private lateinit var timeField:EditText
     private lateinit var tasteField:EditText
+    private lateinit var cuisineField:EditText
     private lateinit var stepBox:android.widget.LinearLayout
     private val stepDrafts=mutableListOf<StepDraft>()
     private data class StepDraft(var text:String="",var image:String?=null)
@@ -52,10 +53,11 @@ class EditRecipeActivity : AppCompatActivity() {
         ingredientField=com.familyrecipes.android.ui.design.Ui.field(this,UiStrings.s(com.familyrecipes.android.R.string.ui_93b21972a4),multi=true);box.addView(ingredientField)
         timeField=com.familyrecipes.android.ui.design.Ui.field(this,UiStrings.s(com.familyrecipes.android.R.string.ui_1c0e1e271a));timeField.inputType=android.text.InputType.TYPE_CLASS_NUMBER;box.addView(timeField)
         tasteField=com.familyrecipes.android.ui.design.Ui.field(this,UiStrings.s(com.familyrecipes.android.R.string.ui_64eafb8239));box.addView(tasteField)
+        cuisineField=Ui.field(this,getString(R.string.cuisine_edit));box.addView(cuisineField)
         box.addView(com.familyrecipes.android.ui.design.Ui.text(this,UiStrings.s(com.familyrecipes.android.R.string.ui_fea10d57e2),20f,true));stepBox=com.familyrecipes.android.ui.design.Ui.box(this,0);box.addView(stepBox)
         box.addView(com.familyrecipes.android.ui.design.Ui.button(this,UiStrings.s(com.familyrecipes.android.R.string.ui_dd24a90cd5)){stepDrafts.add(StepDraft());drawSteps();saveDraft()})
         parent.addView(box,parent.indexOfChild(binding.etRecipeContent.parent.parent as View)+1)
-        listOf(ingredientField,timeField,tasteField).forEach{it.doAfterTextChanged{saveDraft()}}
+        listOf(ingredientField,timeField,tasteField,cuisineField).forEach{it.doAfterTextChanged{saveDraft()}}
     }
     private fun drawSteps(){
         stepBox.removeAllViews()
@@ -78,6 +80,7 @@ class EditRecipeActivity : AppCompatActivity() {
         }.distinctBy{it.ingredientId}
     }
     private fun preparedSteps()=stepDrafts.mapIndexed{index,s->CookingStep(null,null,index+1,s.text,s.image,null)}
+    private fun cuisineTags()=cuisineField.text.toString().trim().takeIf{it.isNotBlank()}?.let{listOf(RecipeTag(null,null,"cuisine",it))}.orEmpty()
     private fun tasteTags()=tasteField.text.toString().split(Regex("[、，, ]")).filter{it.isNotBlank()}.distinct().map{RecipeTag(null,null,"taste",it)}
 
     private lateinit var binding: ActivityEditRecipeBinding
@@ -93,13 +96,14 @@ class EditRecipeActivity : AppCompatActivity() {
     private val photoMeta = mutableMapOf<String, RecipeImage>()
     private data class EditorDraft(val title: String, val content: String, val tags: String,
         val images: List<String>, val metadata: Map<String, RecipeImage>, val links: List<ParsedExternalLink>,
-        val visibility: String, val groups: List<Long>, val original: Recipe?, val ingredientText:String?=null,val timeText:String?=null,val tasteText:String?=null,val stepData:List<StepDraft>?=null)
-    private val draftKey get() = intent.getStringExtra("draft_key") ?: "recipe:${recipeId ?: "new"}:${kitchenId ?: "none"}"
+        val visibility: String, val groups: List<Long>, val original: Recipe?, val ingredientText:String?=null,val timeText:String?=null,val tasteText:String?=null,val stepData:List<StepDraft>?=null,val cuisineText:String?=null,val adaptSourceId:Long?=null)
+    private var adaptSourceId:Long?=null
+    private val draftKey get() = intent.getStringExtra("draft_key") ?: "recipe:${recipeId ?: (adaptSourceId?.let { "adapt-$it" } ?: "new")}:${kitchenId ?: "none"}"
     private var recipeId: Long? = null  // 如果是编辑模式，这里保存菜谱ID
     private var existingRecipe: Recipe? = null  // 保存现有菜谱数据
 
     // 权限相关
-    private var selectedVisibility: String = "public" // public, private, group
+    private var selectedVisibility: String = "public" // public, group
     private val selectedGroupIds = mutableListOf<Long>() // 分享的群组ID列表
 
     /**
@@ -147,6 +151,7 @@ class EditRecipeActivity : AppCompatActivity() {
         // 检查是否是编辑模式
         recipeId = intent.getLongExtra("recipe_id", -1L).takeIf { it > 0 }
 
+        adaptSourceId=intent.getLongExtra("adapt_source_id",-1).takeIf{it>0}
         setupStructuredEditor()
         setupToolbar()
         setupImageGrid()
@@ -168,10 +173,10 @@ class EditRecipeActivity : AppCompatActivity() {
                 catch(_: Exception) { android.widget.Toast.makeText(this@EditRecipeActivity,UiStrings.s(com.familyrecipes.android.R.string.ui_674593ff88),android.widget.Toast.LENGTH_SHORT).show() }
                 draftReady=true
                 setEditingEnabled(true)
-            } else if(recipeId!=null) {
+            } else if(recipeId!=null || adaptSourceId!=null) {
                 binding.btnPublish.isEnabled=false
                 binding.etRecipeTitle.isEnabled=false;binding.etRecipeContent.isEnabled=false;binding.etTags.isEnabled=false
-                loadExistingRecipe(recipeId!!)
+                loadExistingRecipe(recipeId ?: adaptSourceId!!)
             } else { draftReady=true;setEditingEnabled(true) }
         }
         if(recipeId!=null) { binding.toolbar.title=UiStrings.s(com.familyrecipes.android.R.string.ui_55a6506c29);binding.btnPublish.text=UiStrings.s(com.familyrecipes.android.R.string.ui_be5fbbe34c) }
@@ -184,7 +189,7 @@ class EditRecipeActivity : AppCompatActivity() {
             if(view is android.view.ViewGroup) for(i in 0 until view.childCount) enableTree(view.getChildAt(i))
         }
         enableTree(binding.root)
-        enableTree(stepBox);ingredientField.isEnabled=enabled;timeField.isEnabled=enabled;tasteField.isEnabled=enabled
+        enableTree(stepBox);ingredientField.isEnabled=enabled;timeField.isEnabled=enabled;tasteField.isEnabled=enabled;cuisineField.isEnabled=enabled
         enableTree(binding.recyclerImages)
         enableTree(binding.recyclerExternalLinks)
     }
@@ -193,7 +198,7 @@ class EditRecipeActivity : AppCompatActivity() {
         if(recipeId==null && binding.etRecipeTitle.text.isNullOrBlank() && binding.etRecipeContent.text.isNullOrBlank() && selectedImages.isEmpty() && externalLinks.isEmpty() && ingredientField.text.isBlank() && stepDrafts.isEmpty())return
         val draft=EditorDraft(binding.etRecipeTitle.text.toString(),binding.etRecipeContent.text.toString(),
             binding.etTags.text.toString(),selectedImages.map { it.toString() },photoMeta.toMap(),externalLinks.toList(),
-            selectedVisibility,selectedGroupIds.toList(),existingRecipe,ingredientField.text.toString(),timeField.text.toString(),tasteField.text.toString(),stepDrafts.toList())
+            selectedVisibility,selectedGroupIds.toList(),existingRecipe,ingredientField.text.toString(),timeField.text.toString(),tasteField.text.toString(),stepDrafts.toList(),cuisineField.text.toString(),adaptSourceId)
         DraftWrites.put(account,draftKey,com.google.gson.Gson().toJson(draft))
     }
     private fun restoreDraft(draft: EditorDraft) {
@@ -203,6 +208,7 @@ class EditRecipeActivity : AppCompatActivity() {
         photoMeta.clear();photoMeta.putAll(draft.metadata)
         externalLinks.clear();externalLinks.addAll(draft.links)
         selectedVisibility=draft.visibility;selectedGroupIds.clear();selectedGroupIds.addAll(draft.groups)
+        adaptSourceId=draft.adaptSourceId;cuisineField.setText(draft.cuisineText)
         existingRecipe=draft.original;imageAdapter.notifyDataSetChanged();linkAdapter.notifyDataSetChanged();updatePermissionDisplay()
     }
     override fun onStop() { saveDraft();super.onStop() }
@@ -403,9 +409,9 @@ class EditRecipeActivity : AppCompatActivity() {
      * 更新权限显示
      */
     private fun updatePermissionDisplay() {
+        if(selectedVisibility!="group")selectedVisibility="public"
         val subtitle = when (selectedVisibility) {
             "public" -> UiStrings.s(com.familyrecipes.android.R.string.ui_034929bf43)
-            "private" -> UiStrings.s(com.familyrecipes.android.R.string.ui_4d4d119aab)
             "group" -> {
                 if (selectedGroupIds.isEmpty()) {
                     // 显示当前厨房名称
@@ -426,7 +432,7 @@ class EditRecipeActivity : AppCompatActivity() {
      * 显示权限选择对话框
      */
     private fun showPermissionDialog() {
-        val options = arrayOf(UiStrings.s(com.familyrecipes.android.R.string.ui_034929bf43), UiStrings.s(com.familyrecipes.android.R.string.ui_4d4d119aab), UiStrings.s(com.familyrecipes.android.R.string.ui_012b318667))
+        val options = arrayOf(UiStrings.s(com.familyrecipes.android.R.string.ui_034929bf43), UiStrings.s(com.familyrecipes.android.R.string.ui_012b318667))
 
         AlertDialog.Builder(this)
             .setTitle(UiStrings.s(com.familyrecipes.android.R.string.ui_f964950720))
@@ -439,12 +445,6 @@ class EditRecipeActivity : AppCompatActivity() {
                         updatePermissionDisplay()
                     }
                     1 -> {
-                        // 仅自己可见
-                        selectedVisibility = "private"
-                        selectedGroupIds.clear()
-                        updatePermissionDisplay()
-                    }
-                    2 -> {
                         // 分享给群组
                         selectedVisibility = "group"
                         showGroupSelectionDialog()
@@ -541,6 +541,9 @@ class EditRecipeActivity : AppCompatActivity() {
             if(timeField.text.isNotBlank() && (timeField.text.toString().toIntOrNull()?.let{it in 1..10080}!=true)){timeField.error=UiStrings.s(com.familyrecipes.android.R.string.ui_f94651d354);return@setOnClickListener}
             if (recipeId != null) {
                 updateRecipe()
+            } else if(adaptSourceId!=null) {
+                AlertDialog.Builder(this).setTitle(R.string.adapt_save_title).setMessage(R.string.adapt_save_message)
+                    .setNegativeButton(android.R.string.cancel,null).setPositiveButton(R.string.adapt_save){_,_->publishRecipe()}.show()
             } else {
                 publishRecipe()
             }
@@ -589,7 +592,7 @@ class EditRecipeActivity : AppCompatActivity() {
                     sharedGroupIds = if (selectedGroupIds.isNotEmpty()) {
                         com.google.gson.Gson().toJson(selectedGroupIds)
                     } else null,
-                    kitchenId = existingRecipe?.kitchenId ?: com.familyrecipes.android.data.local.PreferenceManager.currentKitchenId,
+                    kitchenId = if(adaptSourceId!=null) kitchenId else existingRecipe?.kitchenId ?: com.familyrecipes.android.data.local.PreferenceManager.currentKitchenId,
                     ownerGroupId = com.familyrecipes.android.data.local.PreferenceManager.currentGroupId,
                     creator = null,
                     tags = null,
@@ -630,7 +633,7 @@ class EditRecipeActivity : AppCompatActivity() {
                 // 5. 创建请求对象
                 val request = CreateRecipeRequest(
                     recipe = recipe,
-                    tags = tagObjects.filter{it.tagType!="taste"} + tasteTags(),
+                    tags = tagObjects.filter{it.tagType!="taste" && it.tagType!="cuisine"} + tasteTags() + cuisineTags(),
                     ingredients = prepareIngredients(),
                     steps = preparedSteps(),
                     cookUserIds = null, // 暂时不处理会做的人
@@ -638,7 +641,7 @@ class EditRecipeActivity : AppCompatActivity() {
                 )
 
                 // 6. 调用API创建菜谱
-                val response = ApiClient.getService().createRecipe(request)
+                val response = ApiClient.getService().createRecipe(request.copy(recipe=request.recipe.copy(sourceRecipeId=adaptSourceId)))
 
                 if (response.isSuccessful && response.body()?.code == 200) {
                     android.widget.Toast.makeText(this@EditRecipeActivity, UiStrings.s(com.familyrecipes.android.R.string.ui_6c6eb30524), android.widget.Toast.LENGTH_SHORT).show()
@@ -711,7 +714,7 @@ class EditRecipeActivity : AppCompatActivity() {
                     sharedGroupIds = if (selectedGroupIds.isNotEmpty()) {
                         com.google.gson.Gson().toJson(selectedGroupIds)
                     } else null,
-                    kitchenId = existingRecipe?.kitchenId ?: com.familyrecipes.android.data.local.PreferenceManager.currentKitchenId,
+                    kitchenId = if(adaptSourceId!=null) kitchenId else existingRecipe?.kitchenId ?: com.familyrecipes.android.data.local.PreferenceManager.currentKitchenId,
                     ownerGroupId = existingRecipe?.ownerGroupId
                         ?: com.familyrecipes.android.data.local.PreferenceManager.currentGroupId,
                     creator = null,
@@ -754,7 +757,7 @@ class EditRecipeActivity : AppCompatActivity() {
                 // 5. 创建请求对象
                 val request = CreateRecipeRequest(
                     recipe = recipe,
-                    tags = tagObjects.filter{it.tagType!="taste"} + tasteTags(),
+                    tags = tagObjects.filter{it.tagType!="taste" && it.tagType!="cuisine"} + tasteTags() + cuisineTags(),
                     ingredients = prepareIngredients(),
                     steps = preparedSteps(),
                     cookUserIds = null,
@@ -858,10 +861,14 @@ class EditRecipeActivity : AppCompatActivity() {
     private fun loadExistingRecipe(id: Long) {
         lifecycleScope.launch {
             try {
-                val response = ApiClient.getService().getRecipeDetail(id)
+                val response = ApiClient.getService().getRecipeDetail(id, original = true)
                 if (response.isSuccessful && response.body()?.code == 200) {
                     existingRecipe = response.body()?.data
                     displayExistingRecipe(existingRecipe!!)
+                    if(adaptSourceId!=null) {
+                        binding.etRecipeTitle.setText(existingRecipe!!.name)
+                        selectedVisibility="public";selectedGroupIds.clear();updatePermissionDisplay()
+                    }
                     draftReady=true
                     setEditingEnabled(true)
                     binding.btnPublish.isEnabled=true
@@ -893,6 +900,7 @@ class EditRecipeActivity : AppCompatActivity() {
      */
     private fun displayExistingRecipe(recipe: Recipe) {
         ingredientField.setText(recipe.ingredients.orEmpty().joinToString("\n"){"${it.ingredient?.name.orEmpty()} | ${it.amount.orEmpty()}"});timeField.setText(recipe.cookingTime?.toString().orEmpty());tasteField.setText(recipe.tags.orEmpty().filter{it.tagType=="taste"}.joinToString("、"){it.tagValue});stepDrafts.clear();stepDrafts.addAll(recipe.steps.orEmpty().map{StepDraft(it.description,it.image)});drawSteps()
+        cuisineField.setText(recipe.tags.orEmpty().filter{it.tagType=="cuisine"}.joinToString("、"){it.tagValue})
         // 填充菜名
         binding.etRecipeTitle.setText(recipe.name)
 
@@ -900,7 +908,7 @@ class EditRecipeActivity : AppCompatActivity() {
         binding.etRecipeContent.setText(recipe.description)
 
         // 填充tags（确保带#号显示）
-        val tagsText = recipe.tags?.filter{it.tagType!="taste"}?.joinToString(" ") {
+        val tagsText = recipe.tags?.filter{it.tagType!="taste" && it.tagType!="cuisine"}?.joinToString(" ") {
             if (it.tagValue.startsWith("#")) {
                 it.tagValue
             } else {
@@ -923,7 +931,7 @@ class EditRecipeActivity : AppCompatActivity() {
         linkAdapter.notifyDataSetChanged()
 
         // 加载权限信息
-        selectedVisibility = recipe.visibility ?: "group"
+        selectedVisibility = recipe.visibility?.takeIf { it == "group" } ?: "public"
         recipe.sharedGroupIds?.let { json ->
             try {
                 val groupIds = com.google.gson.Gson().fromJson(json, Array<Long>::class.java)

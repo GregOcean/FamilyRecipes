@@ -112,7 +112,7 @@ class ScanQRActivity : AppCompatActivity() {
                 val response = ApiClient.getService().addFriend(request)
 
                 if (response.isSuccessful && response.body()?.code == 200) {
-                    Toast.makeText(this@ScanQRActivity, UiStrings.s(com.familyrecipes.android.R.string.ui_415109cfac), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@ScanQRActivity, UiStrings.s(com.familyrecipes.android.R.string.friend_pending), Toast.LENGTH_SHORT).show()
                     setResult(Activity.RESULT_OK)
                     finish()
                 } else {

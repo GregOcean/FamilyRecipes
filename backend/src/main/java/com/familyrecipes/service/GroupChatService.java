@@ -144,13 +144,10 @@ public class GroupChatService {
     @Transactional
     public void addGroupMember(Long groupId, Long operatorId, List<Long> userIds) {
         lockGroup(groupId);
-        // 检查操作者权限（只有管理员可以添加）
+        // 所有群成员均可添加自己的已确认好友
         GroupMember operator = groupChatMapper.getGroupMember(groupId, operatorId);
         if (operator == null) {
             throw new com.familyrecipes.common.ApiException(400, "您不在该群组中");
-        }
-        if (operator.getRole() != GroupMember.MemberRole.manager) {
-            throw new com.familyrecipes.common.ApiException(400, "只有群管理员可以添加成员");
         }
         
         userIds = userIds == null ? List.of() : userIds.stream().filter(java.util.Objects::nonNull)

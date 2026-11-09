@@ -128,6 +128,7 @@ class AddIngredientActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
+        binding.btnReceipt.setOnClickListener { startActivity(Intent(this, ReceiptActivity::class.java)) }
         // 添加图片
         binding.btnAddImage.setOnClickListener {
             showImagePickerDialog()

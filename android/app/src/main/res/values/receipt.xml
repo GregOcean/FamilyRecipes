@@ -1,0 +1,29 @@
+<resources>
+    <string name="receipt_title">小票识别入库</string>
+    <string name="receipt_help">选择或拍摄小票，编辑识别结果后入库。图片会发送至识别服务，不保存为库存照片。</string>
+    <string name="receipt_gallery">选择小票并识别</string>
+    <string name="receipt_camera">拍摄小票并识别</string>
+    <string name="receipt_working">正在识别…</string>
+    <string name="receipt_empty">未识别到食物，可以换一张清晰的小票。</string>
+    <string name="receipt_name">商品名称</string>
+    <string name="receipt_quantity">数量及包装规格</string>
+    <string name="receipt_days">从今天起预计可保存天数（可修改）</string>
+    <string name="receipt_storage">储存方式</string>
+    <string name="receipt_room">常温</string>
+    <string name="receipt_cold">冷藏</string>
+    <string name="receipt_frozen">冷冻</string>
+    <string name="receipt_unspecified">请选择</string>
+    <string name="receipt_remove">移除这项</string>
+    <string name="receipt_save">确认入库</string>
+    <string name="receipt_retry">重试入库</string>
+    <string name="receipt_saving">正在入库…</string>
+    <string name="receipt_pending">入库结果尚未确认，重试不会重复添加。</string>
+    <string name="receipt_invalid">请填写每项的名称、数量、储存方式和 1–3650 天的保质期。</string>
+    <string name="receipt_success">已入库 %1$d 项</string>
+    <string name="receipt_clear">清空识别草稿</string>
+    <string name="receipt_replace">替换当前识别草稿？</string>
+    <string name="receipt_failed">识别失败，图片和草稿已保留，可重试。</string>
+    <string name="receipt_retry_scan">重新识别这张小票</string>
+    <string name="receipt_image_error">无法读取图片，请选择 JPG 或 PNG 小票照片。</string>
+<string name="receipt_camera_permission">拍摄小票需要相机权限，也可以从相册选择。</string>
+</resources>

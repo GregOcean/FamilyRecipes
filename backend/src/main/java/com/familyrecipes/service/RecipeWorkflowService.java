@@ -31,6 +31,22 @@ public class RecipeWorkflowService {
       boolean known,
       String seed,
       int page) {
+    return browse(user,kitchen,scope,origin,keyword,taste,minutes,missing,known,seed,page,"");
+  }
+
+  public PageResult<Recipe> browse(
+      Long user,
+      Long kitchen,
+      String scope,
+      String origin,
+      String keyword,
+      String taste,
+      Integer minutes,
+      Integer missing,
+      boolean known,
+      String seed,
+      int page, String cuisine) {
+    if (cuisine == null || cuisine.length()>50) throw new ApiException(400,"菜系不合法");
     if (page < 1
         || page > 10000
         || !Set.of("discovery", "mine").contains(scope)
@@ -79,18 +95,24 @@ public class RecipeWorkflowService {
           " AND (r.name LIKE ? OR r.description LIKE ? OR EXISTS(SELECT 1 FROM recipe_tag t WHERE"
               + " t.recipe_id=r.id AND t.tag_value LIKE ?) OR EXISTS(SELECT 1 FROM"
               + " recipe_ingredient ri JOIN ingredient i ON i.id=ri.ingredient_id WHERE"
-              + " ri.recipe_id=r.id AND i.name LIKE ?))";
-      for (int i = 0; i < 4; i++) args.add("%" + keyword + "%");
+              + " ri.recipe_id=r.id AND i.name LIKE ?) OR EXISTS(SELECT 1 FROM content_translations ct "
+              + "WHERE ct.source_hash=SHA2(r.name,256) AND ct.kind='content' AND ct.status='ready' AND ct.translated_text LIKE ?) OR EXISTS(SELECT 1 FROM content_translations ct "
+              + "WHERE ct.source_hash=SHA2(r.description,256) AND ct.kind='content' AND ct.status='ready' AND ct.translated_text LIKE ?))";
+      for (int i = 0; i < 6; i++) args.add("%" + keyword + "%");
     }
     if (!taste.isBlank()) {
-      where +=
-          " AND EXISTS(SELECT 1 FROM recipe_tag t WHERE t.recipe_id=r.id AND t.tag_type='taste' AND"
-              + " t.tag_value LIKE ?)";
-      args.add("%" + taste + "%");
+      for(String part : taste.equals("酸辣") ? List.of("酸","辣") : List.of(taste)) {
+        where += " AND EXISTS(SELECT 1 FROM recipe_tag t WHERE t.recipe_id=r.id AND t.tag_type='taste' AND t.tag_value LIKE ?)";
+        args.add("%"+part+"%");
+      }
     }
     if (minutes != null) {
       where += " AND r.cooking_time<=?";
       args.add(minutes);
+    }
+    if (!cuisine.isBlank()) {
+      where += " AND EXISTS(SELECT 1 FROM recipe_tag t WHERE t.recipe_id=r.id AND t.tag_type='cuisine' AND t.tag_value=?)";
+      args.add(cuisine);
     }
     if (missing != null) {
       where +=
@@ -104,19 +126,20 @@ public class RecipeWorkflowService {
     }
     Long total =
         db.queryForObject("SELECT COUNT(*) FROM recipe r" + where, Long.class, args.toArray());
-    String order =
-        scope.equals("discovery") && keyword.isBlank()
-            ? " ORDER BY ((SELECT COUNT(*) FROM recipe_tag t WHERE t.recipe_id=r.id AND"
-                + " EXISTS(SELECT 1 FROM recipe_tag liked JOIN user_favorite f ON"
-                + " f.recipe_id=liked.recipe_id WHERE f.user_id=? AND liked.tag_type=t.tag_type"
-                + " AND liked.tag_value=t.tag_value)) + LEAST(3,(SELECT COUNT(*) FROM"
-                + " cooking_history h WHERE h.recipe_id=r.id AND h.user_id=?)) +"
-                + " MOD(CRC32(CONCAT(r.id,?)),100)/25.0) DESC,r.id DESC"
-            : " ORDER BY r.id DESC";
-    if (scope.equals("discovery") && keyword.isBlank()) {
-      args.add(user);
-      args.add(user);
+    String order=" ORDER BY r.id DESC";
+    if(!keyword.isBlank()) {
+      order=" ORDER BY CASE WHEN r.name=? OR EXISTS(SELECT 1 FROM content_translations ct WHERE ct.source_hash=SHA2(r.name,256) AND ct.kind='content' AND ct.status='ready' AND ct.translated_text=?) THEN 0 "
+          + "WHEN r.name LIKE ? OR EXISTS(SELECT 1 FROM content_translations ct WHERE ct.source_hash=SHA2(r.name,256) AND ct.kind='content' AND ct.status='ready' AND ct.translated_text LIKE ?) THEN 1 "
+          + "WHEN EXISTS(SELECT 1 FROM recipe_ingredient ri JOIN ingredient i ON i.id=ri.ingredient_id WHERE ri.recipe_id=r.id AND i.name LIKE ?) THEN 2 ELSE 3 END,"
+          + " COALESCE(r.view_count,0) DESC, COALESCE(r.favorite_count,0) DESC,r.id DESC";
+      Collections.addAll(args,keyword,keyword,"%"+keyword+"%","%"+keyword+"%","%"+keyword+"%");
+    }
+    if(scope.equals("discovery") && keyword.isBlank()) {
+      String score=com.familyrecipes.mapper.RecommendationScore.SQL;
+      int viewers=score.split("#\\{viewerId\\}",-1).length-1;
+      for(int i=0;i<viewers;i++) args.add(user);
       args.add(seed);
+      order=" ORDER BY "+score.replace("#{viewerId}","?").replace("#{seed}","?")+" DESC,r.id DESC";
     }
     args.add((page - 1) * 20);
     var ids =
@@ -125,7 +148,30 @@ public class RecipeWorkflowService {
             Long.class,
             args.toArray());
     return new PageResult<>(
-        ids.stream().map(id -> recipes.getRecipeDetail(id, user)).toList(), total, page, 20);
+        browseCards(ids, user), total, page, 20);
+  }
+
+  /** List cards do not need steps, media albums or per-recipe detail/translation queries. */
+  private List<Recipe> browseCards(List<Long> ids, Long user) {
+    if(ids.isEmpty()) return List.of();
+    String placeholders=String.join(",",Collections.nCopies(ids.size(),"?"));
+    var rows=db.query("SELECT r.id,r.name,r.cover_image,r.cooking_time,r.creator_id,r.visibility "
+        + "FROM recipe r WHERE r.id IN ("+placeholders+")",
+        org.springframework.jdbc.core.BeanPropertyRowMapper.newInstance(Recipe.class),ids.toArray());
+    var tags=db.query("SELECT * FROM recipe_tag WHERE recipe_id IN ("+placeholders+") ORDER BY id",
+        org.springframework.jdbc.core.BeanPropertyRowMapper.newInstance(RecipeTag.class),ids.toArray());
+    Set<Long> favorites=new HashSet<>();
+    if(user!=null) {
+      var args=new ArrayList<Object>();args.add(user);args.addAll(ids);
+      favorites.addAll(db.queryForList("SELECT recipe_id FROM user_favorite WHERE user_id=? AND recipe_id IN ("+placeholders+")",Long.class,args.toArray()));
+    }
+    Map<Long,Recipe> byId=new HashMap<>();
+    for(Recipe recipe:rows) {
+      recipe.setTags(tags.stream().filter(t->recipe.getId().equals(t.getRecipeId())).toList());
+      recipe.setIsFavorite(favorites.contains(recipe.getId()));
+      byId.put(recipe.getId(),recipe);
+    }
+    return ids.stream().map(byId::get).filter(Objects::nonNull).toList();
   }
 
   @Transactional
@@ -137,19 +183,13 @@ public class RecipeWorkflowService {
     r.setName(r.getName().substring(0, Math.min(90, r.getName().length())) + " · 我的做法");
     r.setId(null);
     r.setCreatorId(user);
-    r.setVisibility("private");
+    r.setVisibility("public");
     r.setSharedGroupIds("[]");
     r.setKitchenId(kitchen);
     r.setOwnerGroupId(null);
-    Map<String, String> copies = new HashMap<>();
-    java.util.function.Function<String, String> copy =
-        url -> url == null ? null : copies.computeIfAbsent(url, u -> media.copyForOwner(u, user));
-    r.setCoverImage(copy.apply(r.getCoverImage()));
-    r.getImages().forEach(i -> i.setUrl(copy.apply(i.getUrl())));
-    r.getSteps().forEach(i -> i.setImage(copy.apply(i.getImage())));
-    r.getExternalRecipes().forEach(i -> i.setThumbnail(copy.apply(i.getThumbnail())));
-    return recipes.createRecipe(
+    Recipe adapted = recipes.createRecipe(
         r, r.getTags(), r.getIngredients(), r.getSteps(), List.of(), r.getExternalRecipes());
+    return adapted;
   }
 
   @Transactional

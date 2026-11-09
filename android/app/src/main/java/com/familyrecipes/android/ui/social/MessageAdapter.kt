@@ -90,8 +90,15 @@ class MessageAdapter(private val messages:List<Message>, private val currentUser
             }
         }
         column.addView(bubble)
+        m.translation?.takeIf { it.status == "ready" && it.language == com.familyrecipes.android.data.remote.ApiClient.contentLanguage() }
+            ?.text?.takeIf { it.isNotBlank() }?.let { translated ->
+                column.addView(Ui.text(c, translated, 14f).apply {
+                    text = ChatMentions.decode(translated)
+                    setTextColor(Ui.muted); this.maxWidth = maxWidth; setPadding(dp(4), dp(6), dp(4), 0)
+                })
+            }
         if(ChatContent.mentions(m.content,currentUserId) && !sent) column.addView(Ui.text(c,c.getString(R.string.chat_mentioned),13f,true).apply{setTextColor(Ui.blue)})
-        val status=Ui.text(c,if(m.id==null) c.getString(if(m.localError==null) R.string.chat_pending else R.string.chat_retry) else
+        val status=Ui.text(c,if(m.id==null) (if(m.localError==null) "" else "❗ ") + c.getString(if(m.localError==null) R.string.chat_pending else R.string.chat_retry) else
             m.createdAt.orEmpty().replace('T',' ').let{if(it.length>=16)it.substring(11,16) else ""},12f).apply {
             setTextColor(Ui.muted);setPadding(0,dp(5),0,0)
         }

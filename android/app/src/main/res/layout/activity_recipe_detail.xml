@@ -7,13 +7,13 @@
     android:orientation="vertical">
 
     <androidx.appcompat.widget.Toolbar
-        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"        android:id="@+id/toolbar"
+        android:theme="@style/ThemeOverlay.FamilyRecipes.Toolbar"        android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:background="@color/toolbar_background"
         app:navigationIcon="@drawable/ic_back"
         app:title="@string/ui_fbb7e7ea47"
-        app:titleTextColor="@color/white">
+        app:titleTextColor="@color/on_toolbar">
         
         <!-- 编辑按钮 -->
         <TextView
@@ -23,7 +23,7 @@
             android:layout_gravity="end"
             android:layout_marginEnd="16dp"
             android:text="@string/ui_95b351c862"
-            android:textColor="@color/white"
+            android:textColor="@color/on_toolbar"
             android:textSize="16sp"
             android:padding="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
@@ -62,7 +62,7 @@
             <ImageView
                 android:id="@+id/iv_cover"
                 android:layout_width="match_parent"
-                android:layout_height="250dp"
+                android:layout_height="200dp"
                 android:scaleType="centerCrop"
                 android:contentDescription="@string/ui_b3c87b5389"
                 tools:src="@drawable/placeholder_recipe" />
@@ -106,89 +106,13 @@
                         android:id="@+id/chip_group"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        app:chipSpacing="8dp" />
+                        android:layout_marginTop="4dp"
+                        app:chipSpacing="4dp" />
 
-                    <!-- Stats Row -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:orientation="horizontal">
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:gravity="center"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:id="@+id/tv_view_count"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:textColor="@color/text_primary"
-                                android:textSize="18sp"
-                                android:textStyle="bold"
-                                tools:text="123" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/ui_9c5c5cdbc5"
-                                android:textColor="@color/text_secondary"
-                                android:textSize="12sp" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:gravity="center"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:id="@+id/tv_favorite_count"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:textColor="@color/text_primary"
-                                android:textSize="18sp"
-                                android:textStyle="bold"
-                                tools:text="45" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/ui_ae336cd047"
-                                android:textColor="@color/text_secondary"
-                                android:textSize="12sp" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:gravity="center"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:id="@+id/tv_cooking_time"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:textColor="@color/text_primary"
-                                android:textSize="18sp"
-                                android:textStyle="bold"
-                                tools:text="30分钟" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/ui_545d6d33e4"
-                                android:textColor="@color/text_secondary"
-                                android:textSize="12sp" />
-                        </LinearLayout>
-                    </LinearLayout>
-
+                    <TextView android:id="@+id/tv_cooking_time"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:textColor="@color/text_secondary" android:textSize="14sp"
+                        android:layout_marginTop="4dp" />
                     <!-- Additional Info Row -->
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -297,6 +221,13 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:paddingHorizontal="16dp" android:paddingBottom="12dp" android:orientation="horizontal">
+                <TextView android:id="@+id/tv_view_count" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:textColor="@color/text_secondary" android:textSize="14sp" android:layout_marginEnd="16dp" />
+                <TextView android:id="@+id/tv_favorite_count" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:textColor="@color/text_secondary" android:textSize="14sp" />
+            </LinearLayout>
             </LinearLayout>
 
         </FrameLayout>

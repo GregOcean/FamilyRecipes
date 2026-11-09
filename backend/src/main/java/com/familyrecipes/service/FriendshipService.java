@@ -23,37 +23,42 @@ public class FriendshipService {
     
     @Autowired
     private UserMapper userMapper;
+    @Autowired private org.springframework.jdbc.core.JdbcTemplate db;
+    private void lockPair(Long a,Long b) {
+        db.queryForList("SELECT id FROM user WHERE id IN (?,?) ORDER BY id FOR UPDATE",Math.min(a,b),Math.max(a,b));
+    }
+    public List<java.util.Map<String,Object>> search(Long user,String query) {
+        String q=query==null?"":query.trim();
+        if(q.isBlank() || q.length()>50) throw new com.familyrecipes.common.ApiException(400,"请输入完整用户名或用户ID");
+        Long id=null;try{id=Long.valueOf(q);}catch(NumberFormatException ignored){}
+        return db.queryForList("SELECT id,username,avatar FROM user WHERE id<>? AND (id=? OR username=?) LIMIT 20",user,id,q);
+    }
+    public List<java.util.Map<String,Object>> invitations(Long user) {
+        return db.queryForList("SELECT f.id,f.user_id AS sender_id,f.friend_id AS recipient_id,u.username,u.avatar FROM friendship f JOIN user u ON u.id=CASE WHEN f.user_id=? THEN f.friend_id ELSE f.user_id END WHERE (f.friend_id=? OR f.user_id=?) AND f.status='pending' ORDER BY f.id DESC LIMIT 100",user,user,user);
+    }
+    @Transactional
+    public void respond(Long user,Long sender,boolean accept) {
+        lockPair(user,sender);
+        int changed=db.update("DELETE FROM friendship WHERE user_id=? AND friend_id=? AND status='pending'",sender,user);
+        if(changed!=1) throw new com.familyrecipes.common.ApiException(404,"邀请不存在或已处理");
+        if(accept) {
+            db.update("INSERT INTO friendship(user_id,friend_id,status) VALUES(?,?,'accepted'),(?,?,'accepted')",sender,user,user,sender);
+        }
+    }
+
     
     /**
      * 添加好友（双向关系）
      */
     @Transactional
     public void addFriend(Long userId, Long friendId) {
-        // 检查是否已经是好友
-        if (friendshipMapper.isFriend(userId, friendId)) {
-            throw new com.familyrecipes.common.ApiException(400, "已经是好友关系");
-        }
-        
-        // 检查好友是否存在
-        User friend = userMapper.findById(friendId);
-        if (friend == null) {
-            throw new com.familyrecipes.common.ApiException(400, "用户不存在");
-        }
-        
-        // 创建双向好友关系
-        Friendship friendship1 = new Friendship();
-        friendship1.setUserId(userId);
-        friendship1.setFriendId(friendId);
-        friendship1.setStatus(Friendship.FriendshipStatus.accepted);
-        friendshipMapper.insertFriendship(friendship1);
-        
-        Friendship friendship2 = new Friendship();
-        friendship2.setUserId(friendId);
-        friendship2.setFriendId(userId);
-        friendship2.setStatus(Friendship.FriendshipStatus.accepted);
-        friendshipMapper.insertFriendship(friendship2);
-        
-        log.info("用户{}成功添加好友{}", userId, friendId);
+        if(userId.equals(friendId) || userMapper.findById(friendId)==null)
+            throw new com.familyrecipes.common.ApiException(400,"请选择其他有效用户");
+        lockPair(userId,friendId);
+        if (friendshipMapper.getFriendship(userId,friendId)!=null || friendshipMapper.getFriendship(friendId,userId)!=null)
+            throw new com.familyrecipes.common.ApiException(409,"已是好友或有待处理邀请");
+        db.update("INSERT INTO friendship(user_id,friend_id,status) VALUES(?,?,'pending')",userId,friendId);
+
     }
     
     /**

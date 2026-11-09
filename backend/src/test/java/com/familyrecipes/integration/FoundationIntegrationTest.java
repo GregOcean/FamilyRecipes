@@ -1,6 +1,8 @@
 package com.familyrecipes.integration;
 
 import com.familyrecipes.util.JwtUtil;
+import com.familyrecipes.model.Message;
+import org.springframework.http.MediaType;
 import com.familyrecipes.mapper.*;
 import com.familyrecipes.service.*;
 import com.familyrecipes.entity.*;
@@ -36,6 +38,7 @@ class FoundationIntegrationTest {
     @TempDir static Path images;
     @DynamicPropertySource static void properties(DynamicPropertyRegistry registry) {
         registry.add("file.upload-dir", images::toString);
+        registry.add("app.ai.routes.translation.model", () -> "");
         registry.add("file.base-url", () -> "http://localhost/api/upload/files/");
     }
     @Autowired MockMvc mvc;
@@ -84,19 +87,105 @@ class FoundationIntegrationTest {
     Recipe recipe(String visibility) {
         Recipe r = new Recipe(); r.setName("test dish"); r.setCreatorId(owner); r.setVisibility(visibility);
         if (visibility.equals("group")) r.setSharedGroupIds("["+group+"]");
-        return recipes.createRecipe(r, null, null, null, null, null);
+        // Legacy private fixtures exercise pre-migration read permissions, not new writes.
+        if(visibility.equals("private"))r.setVisibility("public");
+        var saved=recipes.createRecipe(r, null, null, null, null, null);
+        if(visibility.equals("private")) {db.update("UPDATE recipe SET visibility='private' WHERE id=?",saved.getId());saved.setVisibility("private");}
+        return saved;
     }
 
-    @Test void newRecipeDefaultsToPublicButExplicitPrivateIsRespected() {
+    @Autowired FriendshipService friendshipService;
+    @Autowired org.springframework.transaction.PlatformTransactionManager transactionManager;
+    @Test void tagBackfillRejectsStaleContentAndBoundsFailures() throws Exception {
+        db.update("INSERT IGNORE INTO recipe_classification(recipe_id,status) SELECT id,'complete' FROM recipe");
+        var r=recipe("public");
+        var client=org.mockito.Mockito.mock(com.familyrecipes.ai.ChatCompletionClient.class);
+        org.mockito.Mockito.when(client.complete(org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyList()))
+            .thenAnswer(call->{db.update("UPDATE recipe SET description='changed during request' WHERE id=?",r.getId());return "{\"taste\":[\"甜\"],\"cuisine\":[\"日式\"]}";});
+        var worker=new RecipeTagBackfill(db,new ObjectMapper(),client,new com.familyrecipes.ai.AiRoutes(),transactionManager);
+        worker.processOne();
+        assertEquals(0,db.queryForObject("SELECT COUNT(*) FROM recipe_classification WHERE recipe_id=?",Integer.class,r.getId()));
+        assertEquals(0,db.queryForObject("SELECT COUNT(*) FROM recipe_tag WHERE recipe_id=? AND tag_value='甜'",Integer.class,r.getId()));
+        org.mockito.Mockito.when(client.complete(org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyList())).thenReturn("bad JSON");
+        for(int i=0;i<4;i++) {
+            db.update("UPDATE recipe_classification SET next_attempt_at=NOW() WHERE recipe_id=?",r.getId());
+            worker.processOne();
+        }
+        assertEquals(3,db.queryForObject("SELECT attempts FROM recipe_classification WHERE recipe_id=?",Integer.class,r.getId()));
+        assertEquals("failed",db.queryForObject("SELECT status FROM recipe_classification WHERE recipe_id=?",String.class,r.getId()));
+    }
+
+    @Test void tagBackfillWritesMissingTagsPreservesExplicitAndDoesNotRepeat() throws Exception {
+        db.update("INSERT IGNORE INTO recipe_classification(recipe_id,status) SELECT id,'complete' FROM recipe");
+        var r=recipe("public");
+        db.update("DELETE FROM recipe_tag WHERE recipe_id=?",r.getId());
+        db.update("INSERT INTO recipe_tag(recipe_id,tag_type,tag_value) VALUES(?,'cuisine','粤菜')",r.getId());
+        var client=org.mockito.Mockito.mock(com.familyrecipes.ai.ChatCompletionClient.class);
+        org.mockito.Mockito.when(client.complete(org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyList()))
+            .thenReturn("{\"taste\":[\"甜\"],\"cuisine\":[\"日式\"],\"evidence\":\"honey\"}");
+        var worker=new RecipeTagBackfill(db,new ObjectMapper(),client,new com.familyrecipes.ai.AiRoutes(),transactionManager);
+        worker.processOne();worker.processOne();
+        assertEquals(List.of("甜","粤菜"),db.queryForList("SELECT tag_value FROM recipe_tag WHERE recipe_id=? ORDER BY tag_value",String.class,r.getId()).stream().sorted().toList());
+        assertEquals("complete",db.queryForObject("SELECT status FROM recipe_classification WHERE recipe_id=?",String.class,r.getId()));
+        org.mockito.Mockito.verify(client,org.mockito.Mockito.times(1)).complete(org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyList());
+    }
+
+    @Test void friendSearchIsMinimalAndInvitationsRequireRecipientAcceptance() throws Exception {
+        var matches=friendshipService.search(owner,Long.toString(outsider));
+        assertEquals(1,matches.size());assertFalse(matches.get(0).containsKey("email"));
+        friendshipService.addFriend(owner,outsider);
+        assertFalse(friendshipService.isFriend(owner,outsider));
+        assertThrows(ApiException.class,()->friendshipService.addFriend(owner,outsider));
+        assertThrows(ApiException.class,()->friendshipService.respond(owner,outsider,true));
+        friendshipService.respond(outsider,owner,true);
+        assertTrue(friendshipService.isFriend(owner,outsider));
+        assertTrue(friendshipService.isFriend(outsider,owner));
+        assertTrue(friendshipService.invitations(owner).isEmpty());
+    }
+    @Test void savingAdaptationCopiesOnlyOnSaveAndPreservesSource() {
+        var original=recipe("public");long before=db.queryForObject("SELECT COUNT(*) FROM recipe",Long.class);
+        var draft=recipes.getRecipeDetail(original.getId(),outsider);
+        assertEquals(before,db.queryForObject("SELECT COUNT(*) FROM recipe",Long.class));
+        draft.setId(null);draft.setSourceRecipeId(original.getId());draft.setCreatorId(outsider);
+        draft.setName("My changed version");draft.setVisibility("public");
+        var saved=recipes.createRecipe(draft,draft.getTags(),draft.getIngredients(),draft.getSteps(),List.of(),draft.getExternalRecipes());
+        assertEquals(before+1,db.queryForObject("SELECT COUNT(*) FROM recipe",Long.class));
+        assertEquals(original.getId(),saved.getSourceRecipeId());
+        assertEquals("test dish",recipes.getRecipeDetail(original.getId(),owner).getName());
+    }
+    @Test void recommendationPrefersKnownAndFavoriteButDoesNotExcludeDisliked() {
+        var known=recipe("public");var disliked=recipe("public");
+        db.update("INSERT INTO recipe_cook(recipe_id,user_id,skill_level) VALUES(?,?,3)",known.getId(),owner);
+        db.update("INSERT INTO user_favorite(recipe_id,user_id) VALUES(?,?)",known.getId(),owner);
+        db.update("INSERT INTO user_dislike(recipe_id,user_id) VALUES(?,?)",disliked.getId(),owner);
+        var ranked=recommendations.recommend(owner,null,"discovery","stable",LocalDate.now(clock));
+        assertTrue(ranked.indexOf(known.getId())<ranked.indexOf(disliked.getId()));assertTrue(ranked.contains(disliked.getId()));
+        recipes.viewRecipe(known.getId(),owner);recipes.viewRecipe(known.getId(),owner);
+        assertEquals(1,db.queryForObject("SELECT COUNT(*) FROM recipe_view_history WHERE user_id=? AND recipe_id=?",Integer.class,owner,known.getId()));
+        var page=workflows.browse(owner,null,"discovery","all","","",null,null,false,"stable",1,"");
+        assertNotNull(page);
+    }
+    @Test void publicRecipeMigrationIsRepeatableAndPreservesGroups() throws Exception {
+        var legacy=recipe("private");var restricted=recipe("group");
+        String sql=new String(new org.springframework.core.io.ClassPathResource("migrations/2026-11-08-public-recipes.sql").getInputStream().readAllBytes(),java.nio.charset.StandardCharsets.UTF_8);
+        // Avoid DDL's implicit commit in this rollback-isolated test; check the data migration twice.
+        String update=sql.substring(sql.indexOf("UPDATE"),sql.indexOf(';'));
+        db.update(update);db.update(update);
+        assertEquals("public",recipeMapper.findById(legacy.getId()).getVisibility());
+        assertEquals("group",recipeMapper.findById(restricted.getId()).getVisibility());
+    }
+    @Test void newRecipeDefaultsToPublicAndPrivateWritesAreRejected() {
         Recipe r = new Recipe(); r.setName("默认公开"); r.setCreatorId(owner);
         var saved = recipes.createRecipe(r,null,null,null,null,null);
         assertEquals("public",saved.getVisibility());
         assertNotNull(recipes.getRecipeDetail(saved.getId(),outsider));
-        var privateRecipe = recipe("private");
-        assertThrows(ApiException.class,()->recipes.getRecipeDetail(privateRecipe.getId(),outsider));
+        r.setId(null);r.setVisibility("private");
+        assertThrows(ApiException.class,()->recipes.createRecipe(r,null,null,null,null,null));
+        saved.setVisibility("private");
+        assertThrows(ApiException.class,()->recipes.updateRecipe(saved,null,null,null,null,null));
     }
     @Test void externalLinksKeepNotesAndUserOrderAcrossEdits() {
-        Recipe r = new Recipe(); r.setName("多来源菜谱"); r.setCreatorId(owner); r.setVisibility("private");
+        Recipe r = new Recipe(); r.setName("多来源菜谱"); r.setCreatorId(owner); r.setVisibility("public");
         ExternalRecipe a = new ExternalRecipe(); a.setTitle("视频"); a.setUrl("https://youtu.be/demo");
         a.setNotes("孩子吃可以省略辣椒"); a.setSource("wrong"); a.setSortOrder(99);
         ExternalRecipe b = new ExternalRecipe(); b.setTitle("步骤"); b.setUrl("https://www.instagram.com/p/demo");
@@ -417,7 +506,8 @@ class FoundationIntegrationTest {
         var privateRecipe=recipe("private");
         var image=new BufferedImage(2,2,BufferedImage.TYPE_INT_RGB);var out=new ByteArrayOutputStream();ImageIO.write(image,"png",out);
         String imageUrl=media.upload(new MockMultipartFile("file","shared.png","image/png",out.toByteArray()),owner);
-        privateRecipe.setCoverImage(imageUrl);recipes.updateRecipe(privateRecipe,List.of(),List.of(),List.of(),null,null);
+        privateRecipe.setCoverImage(imageUrl);privateRecipe.setVisibility("public");recipes.updateRecipe(privateRecipe,List.of(),List.of(),List.of(),null,null);
+        db.update("UPDATE recipe SET visibility='private' WHERE id=?",privateRecipe.getId());
         String filename=imageUrl.substring(imageUrl.lastIndexOf('/')+1);
         assertThrows(ApiException.class,()->media.read(filename,outsider));
         var dish=new MealArrangement.Dish();dish.setName("手写菜名");dish.setRecipeId(privateRecipe.getId());m.setDishes(List.of(dish));m.setShopping(List.of());
@@ -451,6 +541,18 @@ class FoundationIntegrationTest {
         fridge.changeStatus(id,owner,"consumed");assertEquals(1,fridge.getConsumedItems(owner,kitchen).size());
         assertThrows(ApiException.class,()->fridge.changeStatus(id,outsider,"normal"));
     }
+    @Test void cuisineFilterCombinesWithVisibility() {
+        var publicRecipe=recipe("public");
+        var privateRecipe=recipe("group");
+        String probe="cuisine-probe-"+UUID.randomUUID();
+        for (var r : List.of(publicRecipe,privateRecipe)) {
+            r.setName(probe);
+            var cuisine=new RecipeTag();cuisine.setTagType("cuisine");cuisine.setTagValue("川菜");
+            recipes.updateRecipe(r,List.of(cuisine),null,null,null,null);
+        }
+        assertEquals(1,workflows.browse(outsider,null,"discovery","all",probe,"",null,null,false,"x",1,"川菜").getTotal());
+        assertEquals(0,workflows.browse(outsider,null,"discovery","all",probe,"",null,null,false,"x",1,"意大利菜").getTotal());
+    }
     @Test void adaptationCopiesContentAndImagesAndKeepsSourceIndependent() throws Exception {
         var image=new BufferedImage(2,2,BufferedImage.TYPE_INT_RGB);var out=new ByteArrayOutputStream();ImageIO.write(image,"png",out);
         String url=media.upload(new MockMultipartFile("file","test.png","image/png",out.toByteArray()),owner);
@@ -459,7 +561,7 @@ class FoundationIntegrationTest {
         original=recipes.createRecipe(original,List.of(),List.of(),List.of(step),List.of(),List.of());
         var otherKitchen=kitchens.list(outsider).get(0);
         var copy=workflows.adapt(original.getId(),outsider,otherKitchen.getId());
-        assertEquals(original.getId(),copy.getSourceRecipeId());assertEquals("private",copy.getVisibility());assertNotEquals(url,copy.getCoverImage());
+        assertEquals(original.getId(),copy.getSourceRecipeId());assertEquals("public",copy.getVisibility());assertNotEquals(url,copy.getCoverImage());
         media.requireOwned(copy.getCoverImage(),outsider);
         copy.setName("自己的版本");recipes.updateRecipe(copy,copy.getTags(),copy.getIngredients(),copy.getSteps(),null,copy.getExternalRecipes());
         assertEquals("原始做法",recipes.getRecipeDetail(original.getId(),owner).getName());
@@ -469,7 +571,8 @@ class FoundationIntegrationTest {
     @Test void browseCombinesTasteKnownInventoryAndSearchBeforePagination() {
         var r=recipe("private");var tag=new RecipeTag();tag.setTagType("taste");tag.setTagValue("酸辣");
         var ingredient=new RecipeIngredient();ingredient.setIngredientId(fridge.previewIngredient("牛奶").getId());ingredient.setAmount("1瓶");
-        r.setCookingTime(15);recipes.updateRecipe(r,List.of(tag),List.of(ingredient),List.of(),null,null);
+        r.setCookingTime(15);r.setVisibility("public");recipes.updateRecipe(r,List.of(tag),List.of(ingredient),List.of(),null,null);
+        db.update("UPDATE recipe SET visibility='private' WHERE id=?",r.getId());
         workflows.known(r.getId(),owner,true);
         assertEquals(0,workflows.browse(owner,kitchen,"mine","all","test","酸",30,0,true,"x",1).getTotal());
         var item=new FridgeItem();item.setUserId(owner);item.setKitchenId(kitchen);item.setIngredientId(ingredient.getIngredientId());item.setExpiryDate(LocalDate.now(clock).plusDays(5));fridge.addItem(item);
@@ -519,5 +622,199 @@ class FoundationIntegrationTest {
         var sent=meals.share(meal.getId(),group,owner,client);
         meal.setTitle("后来改名");meals.save(meal,owner);
         assertEquals(sent.getId(),meals.share(meal.getId(),group,owner,client).getId());
+    }
+
+    @Test void searchRanksNamesBeforeIngredientsThenDescriptionAndPopularity() {
+        String term="番茄";
+        var exact=recipe("public");var popular=recipe("public");var favorite=recipe("public");var plain=recipe("public");var ingredient=recipe("public");var description=recipe("public");
+        db.update("UPDATE recipe SET name=?,view_count=0 WHERE id=?",term,exact.getId());
+        db.update("UPDATE recipe SET name=?,view_count=10,favorite_count=0 WHERE id=?",term+"炒饭",popular.getId());
+        db.update("UPDATE recipe SET name=?,view_count=5,favorite_count=8 WHERE id=?",term+"汤",favorite.getId());
+        db.update("UPDATE recipe SET name=?,view_count=5,favorite_count=0 WHERE id=?",term+"炖肉",plain.getId());
+        db.update("UPDATE recipe SET view_count=9999 WHERE id=?",ingredient.getId());
+        db.update("INSERT INTO recipe_ingredient(recipe_id,ingredient_id,amount) SELECT ?,id,'1个' FROM ingredient WHERE name=?",ingredient.getId(),term);
+        db.update("UPDATE recipe SET description=?,view_count=99999 WHERE id=?",term,description.getId());
+        var ids=workflows.browse(owner,null,"mine","created",term,"",null,null,false,"0",1).getList().stream().map(Recipe::getId).toList();
+        assertEquals(List.of(exact.getId(),popular.getId(),favorite.getId(),plain.getId(),ingredient.getId(),description.getId()),ids);
+    }
+    @Test void groupInvitesAllowMembersAndRequireAcceptedFriendshipAndGrantKitchenMembership() {
+        assertThrows(ApiException.class,()->groups.addGroupMember(group,owner,List.of(outsider)));
+        friendshipService.addFriend(owner,outsider);
+        assertThrows(ApiException.class,()->groups.addGroupMember(group,owner,List.of(outsider)));
+        friendshipService.respond(outsider,owner,true);
+        groups.addGroupMember(group,owner,List.of(outsider));
+        assertNotNull(kitchens.requireMember(kitchen,outsider));
+        long newcomer=user("newcomer");
+        assertThrows(ApiException.class,()->groups.addGroupMember(group,newcomer,List.of(owner)));
+        friendshipService.addFriend(outsider,newcomer);friendshipService.respond(newcomer,outsider,true);
+        groups.addGroupMember(group,outsider,List.of(newcomer));
+        assertNotNull(kitchens.requireMember(kitchen,newcomer));
+        int count=db.queryForObject("SELECT COUNT(*) FROM group_member WHERE group_id=?",Integer.class,group);
+        groups.addGroupMember(group,owner,List.of(outsider));
+        assertEquals(count,db.queryForObject("SELECT COUNT(*) FROM group_member WHERE group_id=?",Integer.class,group));
+    }
+
+    @Test void translatedSearchWithLargeCatalogCompletesWithoutDetailFanout() {
+        var recipeRows=new ArrayList<Object[]>();
+        var translationRows=new ArrayList<Object[]>();
+        String prefix="perf-"+UUID.randomUUID();
+        for(int i=0;i<3000;i++)recipeRows.add(new Object[]{prefix+i,owner,"public"});
+        db.batchUpdate("INSERT INTO recipe(name,creator_id,visibility) VALUES(?,?,?)",recipeRows);
+        for(int i=0;i<12000;i++) {
+            String source=prefix+i;
+            translationRows.add(new Object[]{com.familyrecipes.translation.TranslationService.digest(source),source,"translated "+source});
+        }
+        db.batchUpdate("INSERT INTO content_translations(source_hash,source_text,translated_text,target_language,engine,kind,status) VALUES(?,?,?,'zh','perf','content','ready')",translationRows);
+        long start=System.nanoTime();
+        var result=assertTimeout(Duration.ofSeconds(8),()->workflows.browse(null,null,"discovery","all","translated "+prefix+"2999","",null,null,false,"0",1));
+        assertEquals(1,result.getTotal());
+        System.out.println("Catalog search benchmark: 3000 recipes / 12000 translations, "+((System.nanoTime()-start)/1_000_000)+" ms");
+    }
+
+    @Test void browseCardsStayLightweightAndSearchTranslatedDescriptionsWithoutDuplicates() {
+        var r=recipe("public");
+        String description="独特描述"+UUID.randomUUID();
+        String term="translated-probe-"+UUID.randomUUID();
+        db.update("UPDATE recipe SET description=? WHERE id=?",description,r.getId());
+        db.update("INSERT INTO user_favorite(recipe_id,user_id) VALUES(?,?)",r.getId(),owner);
+        String hash=com.familyrecipes.translation.TranslationService.digest(description);
+        for(String engine:List.of("test-a","test-b"))
+            db.update("INSERT INTO content_translations(source_hash,target_language,engine,source_text,kind,status,translated_text) VALUES(?,'en',?,?,'content','ready',?)",hash,engine,description,term);
+        var page=workflows.browse(owner,null,"discovery","all",term,"",null,null,false,"0",1);
+        assertEquals(1,page.getTotal());
+        assertEquals(1,page.getList().size());
+        var card=page.getList().get(0);
+        assertEquals(r.getId(),card.getId());
+        assertEquals(true,card.getIsFavorite());
+        assertNotNull(card.getTags());
+        assertNull(card.getSteps());assertNull(card.getDescription());assertNull(card.getImages());
+        assertEquals(description,recipes.getRecipeDetail(r.getId(),owner).getDescription());
+        db.update("UPDATE recipe SET visibility='private' WHERE id=?",r.getId());
+        assertEquals(0,workflows.browse(outsider,null,"discovery","all",term,"",null,null,false,"0",1).getTotal());
+    }
+
+    @Test void translationsPreserveOriginalsAndInvalidateOnEdit() throws Exception {
+        Recipe r=recipe("public");
+        db.update("UPDATE recipe SET name='清蒸鱼' WHERE id=?",r.getId());
+        String hash=com.familyrecipes.translation.TranslationService.digest("清蒸鱼");
+        db.update("INSERT INTO content_translations(source_hash,target_language,engine,source_text,kind,status,translated_text) VALUES(?,'en','content:llm::v1','清蒸鱼','content','ready','Steamed fish')",hash);
+        mvc.perform(get("/api/recipes/"+r.getId()).header("Accept-Language","en"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.name").value("Steamed fish"))
+            .andExpect(jsonPath("$.data.original_content.name").value("清蒸鱼"));
+        mvc.perform(get("/api/recipes/"+r.getId()))
+            .andExpect(jsonPath("$.data.name").value("清蒸鱼"));
+        mvc.perform(get("/api/recipes/"+r.getId()).header("Accept-Language","en").header("X-Content-Original","true"))
+            .andExpect(jsonPath("$.data.name").value("清蒸鱼"));
+        assertEquals(1,workflows.browse(null,null,"discovery","all","Steamed fish","",null,null,false,"0",1).getTotal());
+        assertTrue(recipeMapper.searchByKeyword("Steamed fish",null).stream().anyMatch(item->item.getId().equals(r.getId())));
+        db.update("UPDATE recipe SET visibility='private' WHERE id=?",r.getId());
+        assertEquals(0,workflows.browse(outsider,null,"discovery","all","Steamed fish","",null,null,false,"0",1).getTotal());
+        db.update("UPDATE recipe SET visibility='public',name='红烧鱼' WHERE id=?",r.getId());
+        mvc.perform(get("/api/recipes/"+r.getId()).header("Accept-Language","en"))
+            .andExpect(jsonPath("$.data.name").value("红烧鱼"));
+        assertEquals("红烧鱼",db.queryForObject("SELECT name FROM recipe WHERE id=?",String.class,r.getId()));
+    }
+
+    @Test void chatTranslationsRequireMembershipAndNeverAcceptArbitraryText() throws Exception {
+        var m=messages.sendMessage(group,owner,"不要放花生",Message.MessageType.text);
+        String hash=com.familyrecipes.translation.TranslationService.digest(m.getContent());
+        db.update("INSERT INTO content_translations(source_hash,target_language,engine,source_text,kind,status,translated_text) VALUES(?,'en','chat:llm::v1',?,'chat','ready','Do not add peanuts')",hash,m.getContent());
+        String payload="{\"group_id\":"+group+",\"ids\":["+m.getId()+"]}";
+        mvc.perform(post("/api/messages/translations").header("Authorization",ownerAuth).header("Accept-Language","en").contentType(MediaType.APPLICATION_JSON).content(payload))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data."+m.getId()+".text").value("Do not add peanuts"));
+        mvc.perform(post("/api/messages/translations").header("Authorization",otherAuth).header("Accept-Language","en").contentType(MediaType.APPLICATION_JSON).content(payload))
+            .andExpect(status().isNotFound());
+        assertEquals("不要放花生",messageMapper.findById(m.getId()).getContent());
+    }
+
+    @Autowired com.familyrecipes.controller.CatalogImportController catalog;
+    @Test void catalogImportIsAdminOnlyAndIdempotent() throws Exception {
+        org.springframework.test.util.ReflectionTestUtils.setField(catalog,"admin",owner);
+        String payload="{\"provenance\":{\"source\":\"test\",\"source_id\":\"one\",\"source_url\":\"https://example.com\",\"author\":\"Test\",\"license\":\"CC0\",\"license_url\":\"https://creativecommons.org/publicdomain/zero/1.0/\"},\"recipe\":{\"name\":\"Test imported recipe\"},\"steps\":[{\"step_number\":1,\"description\":\"Cook\"}],\"ingredients\":[],\"tags\":[]}";
+        try {
+            mvc.perform(post("/api/catalog/import").header("Authorization",otherAuth).contentType(MediaType.APPLICATION_JSON).content(payload)).andExpect(status().isForbidden());
+            String first=mvc.perform(post("/api/catalog/import").header("Authorization",ownerAuth).contentType(MediaType.APPLICATION_JSON).content(payload)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+            String second=mvc.perform(post("/api/catalog/import").header("Authorization",ownerAuth).contentType(MediaType.APPLICATION_JSON).content(payload)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+            assertEquals(json.readTree(first).get("data"),json.readTree(second).get("data"));
+            long id=json.readTree(first).get("data").asLong();
+            assertEquals("public",recipeMapper.findById(id).getVisibility());
+            var adapted=workflows.adapt(id,owner,kitchen);
+            assertEquals(1,db.queryForObject("SELECT COUNT(*) FROM recipe_provenance WHERE recipe_id=?",Integer.class,adapted.getId()));
+            mvc.perform(put("/api/recipes/"+id).header("Authorization",otherAuth).contentType(MediaType.APPLICATION_JSON).content("{\"recipe\":{\"name\":\"Changed\"}}"))
+                .andExpect(status().isNotFound());
+        } finally { org.springframework.test.util.ReflectionTestUtils.setField(catalog,"admin",0L); }
+    }
+
+    @Autowired com.familyrecipes.translation.TranslationService translationService;
+    @Autowired com.familyrecipes.ai.AiRoutes aiRoutes;
+    @Test void workerUsesConfiguredProviderAndDurableCache() throws Exception {
+        var server=com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress("127.0.0.1",0),0);
+        java.util.concurrent.atomic.AtomicInteger calls=new java.util.concurrent.atomic.AtomicInteger();
+        server.createContext("/translate",exchange->{
+            calls.incrementAndGet();
+            byte[] bytes="{\"choices\":[{\"message\":{\"content\":\"Steamed fish\"}}]}".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(200,bytes.length);exchange.getResponseBody().write(bytes);exchange.close();
+        });server.start();
+        org.springframework.test.util.ReflectionTestUtils.setField(translationService,"enabled",true);
+        var oldRoute=aiRoutes.getRoutes().get("translation");
+        var route=new com.familyrecipes.ai.AiRoutes.Route();
+        route.setUrl("http://127.0.0.1:"+server.getAddress().getPort()+"/translate");route.setKey("test-only");route.setModel("fixture-model");
+        aiRoutes.getRoutes().put("translation",route);
+        try {
+            assertEquals("pending",translationService.lookup("测试清蒸鱼","en","content",true).status());
+            translationService.lookup("测试清蒸鱼","en","content",true);
+            translationService.work();
+            var result=translationService.lookup("测试清蒸鱼","en","content",true);
+            assertEquals("ready",result.status());assertEquals("Steamed fish",result.text());assertEquals(1,calls.get());
+            assertEquals("pending",translationService.lookup("修改后的清蒸鱼","en","content",true).status());
+        } finally {
+            server.stop(0);
+            org.springframework.test.util.ReflectionTestUtils.setField(translationService,"enabled",false);
+            aiRoutes.getRoutes().put("translation",oldRoute);
+        }
+    }
+
+    @Test void receiptImportIsAtomicIdempotentAndMemberOnly() throws Exception {
+        String id=UUID.randomUUID().toString();
+        String body=json.writeValueAsString(Map.of("request_id",id,"kitchen_id",kitchen,"items",List.of(
+            Map.of("name","receipt milk","quantity","2 cartons","storage","冷藏","estimated_days",7),
+            Map.of("name","receipt rice","quantity","1kg","storage","常温","estimated_days",180))));
+        mvc.perform(post("/api/receipts/import").contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/receipts/import").header("Authorization",otherAuth).contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isNotFound());
+        for(int i=0;i<2;i++)mvc.perform(post("/api/receipts/import").header("Authorization",ownerAuth).contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isOk()).andExpect(jsonPath("$.data").value(2));
+        assertEquals(2,db.queryForObject("SELECT COUNT(*) FROM fridge_item WHERE kitchen_id=?",Integer.class,kitchen));
+        mvc.perform(post("/api/receipts/import").header("Authorization",ownerAuth).contentType(MediaType.APPLICATION_JSON).content(body.replace("2 cartons","3 cartons"))).andExpect(status().isConflict());
+        String invalid=body.replace(id,UUID.randomUUID().toString()).replace("180","0");
+        mvc.perform(post("/api/receipts/import").header("Authorization",ownerAuth).contentType(MediaType.APPLICATION_JSON).content(invalid)).andExpect(status().isBadRequest());
+        assertEquals(2,db.queryForObject("SELECT COUNT(*) FROM fridge_item WHERE kitchen_id=?",Integer.class,kitchen));
+        assertEquals(1,db.queryForObject("SELECT COUNT(*) FROM receipt_import WHERE user_id=?",Integer.class,owner));
+    }
+    @Test void receiptRecognitionRequiresMembershipAndConfiguration() throws Exception {
+        var image=new MockMultipartFile("image","receipt.png","image/png",new byte[]{1});
+        mvc.perform(multipart("/api/receipts/recognize").file(image).param("kitchenId",String.valueOf(kitchen))).andExpect(status().isUnauthorized());
+        mvc.perform(multipart("/api/receipts/recognize").file(image).param("kitchenId",String.valueOf(kitchen)).header("Authorization",otherAuth)).andExpect(status().isNotFound());
+        mvc.perform(multipart("/api/receipts/recognize").file(image).param("kitchenId",String.valueOf(kitchen)).header("Authorization",ownerAuth)).andExpect(status().isServiceUnavailable());
+    }
+
+    @Test void receiptImagePassesThroughProviderAndReturnsEditableFields() throws Exception {
+        var server=com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress("127.0.0.1",0),0);
+        var captured=new java.util.concurrent.atomic.AtomicReference<String>();
+        server.createContext("/chat",exchange->{
+            captured.set(new String(exchange.getRequestBody().readAllBytes(),java.nio.charset.StandardCharsets.UTF_8));
+            String output="[{\"name\":\"牛奶\",\"quantity\":\"2盒\",\"storage\":\"冷藏\",\"estimated_days\":null}]";
+            byte[] bytes=json.writeValueAsBytes(Map.of("choices",List.of(Map.of("finish_reason","stop","message",Map.of("content",output)))));
+            exchange.sendResponseHeaders(200,bytes.length);exchange.getResponseBody().write(bytes);exchange.close();
+        });server.start();
+        var old=aiRoutes.getRoutes().get("vision");var route=new com.familyrecipes.ai.AiRoutes.Route();
+        route.setUrl("http://127.0.0.1:"+server.getAddress().getPort()+"/chat");route.setKey("test-only");route.setModel("glm-4.6v-flash");route.setThinkingType("disabled");
+        aiRoutes.getRoutes().put("vision",route);
+        try {
+            var bytes=new ByteArrayOutputStream();ImageIO.write(new BufferedImage(10,20,BufferedImage.TYPE_INT_RGB),"png",bytes);
+            mvc.perform(multipart("/api/receipts/recognize").file(new MockMultipartFile("image","test.png","image/png",bytes.toByteArray())).param("kitchenId",String.valueOf(kitchen)).header("Authorization",ownerAuth))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data[0].name").value("牛奶")).andExpect(jsonPath("$.data[0].quantity").value("2盒"));
+            var request=json.readTree(captured.get());assertEquals("disabled",request.path("thinking").path("type").asText());
+            assertTrue(request.path("messages").get(0).path("content").get(1).path("image_url").path("url").asText().startsWith("data:image/png;base64,"));
+            mvc.perform(multipart("/api/receipts/recognize").file(new MockMultipartFile("image","bad.png","image/png",new byte[]{1})).param("kitchenId",String.valueOf(kitchen)).header("Authorization",ownerAuth)).andExpect(status().isBadRequest());
+        }finally{aiRoutes.getRoutes().put("vision",old);server.stop(0);}
     }
 }

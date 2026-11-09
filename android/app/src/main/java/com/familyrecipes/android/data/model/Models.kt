@@ -87,7 +87,8 @@ data class RecipeTag(
     val id: Long?,
     @SerializedName("recipe_id") val recipeId: Long?,
     @SerializedName("tag_type") val tagType: String,
-    @SerializedName("tag_value") val tagValue: String
+    @SerializedName("tag_value") val tagValue: String,
+    @SerializedName("display_value") val displayValue: String? = null
 ) {
     companion object {
         const val TYPE_MEAL_TIME = "meal_time"
@@ -286,6 +287,7 @@ data class GroupMember(
  * 消息
  */
 data class Message(
+    val translation: ChatTranslation? = null,
     val localError: String? = null,
     @SerializedName("client_message_id") val clientMessageId: String? = null,
     val id: Long?,
@@ -316,3 +318,17 @@ data class MealArrangement(val id:Long?=null,@SerializedName("owner_id") val own
  val dishes:List<MealDish> = emptyList(),val shopping:List<ShoppingItem> = emptyList(),
  @SerializedName("source_id") val sourceId:Long?=null,val revision:Int?=null)
 data class CookingRecord(val id:Long?=null,@SerializedName("cooked_at") val cookedAt:String,val notes:String,val images:String="[]")
+
+
+data class ChatTranslationRequest(@SerializedName("group_id") val groupId: Long, val ids: List<Long>)
+data class ChatTranslation(val status: String, val text: String?, val language: String)
+
+data class TagOption(val value: String, val name: String)
+
+
+data class FriendSearchUser(val id:Long,val username:String,val avatar:String?)
+data class FriendInvitation(val id:Long,@SerializedName("sender_id") val senderId:Long,@SerializedName("recipient_id") val recipientId:Long,val username:String,val avatar:String?)
+
+// Receipt drafts stay editable until one atomic, idempotent inventory import.
+data class ReceiptItem(val name: String?, val quantity: String?, val storage: String?, @SerializedName("estimated_days") val estimatedDays: Int?)
+data class ReceiptImportRequest(@SerializedName("request_id") val requestId: String, @SerializedName("kitchen_id") val kitchenId: Long, val items: List<ReceiptItem>)

@@ -1,0 +1,7 @@
+<resources>
+    <string name="content_sources">Sources and licenses</string>
+    <string name="sources_intro">Public recipes come from the contributors listed below. Formatting has been adapted; translations are machine-generated. Each entry and image retains its own license, including applicable requirements for adaptations.</string>
+    <string name="sources_more">Load more</string>
+    <string name="sources_retry">Could not load. Tap to retry</string>
+    <string name="translation_note">Content follows your chosen language. Original text is shown until translation is ready. Editors retain the original content.</string>
+</resources>

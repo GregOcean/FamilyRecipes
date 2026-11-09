@@ -188,15 +188,22 @@ class GroupChatActivity : AppCompatActivity() {
         }
     }
     private suspend fun loadMembers(): Boolean {
+        GroupCache.detail(account,groupId)?.let { cached ->
+            members=cached.members.orEmpty()
+            adapter.members=members
+            adapter.notifyDataSetChanged()
+        }
         return try {
             val group = Ui.data(ApiClient.getService().getGroupDetail(groupId))
+            if(account!=LocalStore.account) return false
+            GroupCache.saveDetail(account,group)
             members = group.members.orEmpty()
             binding.tvGroupName.text = getString(R.string.chat_group_count, group.name, members.size)
             adapter.members = members
             adapter.notifyDataSetChanged()
             true
         } catch(e: CancellationException) { throw e }
-          catch(_: Exception) { false }
+          catch(_: Exception) { members.isNotEmpty() }
     }
     private fun sheet(title: String = ""): Pair<BottomSheetDialog, LinearLayout> {
         val dialog = BottomSheetDialog(this)
@@ -220,6 +227,10 @@ class GroupChatActivity : AppCompatActivity() {
             if(!success) {
                 body.addView(Ui.button(this@GroupChatActivity, s(R.string.chat_failed_load)) { load() }); return@launch
             }
+            if(!mention)body.addView(Ui.button(this@GroupChatActivity,getString(R.string.group_manage_members)) {
+                dialog.dismiss()
+                startActivity(Intent(this@GroupChatActivity,com.familyrecipes.android.ui.settings.GroupSettingsActivity::class.java).putExtra("group_id",groupId))
+            })
             body.addView(Ui.text(this@GroupChatActivity, s(R.string.chat_member_hint), 14f))
             if(members.none { it.userId != userId }) body.addView(Ui.text(this@GroupChatActivity, s(R.string.chat_no_members)))
             members.forEach { member ->
@@ -296,7 +307,13 @@ class GroupChatActivity : AppCompatActivity() {
                     .filter { it.ownerId==userId && it.kind==kind }.distinctBy { it.id }
                 if(!dialog.isShowing) return@launch
                 body.removeAllViews()
-                if(meals.isEmpty()) body.addView(Ui.text(this@GroupChatActivity,s(R.string.chat_no_meals)))
+                if(meals.isEmpty()) {
+                    dialog.dismiss()
+                    val kitchen=kitchens.firstOrNull { it.groupId==groupId } ?: kitchens.firstOrNull { it.id==PreferenceManager.currentKitchenId }
+                    startActivity(Intent(this@GroupChatActivity,com.familyrecipes.android.ui.meal.MealEditorActivity::class.java)
+                        .putExtra("kind",kind).putExtra("kitchen_id",kitchen?.id?:0L))
+                    return@launch
+                }
                 meals.forEach { meal ->
                     val subtitle=listOfNotNull(kitchens.find{it.id==meal.kitchenId}?.name,meal.mealDate,meal.meal?.let{UiStrings.domain(it)})
                         .filter{it.isNotBlank()}.joinToString(" · ")

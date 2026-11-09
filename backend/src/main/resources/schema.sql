@@ -26,7 +26,7 @@ CREATE TABLE `recipe` (
     `creator_id` BIGINT NOT NULL COMMENT '创建者ID',
     `view_count` INT DEFAULT 0 COMMENT '浏览次数',
     `dislike_count` INT NOT NULL DEFAULT 0,
-    `visibility` VARCHAR(20) NOT NULL DEFAULT 'private',
+    `visibility` VARCHAR(20) NOT NULL DEFAULT 'public',
     `shared_group_ids` JSON,
     `owner_group_id` BIGINT,
     `favorite_count` INT DEFAULT 0 COMMENT '收藏次数',
@@ -429,3 +429,57 @@ CREATE TABLE IF NOT EXISTS recipe_chat_share (
   PRIMARY KEY (recipe_id, group_id),
   INDEX idx_recipe_chat_group (group_id)
 );
+CREATE TABLE IF NOT EXISTS content_translations (
+ id BIGINT PRIMARY KEY AUTO_INCREMENT,
+ source_hash CHAR(64) NOT NULL,
+ target_language VARCHAR(8) NOT NULL,
+ engine VARCHAR(180) NOT NULL,
+ source_text MEDIUMTEXT NOT NULL,
+ kind VARCHAR(16) NOT NULL,
+ translated_text MEDIUMTEXT,
+ status VARCHAR(16) NOT NULL DEFAULT 'pending',
+ attempts INT NOT NULL DEFAULT 0,
+ last_error VARCHAR(100),
+ next_attempt_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ UNIQUE KEY translation_identity(source_hash,target_language,engine),
+ INDEX translation_queue(status,next_attempt_at)
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS recipe_provenance (
+ recipe_id BIGINT PRIMARY KEY,
+ source_identity CHAR(64) NOT NULL UNIQUE,
+ metadata JSON NOT NULL,
+ created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ FOREIGN KEY(recipe_id) REFERENCES recipe(id) ON DELETE CASCADE
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS recipe_view_history (
+ user_id BIGINT NOT NULL,
+ recipe_id BIGINT NOT NULL,
+ viewed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ PRIMARY KEY(user_id,recipe_id),
+ INDEX idx_recent_views(user_id,viewed_at),
+ FOREIGN KEY(user_id) REFERENCES user(id) ON DELETE CASCADE,
+ FOREIGN KEY(recipe_id) REFERENCES recipe(id) ON DELETE CASCADE
+);
+-- Idempotency ledger; keep rows so network retries never duplicate inventory.
+CREATE TABLE IF NOT EXISTS receipt_import (
+    user_id BIGINT NOT NULL,
+    request_id VARCHAR(36) NOT NULL,
+    kitchen_id BIGINT NOT NULL,
+    payload_hash CHAR(64) NOT NULL,
+    item_count INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(user_id, request_id)
+);
+
+CREATE TABLE IF NOT EXISTS recipe_classification (
+    recipe_id BIGINT PRIMARY KEY,
+    status VARCHAR(20) NOT NULL,
+    attempts INT NOT NULL DEFAULT 0,
+    next_attempt_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    source_hash VARCHAR(64),
+    model VARCHAR(100),
+    result_json JSON,
+    FOREIGN KEY (recipe_id) REFERENCES recipe(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
