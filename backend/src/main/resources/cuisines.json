@@ -1,0 +1,899 @@
+[
+  {
+    "value": "region:china",
+    "name": "中国",
+    "en": "China",
+    "aliases": [],
+    "children": [
+      {
+        "value": "region:china-eight",
+        "name": "八大菜系",
+        "en": "Eight major cuisines",
+        "aliases": [],
+        "children": [
+          {
+            "value": "川菜",
+            "name": "川菜",
+            "en": "Sichuan",
+            "aliases": [
+              "四川菜",
+              "四川"
+            ],
+            "children": []
+          },
+          {
+            "value": "粤菜",
+            "name": "粤菜",
+            "en": "Cantonese",
+            "aliases": [
+              "广东菜",
+              "广东"
+            ],
+            "children": []
+          },
+          {
+            "value": "湘菜",
+            "name": "湘菜",
+            "en": "Hunan",
+            "aliases": [
+              "湖南菜",
+              "湖南"
+            ],
+            "children": []
+          },
+          {
+            "value": "鲁菜",
+            "name": "鲁菜",
+            "en": "Shandong",
+            "aliases": [
+              "山东菜",
+              "山东"
+            ],
+            "children": []
+          },
+          {
+            "value": "苏菜",
+            "name": "苏菜",
+            "en": "Jiangsu",
+            "aliases": [
+              "江苏菜",
+              "江苏"
+            ],
+            "children": []
+          },
+          {
+            "value": "浙菜",
+            "name": "浙菜",
+            "en": "Zhejiang",
+            "aliases": [
+              "浙江菜",
+              "浙江"
+            ],
+            "children": []
+          },
+          {
+            "value": "闽菜",
+            "name": "闽菜",
+            "en": "Fujian",
+            "aliases": [
+              "福建菜",
+              "福建"
+            ],
+            "children": []
+          },
+          {
+            "value": "徽菜",
+            "name": "徽菜",
+            "en": "Anhui",
+            "aliases": [
+              "安徽菜",
+              "安徽"
+            ],
+            "children": []
+          }
+        ]
+      },
+      {
+        "value": "region:china-provinces",
+        "name": "其他省级风味",
+        "en": "Other provincial cuisines",
+        "aliases": [],
+        "children": [
+          {
+            "value": "北京菜",
+            "name": "北京菜",
+            "en": "Beijing",
+            "aliases": [
+              "北京"
+            ],
+            "children": []
+          },
+          {
+            "value": "天津菜",
+            "name": "天津菜",
+            "en": "Tianjin",
+            "aliases": [
+              "天津"
+            ],
+            "children": []
+          },
+          {
+            "value": "河北菜",
+            "name": "河北菜",
+            "en": "Hebei",
+            "aliases": [
+              "河北"
+            ],
+            "children": []
+          },
+          {
+            "value": "山西菜",
+            "name": "山西菜",
+            "en": "Shanxi",
+            "aliases": [
+              "山西"
+            ],
+            "children": []
+          },
+          {
+            "value": "内蒙古菜",
+            "name": "内蒙古菜",
+            "en": "Inner Mongolia",
+            "aliases": [
+              "内蒙古"
+            ],
+            "children": []
+          },
+          {
+            "value": "辽宁菜",
+            "name": "辽宁菜",
+            "en": "Liaoning",
+            "aliases": [
+              "辽宁"
+            ],
+            "children": []
+          },
+          {
+            "value": "吉林菜",
+            "name": "吉林菜",
+            "en": "Jilin",
+            "aliases": [
+              "吉林"
+            ],
+            "children": []
+          },
+          {
+            "value": "黑龙江菜",
+            "name": "黑龙江菜",
+            "en": "Heilongjiang",
+            "aliases": [
+              "黑龙江"
+            ],
+            "children": []
+          },
+          {
+            "value": "上海菜",
+            "name": "上海菜",
+            "en": "Shanghai",
+            "aliases": [
+              "上海"
+            ],
+            "children": []
+          },
+          {
+            "value": "江西菜",
+            "name": "江西菜",
+            "en": "Jiangxi",
+            "aliases": [
+              "江西"
+            ],
+            "children": []
+          },
+          {
+            "value": "河南菜",
+            "name": "河南菜",
+            "en": "Henan",
+            "aliases": [
+              "河南"
+            ],
+            "children": []
+          },
+          {
+            "value": "湖北菜",
+            "name": "湖北菜",
+            "en": "Hubei",
+            "aliases": [
+              "湖北"
+            ],
+            "children": []
+          },
+          {
+            "value": "广西菜",
+            "name": "广西菜",
+            "en": "Guangxi",
+            "aliases": [
+              "广西"
+            ],
+            "children": []
+          },
+          {
+            "value": "海南菜",
+            "name": "海南菜",
+            "en": "Hainan",
+            "aliases": [
+              "海南"
+            ],
+            "children": []
+          },
+          {
+            "value": "重庆菜",
+            "name": "重庆菜",
+            "en": "Chongqing",
+            "aliases": [
+              "重庆"
+            ],
+            "children": []
+          },
+          {
+            "value": "贵州菜",
+            "name": "贵州菜",
+            "en": "Guizhou",
+            "aliases": [
+              "贵州"
+            ],
+            "children": []
+          },
+          {
+            "value": "云南菜",
+            "name": "云南菜",
+            "en": "Yunnan",
+            "aliases": [
+              "云南"
+            ],
+            "children": []
+          },
+          {
+            "value": "西藏菜",
+            "name": "西藏菜",
+            "en": "Tibet",
+            "aliases": [
+              "西藏"
+            ],
+            "children": []
+          },
+          {
+            "value": "陕西菜",
+            "name": "陕西菜",
+            "en": "Shaanxi",
+            "aliases": [
+              "陕西"
+            ],
+            "children": []
+          },
+          {
+            "value": "甘肃菜",
+            "name": "甘肃菜",
+            "en": "Gansu",
+            "aliases": [
+              "甘肃"
+            ],
+            "children": []
+          },
+          {
+            "value": "青海菜",
+            "name": "青海菜",
+            "en": "Qinghai",
+            "aliases": [
+              "青海"
+            ],
+            "children": []
+          },
+          {
+            "value": "宁夏菜",
+            "name": "宁夏菜",
+            "en": "Ningxia",
+            "aliases": [
+              "宁夏"
+            ],
+            "children": []
+          },
+          {
+            "value": "新疆菜",
+            "name": "新疆菜",
+            "en": "Xinjiang",
+            "aliases": [
+              "新疆"
+            ],
+            "children": []
+          }
+        ]
+      },
+      {
+        "value": "region:china-home",
+        "name": "家常与港澳台",
+        "en": "Home-style, Hong Kong, Macao & Taiwan",
+        "aliases": [],
+        "children": [
+          {
+            "value": "中式家常",
+            "name": "中式家常",
+            "en": "Chinese home-style",
+            "aliases": [
+              "CN",
+              "中国",
+              "China",
+              "Chinese",
+              "中餐"
+            ],
+            "children": []
+          },
+          {
+            "value": "港式",
+            "name": "港式",
+            "en": "Hong Kong",
+            "aliases": [
+              "HK",
+              "香港",
+              "Hong Kong"
+            ],
+            "children": []
+          },
+          {
+            "value": "澳门菜",
+            "name": "澳门菜",
+            "en": "Macao",
+            "aliases": [
+              "MO",
+              "澳门",
+              "Macao"
+            ],
+            "children": []
+          },
+          {
+            "value": "台湾菜",
+            "name": "台湾菜",
+            "en": "Taiwan",
+            "aliases": [
+              "TW",
+              "台湾",
+              "Taiwan"
+            ],
+            "children": []
+          }
+        ]
+      },
+      {
+        "value": "region:china-legacy",
+        "name": "其他中国地域风味",
+        "en": "Other Chinese regional styles",
+        "aliases": [],
+        "children": [
+          {
+            "value": "东北菜",
+            "name": "东北菜",
+            "en": "Northeastern Chinese",
+            "aliases": [],
+            "children": []
+          },
+          {
+            "value": "西北菜",
+            "name": "西北菜",
+            "en": "Northwestern Chinese",
+            "aliases": [],
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "value": "region:east-asia",
+    "name": "东亚",
+    "en": "East Asia",
+    "aliases": [],
+    "children": [
+      {
+        "value": "日式",
+        "name": "日本",
+        "en": "Japan",
+        "aliases": [
+          "JP",
+          "日本",
+          "Japan",
+          "Japanese"
+        ],
+        "children": []
+      },
+      {
+        "value": "韩式",
+        "name": "韩国 / 朝鲜",
+        "en": "Korea",
+        "aliases": [
+          "KR",
+          "KP",
+          "韩国",
+          "朝鲜",
+          "South Korea",
+          "Korean"
+        ],
+        "children": []
+      },
+      {
+        "value": "蒙古菜",
+        "name": "蒙古",
+        "en": "Mongolia",
+        "aliases": [
+          "MN",
+          "蒙古",
+          "Mongolia"
+        ],
+        "children": []
+      }
+    ]
+  },
+  {
+    "value": "region:southeast-asia",
+    "name": "东南亚",
+    "en": "Southeast Asia",
+    "aliases": [],
+    "children": [
+      {
+        "value": "泰式",
+        "name": "泰国",
+        "en": "Thailand",
+        "aliases": [
+          "TH",
+          "泰国",
+          "Thailand"
+        ],
+        "children": []
+      },
+      {
+        "value": "越南菜",
+        "name": "越南",
+        "en": "Vietnam",
+        "aliases": [
+          "VN",
+          "越南",
+          "Vietnam"
+        ],
+        "children": []
+      },
+      {
+        "value": "马来菜",
+        "name": "马来西亚",
+        "en": "Malaysia",
+        "aliases": [
+          "MY",
+          "马来西亚",
+          "Malaysia"
+        ],
+        "children": []
+      },
+      {
+        "value": "新加坡菜",
+        "name": "新加坡",
+        "en": "Singapore",
+        "aliases": [
+          "SG",
+          "新加坡",
+          "Singapore"
+        ],
+        "children": []
+      },
+      {
+        "value": "印尼菜",
+        "name": "印度尼西亚",
+        "en": "Indonesia",
+        "aliases": [
+          "ID",
+          "印度尼西亚",
+          "Indonesia"
+        ],
+        "children": []
+      },
+      {
+        "value": "菲律宾菜",
+        "name": "菲律宾",
+        "en": "Philippines",
+        "aliases": [
+          "PH",
+          "菲律宾",
+          "Philippines"
+        ],
+        "children": []
+      },
+      {
+        "value": "缅甸菜",
+        "name": "缅甸",
+        "en": "Myanmar",
+        "aliases": [
+          "MM",
+          "缅甸",
+          "Myanmar"
+        ],
+        "children": []
+      },
+      {
+        "value": "柬埔寨菜",
+        "name": "柬埔寨",
+        "en": "Cambodia",
+        "aliases": [
+          "KH",
+          "柬埔寨",
+          "Cambodia"
+        ],
+        "children": []
+      },
+      {
+        "value": "老挝菜",
+        "name": "老挝",
+        "en": "Laos",
+        "aliases": [
+          "LA",
+          "老挝",
+          "Laos"
+        ],
+        "children": []
+      },
+      {
+        "value": "文莱菜",
+        "name": "文莱",
+        "en": "Brunei",
+        "aliases": [
+          "BN",
+          "文莱",
+          "Brunei"
+        ],
+        "children": []
+      }
+    ]
+  },
+  {
+    "value": "region:europe",
+    "name": "欧洲（含俄罗斯）",
+    "en": "Europe (including Russia)",
+    "aliases": [],
+    "children": [
+      {
+        "value": "意大利菜",
+        "name": "意大利",
+        "en": "Italy",
+        "aliases": [
+          "IT",
+          "意大利",
+          "Italy"
+        ],
+        "children": []
+      },
+      {
+        "value": "法国菜",
+        "name": "法国",
+        "en": "France",
+        "aliases": [
+          "FR",
+          "法国",
+          "France"
+        ],
+        "children": []
+      },
+      {
+        "value": "西班牙菜",
+        "name": "西班牙",
+        "en": "Spain",
+        "aliases": [
+          "ES",
+          "西班牙",
+          "Spain"
+        ],
+        "children": []
+      },
+      {
+        "value": "葡萄牙菜",
+        "name": "葡萄牙",
+        "en": "Portugal",
+        "aliases": [
+          "PT",
+          "葡萄牙",
+          "Portugal"
+        ],
+        "children": []
+      },
+      {
+        "value": "德国菜",
+        "name": "德国",
+        "en": "Germany",
+        "aliases": [
+          "DE",
+          "德国",
+          "Germany"
+        ],
+        "children": []
+      },
+      {
+        "value": "英式",
+        "name": "英国",
+        "en": "United Kingdom",
+        "aliases": [
+          "GB",
+          "英国",
+          "United Kingdom"
+        ],
+        "children": []
+      },
+      {
+        "value": "希腊菜",
+        "name": "希腊",
+        "en": "Greece",
+        "aliases": [
+          "GR",
+          "希腊",
+          "Greece"
+        ],
+        "children": []
+      },
+      {
+        "value": "俄罗斯菜",
+        "name": "俄罗斯",
+        "en": "Russia",
+        "aliases": [
+          "RU",
+          "俄罗斯",
+          "Russia"
+        ],
+        "children": []
+      },
+      {
+        "value": "北欧",
+        "name": "北欧",
+        "en": "Northern Europe",
+        "aliases": [
+          "SE",
+          "NO",
+          "DK",
+          "FI",
+          "IS",
+          "瑞典",
+          "挪威",
+          "丹麦",
+          "芬兰",
+          "冰岛"
+        ],
+        "children": []
+      },
+      {
+        "value": "欧洲其他",
+        "name": "欧洲其他",
+        "en": "Other Europe",
+        "aliases": [
+          "NL",
+          "BE",
+          "CH",
+          "AT",
+          "PL",
+          "CZ",
+          "HU",
+          "RO",
+          "UA",
+          "IE",
+          "欧洲菜"
+        ],
+        "children": []
+      }
+    ]
+  },
+  {
+    "value": "region:other",
+    "name": "其他地区",
+    "en": "Other regions",
+    "aliases": [],
+    "children": [
+      {
+        "value": "印度菜",
+        "name": "印度",
+        "en": "India",
+        "aliases": [
+          "IN",
+          "印度",
+          "India",
+          "Indian"
+        ],
+        "children": []
+      },
+      {
+        "value": "南亚",
+        "name": "南亚（其他或未细分）",
+        "en": "South Asia (other or unspecified)",
+        "aliases": [
+          "PK",
+          "BD",
+          "LK",
+          "NP",
+          "不丹",
+          "BT",
+          "MV"
+        ],
+        "children": []
+      },
+      {
+        "value": "中东",
+        "name": "中东",
+        "en": "Middle East",
+        "aliases": [
+          "土耳其菜",
+          "TR",
+          "土耳其",
+          "Turkey",
+          "IR",
+          "IQ",
+          "IL",
+          "LB",
+          "SY",
+          "JO",
+          "SA",
+          "AE",
+          "QA",
+          "OM",
+          "YE",
+          "KW",
+          "BH",
+          "PS",
+          "中东菜"
+        ],
+        "children": []
+      },
+      {
+        "value": "南美",
+        "name": "南美",
+        "en": "South America",
+        "aliases": [
+          "BR",
+          "AR",
+          "CL",
+          "PE",
+          "CO",
+          "EC",
+          "BO",
+          "UY",
+          "PY",
+          "VE",
+          "巴西",
+          "Brazil",
+          "阿根廷"
+        ],
+        "children": []
+      },
+      {
+        "value": "北美",
+        "name": "北美",
+        "en": "North America",
+        "aliases": [
+          "美式",
+          "墨西哥菜",
+          "US",
+          "CA",
+          "MX",
+          "美国",
+          "加拿大",
+          "墨西哥",
+          "United States",
+          "American",
+          "Mexican",
+          "Mexico"
+        ],
+        "children": []
+      },
+      {
+        "value": "中美洲与加勒比",
+        "name": "中美洲与加勒比",
+        "en": "Central America & Caribbean",
+        "aliases": [
+          "CU",
+          "JM",
+          "HT",
+          "DO",
+          "CR",
+          "GT",
+          "PA",
+          "BZ",
+          "HN",
+          "NI",
+          "SV",
+          "TT"
+        ],
+        "children": []
+      },
+      {
+        "value": "region:africa",
+        "name": "非洲",
+        "en": "Africa",
+        "aliases": [],
+        "children": [
+          {
+            "value": "北非",
+            "name": "北非",
+            "en": "North Africa",
+            "aliases": [
+              "MA",
+              "DZ",
+              "TN",
+              "LY",
+              "EG",
+              "摩洛哥",
+              "埃及"
+            ],
+            "children": []
+          },
+          {
+            "value": "非洲南部",
+            "name": "非洲南部",
+            "en": "Southern Africa",
+            "aliases": [
+              "ZA",
+              "NA",
+              "BW",
+              "ZW",
+              "ZM",
+              "MZ",
+              "LS",
+              "SZ",
+              "南非"
+            ],
+            "children": []
+          },
+          {
+            "value": "非洲其他",
+            "name": "非洲其他",
+            "en": "Other Africa",
+            "aliases": [
+              "非洲菜",
+              "NG",
+              "GH",
+              "KE",
+              "ET",
+              "TZ",
+              "UG",
+              "SN",
+              "CM",
+              "CD"
+            ],
+            "children": []
+          }
+        ]
+      },
+      {
+        "value": "澳洲",
+        "name": "澳洲",
+        "en": "Australia",
+        "aliases": [
+          "AU",
+          "澳大利亚",
+          "Australia",
+          "澳洲菜"
+        ],
+        "children": []
+      },
+      {
+        "value": "大洋洲其他",
+        "name": "大洋洲其他",
+        "en": "Other Oceania",
+        "aliases": [
+          "NZ",
+          "FJ",
+          "PG",
+          "WS",
+          "TO",
+          "新西兰"
+        ],
+        "children": []
+      },
+      {
+        "value": "其他",
+        "name": "其他",
+        "en": "Other / fusion",
+        "aliases": [],
+        "children": []
+      }
+    ]
+  }
+]

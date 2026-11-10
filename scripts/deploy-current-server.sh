@@ -63,7 +63,7 @@ for fr_column in notes sort_order; do
     fi
 done
 echo "迁移菜谱可见性：旧私有菜谱将改为公开，群组可见保持不变。数据库备份：$fr_backup/family_recipes.sql.gz"
-for fr_migration in 2026-11-08-translations.sql 2026-11-08-recommendation-signals.sql 2026-11-08-receipt-import.sql 2026-11-08-public-recipes.sql 2026-11-09-recipe-classification.sql; do
+for fr_migration in 2026-11-08-translations.sql 2026-11-08-recommendation-signals.sql 2026-11-08-receipt-import.sql 2026-11-08-public-recipes.sql 2026-11-09-recipe-classification.sql 2026-11-10-cuisine-refinement.sql; do
     mysql family_recipes < "$fr_migration"
 done
 if [[ -f /var/www/familyrecipes-apk/release.json ]]; then

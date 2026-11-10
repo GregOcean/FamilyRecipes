@@ -130,6 +130,9 @@ interface ApiService {
     @GET("/api/recipes/recently-cooked")
     suspend fun getRecentlyCooked(@Query("limit") limit: Int = 10): Response<ApiResponse<List<Recipe>>>
 
+    @GET("/api/recipes/cuisines/tree")
+    suspend fun getCuisineTree(): Response<ApiResponse<List<CuisineOption>>>
+
     @GET("/api/recipes/tags/{tagType}/options")
     suspend fun getTagOptions(@Path("tagType") tagType: String): Response<ApiResponse<List<TagOption>>>
 

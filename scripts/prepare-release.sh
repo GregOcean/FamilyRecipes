@@ -26,7 +26,7 @@ mkdir -p "$fr_bundle"
 cp backend/target/backend-1.0.0.jar "$fr_bundle/"
 cp android/app/build/outputs/apk/release/app-release.apk "$fr_bundle/FamilyRecipes-$fr_version.apk"
 cp scripts/deploy-current-server.sh "$fr_bundle/"
-for fr_migration in 2026-11-08-translations.sql 2026-11-08-recommendation-signals.sql 2026-11-08-receipt-import.sql 2026-11-08-public-recipes.sql 2026-11-09-recipe-classification.sql; do
+for fr_migration in 2026-11-08-translations.sql 2026-11-08-recommendation-signals.sql 2026-11-08-receipt-import.sql 2026-11-08-public-recipes.sql 2026-11-09-recipe-classification.sql 2026-11-10-cuisine-refinement.sql; do
     cp "backend/src/main/resources/migrations/$fr_migration" "$fr_bundle/"
 done
 printf '%s\n' "$fr_version" > "$fr_bundle/VERSION"

@@ -303,6 +303,11 @@ public class RecipeController {
     /**
      * 获取标签选项
      */
+    @GetMapping("/cuisines/tree")
+    public Result<List<java.util.Map<String,Object>>> cuisineTree(HttpServletRequest request) {
+        return Result.success(com.familyrecipes.service.CuisineCatalog.tree("en".equals(com.familyrecipes.translation.TranslationService.language(request.getHeader("Accept-Language")))));
+    }
+
     @GetMapping("/tags/{tagType}/options")
     public Result<List<java.util.Map<String,String>>> tagOptions(@PathVariable String tagType,HttpServletRequest request) {
         return Result.success(recipeService.getTagValues(tagType,(Long)request.getAttribute("userId")).stream()

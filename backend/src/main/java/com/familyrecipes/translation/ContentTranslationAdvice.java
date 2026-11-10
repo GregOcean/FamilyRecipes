@@ -21,6 +21,7 @@ public class ContentTranslationAdvice implements ResponseBodyAdvice<Object> {
     public boolean supports(MethodParameter p,Class<? extends HttpMessageConverter<?>> c) {return true;}
     public Object beforeBodyWrite(Object body,MethodParameter p,MediaType t,Class<? extends HttpMessageConverter<?>> c,ServerHttpRequest req,ServerHttpResponse res) {
         String path=req.getURI().getPath();
+        if(path.equals("/api/recipes/cuisines/tree")) return body;
         if(body==null || !(path.startsWith("/api/recipes") || path.startsWith("/api/fridge") || path.startsWith("/api/inventory/categories") || path.startsWith("/api/meals") || path.startsWith("/api/search"))) return body;
         JsonNode tree=json.valueToTree(body);
         if(tree.path("code").asInt()!=200 || tree.path("data").isNull()) return body;
@@ -41,6 +42,10 @@ public class ContentTranslationAdvice implements ResponseBodyAdvice<Object> {
             if(SKIP.contains(key) || (key.equals("category") && !object.has("category_id"))) continue;
             if(key.equals("tag_value") && value.isTextual()) {
                 String source=value.asText();
+                if("cuisine".equals(object.path("tag_type").asText())) {
+                    if(display)object.put("display_value",com.familyrecipes.service.CuisineCatalog.label(source,"en".equals(language)));
+                    continue;
+                }
                 var tr=translations.lookup(source,language,"content",enqueue);
                 if(display && "ready".equals(tr.status())) object.put("display_value",tr.text());
                 continue;

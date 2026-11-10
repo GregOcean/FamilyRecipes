@@ -1,1 +1,1 @@
-<resources><string name="cuisine_all">菜系不限</string><string name="cuisine_choose">选择菜系</string></resources>
+<resources><string name="cuisine_all">菜系不限</string><string name="cuisine_choose">选择菜系</string><string name="cuisine_all_in">%1$s · 全部</string></resources>

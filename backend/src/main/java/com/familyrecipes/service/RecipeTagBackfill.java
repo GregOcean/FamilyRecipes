@@ -15,7 +15,7 @@ import java.util.*;
 public class RecipeTagBackfill {
     static final Map<String,List<String>> ALLOWED=Map.of(
         "taste",List.of("清淡","鲜香","酸","甜","辣","麻","苦"),
-        "cuisine",List.of("川菜","粤菜","湘菜","鲁菜","苏菜","浙菜","闽菜","徽菜","东北菜","西北菜","云南菜","港式","台湾菜","中式家常","日式","韩式","泰式","越南菜","印度菜","马来菜","新加坡菜","印尼菜","意大利菜","法国菜","西班牙菜","希腊菜","土耳其菜","墨西哥菜","美式","英式","非洲菜","中东菜","其他"));
+        "cuisine",CuisineCatalog.labels());
     private final JdbcTemplate db;
     private final ObjectMapper json;
     private final ChatCompletionClient client;
@@ -51,7 +51,7 @@ public class RecipeTagBackfill {
                 +"Use ingredients, method and description as evidence; do not infer cuisine solely from language or website. "
                 +"Return JSON with taste and cuisine arrays using only these labels: "+json.writeValueAsString(ALLOWED)
                 +". At most 4 taste labels and 2 cuisines. Use an empty array when evidence is insufficient. Include a brief evidence string.";
-            var result=parse(client.complete(AiRoutes.TRANSLATION,List.of(Map.of("role","system","content",prompt),Map.of("role","user","content",source))),json);
+            var result=parse(client.complete(AiRoutes.TRANSLATION,List.of(Map.of("role","system","content",prompt),Map.of("role","user","content",source.substring(0,Math.min(24000,source.length()))))),json);
             tx.executeWithoutResult(status->{
                 if(db.queryForList("SELECT id FROM recipe WHERE id=? FOR UPDATE",Long.class,id).isEmpty())return;
                 if(!hash.equals(TranslationService.digest(source(id)))) {
@@ -74,13 +74,13 @@ public class RecipeTagBackfill {
             db.update("UPDATE recipe_classification SET status='failed' WHERE recipe_id=?",id);
         }
     }
-    private String source(long id) {
+    String source(long id) {
         try {
             var recipe=db.queryForMap("SELECT name,description FROM recipe WHERE id=?",id);
             var content=new LinkedHashMap<String,Object>();content.put("recipe",recipe);
             content.put("ingredients",db.queryForList("SELECT i.name,ri.amount FROM recipe_ingredient ri JOIN ingredient i ON i.id=ri.ingredient_id WHERE ri.recipe_id=? ORDER BY ri.id",id));
             content.put("steps",db.queryForList("SELECT description FROM cooking_step WHERE recipe_id=? ORDER BY step_number,id",id));
-            String text=json.writeValueAsString(content);return text.length()>24000?text.substring(0,24000):text;
+            return json.writeValueAsString(content);
         } catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalStateException(e);}
     }
     static JsonNode parse(String text,ObjectMapper json) throws Exception {

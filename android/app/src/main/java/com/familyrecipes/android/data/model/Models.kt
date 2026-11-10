@@ -324,6 +324,7 @@ data class ChatTranslationRequest(@SerializedName("group_id") val groupId: Long,
 data class ChatTranslation(val status: String, val text: String?, val language: String)
 
 data class TagOption(val value: String, val name: String)
+data class CuisineOption(val value: String, val name: String, val children: List<CuisineOption> = emptyList(), val aliases: List<String> = emptyList())
 
 
 data class FriendSearchUser(val id:Long,val username:String,val avatar:String?)

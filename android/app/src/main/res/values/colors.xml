@@ -34,7 +34,7 @@
     <color name="category_child_selected_bg">#FFDCC5</color>
     <color name="category_text_normal">#69584C</color>
     <color name="category_text_selected">#883D29</color>
-    <color name="ic_launcher_background">#FFF0E1</color>
+    <color name="ic_launcher_background">#FFFFFF</color>
     <color name="surface">#FFFCF8</color>
     <color name="outline">#9C8574</color>
     <color name="on_primary">#FFFFFF</color>

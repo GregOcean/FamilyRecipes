@@ -168,15 +168,50 @@ class RecipeListFragment : Fragment(), SearchableFragment {
             }
         }
         val all=getString(com.familyrecipes.android.R.string.filter_any)
-        filter(com.familyrecipes.android.R.string.filter_cuisine,cuisine.ifBlank { all }) { button ->
+        var cuisineTree:List<com.familyrecipes.android.data.model.CuisineOption>?=null
+        val cuisineButton=filter(com.familyrecipes.android.R.string.filter_cuisine,cuisine.ifBlank { all }) { button ->
             viewLifecycleOwner.lifecycleScope.launch {
                 button.isEnabled=false
                 try {
-                    val choices=listOf(TagOption("",all))+Ui.data(ApiClient.getService().getTagOptions("cuisine"))
-                    options(button,com.familyrecipes.android.R.string.filter_cuisine,choices.map { it.name }) {
-                        cuisine=choices[it].value;load()
+                    val tree=cuisineTree ?: Ui.data(ApiClient.getService().getCuisineTree()).also { cuisineTree=it }
+                    val popup=PopupMenu(ctx,button)
+                    fun select(value:String,label:String) {
+                        cuisine=value;button.text=label
+                        button.contentDescription=getString(com.familyrecipes.android.R.string.filter_cuisine)+": "+label
+                        load()
                     }
+                    popup.menu.add(all).setOnMenuItemClickListener { select("",all);true }
+                    fun addNodes(menu:android.view.Menu,nodes:List<com.familyrecipes.android.data.model.CuisineOption>) {
+                        nodes.forEach { node ->
+                            if(node.children.isEmpty()) {
+                                menu.add(node.name).apply {
+                                    isCheckable=true;isChecked=cuisine==node.value || cuisine in node.aliases
+                                    setOnMenuItemClickListener { select(node.value,node.name);true }
+                                }
+                            } else {
+                                val sub=menu.addSubMenu(node.name)
+                                sub.add(getString(com.familyrecipes.android.R.string.cuisine_all_in,node.name))
+                                    .setOnMenuItemClickListener { select(node.value,node.name);true }
+                                addNodes(sub,node.children)
+                            }
+                        }
+                    }
+                    addNodes(popup.menu,tree);popup.show()
                 }catch(e:CancellationException){throw e}catch(e:Exception){Ui.toast(ctx,e)}finally{button.isEnabled=true}
+            }
+        }
+        if(cuisine.isNotBlank()) root.post {
+            if(view !== root) return@post
+            viewLifecycleOwner.lifecycleScope.launch {
+                try {
+                    val tree=Ui.data(ApiClient.getService().getCuisineTree());cuisineTree=tree
+                    fun find(nodes:List<com.familyrecipes.android.data.model.CuisineOption>):String? {
+                        for(node in nodes) {find(node.children)?.let{return it};if(node.value==cuisine || cuisine in node.aliases)return node.name}
+                        return null
+                    }
+                    cuisineButton.text=if(cuisine.isBlank())all else find(tree) ?: UiStrings.domain(cuisine)
+                    cuisineButton.contentDescription=getString(com.familyrecipes.android.R.string.filter_cuisine)+": "+cuisineButton.text
+                }catch(e:CancellationException){throw e}catch(_:Exception){ /* Discovery remains usable without taxonomy. */ }
             }
         }
         val tastes=listOf("", "酸", "辣", "酸辣", "清淡", "鲜香", "甜", "麻", "咸")

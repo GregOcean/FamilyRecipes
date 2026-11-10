@@ -96,6 +96,66 @@ class FoundationIntegrationTest {
 
     @Autowired FriendshipService friendshipService;
     @Autowired org.springframework.transaction.PlatformTransactionManager transactionManager;
+    @Autowired RecipeTagBackfill classificationContent;
+    private Recipe importedCuisine(String cuisine) {
+        var r=recipe("public");
+        db.update("DELETE FROM recipe_tag WHERE recipe_id=? AND tag_type='cuisine'",r.getId());
+        db.update("INSERT INTO recipe_tag(recipe_id,tag_type,tag_value) VALUES(?,'cuisine',?)",r.getId(),cuisine);
+        db.update("INSERT INTO recipe_provenance(recipe_id,source_identity,metadata) VALUES(?,?,'{}')",r.getId(),com.familyrecipes.translation.TranslationService.digest(UUID.randomUUID().toString()));
+        return r;
+    }
+    private CuisineRefinementService refinement(com.familyrecipes.ai.ChatCompletionClient client) {
+        return new CuisineRefinementService(db,json,client,new com.familyrecipes.ai.AiRoutes(),classificationContent,transactionManager);
+    }
+    @Test void cuisineRefinementIsImportedOnlyAdditiveAndIdempotent() throws Exception {
+        var coarse=importedCuisine("东北菜");var exact=importedCuisine("IN");
+        var personal=recipe("public");
+        db.update("UPDATE recipe_tag SET tag_value='东北菜' WHERE recipe_id=? AND tag_type='cuisine'",personal.getId());
+        var client=org.mockito.Mockito.mock(com.familyrecipes.ai.ChatCompletionClient.class);
+        org.mockito.Mockito.when(client.complete(org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyList())).thenReturn("{\"cuisine\":[\"辽宁菜\"],\"evidence\":\"test\"}");
+        var worker=refinement(client);
+        assertEquals(1,worker.audit().get("eligible_not_queued"));
+        assertEquals(1,worker.enqueue(owner,5));assertEquals(0,worker.enqueue(owner,5));
+        worker.processOne();worker.processOne();
+        assertEquals(Set.of("东北菜","辽宁菜"),new HashSet<>(db.queryForList("SELECT tag_value FROM recipe_tag WHERE recipe_id=? AND tag_type='cuisine'",String.class,coarse.getId())));
+        assertEquals("complete",db.queryForObject("SELECT status FROM recipe_cuisine_refinement WHERE recipe_id=?",String.class,coarse.getId()));
+        assertEquals(0,db.queryForObject("SELECT COUNT(*) FROM recipe_cuisine_refinement WHERE recipe_id IN (?,?)",Integer.class,exact.getId(),personal.getId()));
+        org.mockito.Mockito.verify(client,org.mockito.Mockito.times(1)).complete(org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyList());
+        mvc.perform(get("/api/catalog/cuisine-refinement")).andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/catalog/cuisine-refinement").header("Authorization",otherAuth)).andExpect(status().isForbidden());
+    }
+    @Test void cuisineRefinementDoesNotApplyAfterConcurrentEdit() throws Exception {
+        var r=importedCuisine("南亚");var client=org.mockito.Mockito.mock(com.familyrecipes.ai.ChatCompletionClient.class);
+        var worker=refinement(client);assertEquals(1,worker.enqueue(owner,5));
+        org.mockito.Mockito.when(client.complete(org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyList())).thenAnswer(call->{
+            db.update("UPDATE recipe SET description='edited after queue' WHERE id=?",r.getId());
+            return "{\"cuisine\":[\"印度菜\"]}";
+        });
+        worker.processOne();
+        assertEquals("stale",db.queryForObject("SELECT status FROM recipe_cuisine_refinement WHERE recipe_id=?",String.class,r.getId()));
+        assertEquals(List.of("南亚"),db.queryForList("SELECT tag_value FROM recipe_tag WHERE recipe_id=? AND tag_type='cuisine'",String.class,r.getId()));
+    }
+    @Test void cuisineRefinementFailureIsBoundedAndInterruptedFinalAttemptIsRecovered() throws Exception {
+        var r=importedCuisine("其他");var client=org.mockito.Mockito.mock(com.familyrecipes.ai.ChatCompletionClient.class);
+        org.mockito.Mockito.when(client.complete(org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyList())).thenThrow(new IllegalStateException("test"));
+        var worker=refinement(client);worker.enqueue(owner,5);
+        for(int i=0;i<4;i++) {
+            db.update("UPDATE recipe_cuisine_refinement SET next_attempt_at=NOW() WHERE recipe_id=?",r.getId());worker.processOne();
+        }
+        assertEquals(3,db.queryForObject("SELECT attempts FROM recipe_cuisine_refinement WHERE recipe_id=?",Integer.class,r.getId()));
+        db.update("UPDATE recipe_cuisine_refinement SET status='running',next_attempt_at=NOW() WHERE recipe_id=?",r.getId());worker.processOne();
+        assertEquals("failed",db.queryForObject("SELECT status FROM recipe_cuisine_refinement WHERE recipe_id=?",String.class,r.getId()));
+        assertEquals(List.of("其他"),db.queryForList("SELECT tag_value FROM recipe_tag WHERE recipe_id=? AND tag_type='cuisine'",String.class,r.getId()));
+        org.mockito.Mockito.verify(client,org.mockito.Mockito.times(3)).complete(org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyList());
+    }
+    @Test void cuisineRefinementKeepsUncertainOrContradictoryResultForReview() throws Exception {
+        var r=importedCuisine("东北菜");var client=org.mockito.Mockito.mock(com.familyrecipes.ai.ChatCompletionClient.class);
+        org.mockito.Mockito.when(client.complete(org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyList())).thenReturn("{\"cuisine\":[\"粤菜\"]}");
+        var worker=refinement(client);worker.enqueue(owner,5);worker.processOne();
+        assertEquals("needs_review",db.queryForObject("SELECT status FROM recipe_cuisine_refinement WHERE recipe_id=?",String.class,r.getId()));
+        assertEquals(List.of("东北菜"),db.queryForList("SELECT tag_value FROM recipe_tag WHERE recipe_id=? AND tag_type='cuisine'",String.class,r.getId()));
+    }
+
     @Test void tagBackfillRejectsStaleContentAndBoundsFailures() throws Exception {
         db.update("INSERT IGNORE INTO recipe_classification(recipe_id,status) SELECT id,'complete' FROM recipe");
         var r=recipe("public");
@@ -652,6 +712,48 @@ class FoundationIntegrationTest {
         int count=db.queryForObject("SELECT COUNT(*) FROM group_member WHERE group_id=?",Integer.class,group);
         groups.addGroupMember(group,owner,List.of(outsider));
         assertEquals(count,db.queryForObject("SELECT COUNT(*) FROM group_member WHERE group_id=?",Integer.class,group));
+    }
+
+    @Test void discoveryWithFullTagsAndPreferencesIsBoundedAndStable() {
+        String prefix="discovery-perf-"+UUID.randomUUID();
+        var rows=new ArrayList<Object[]>();
+        for(int i=0;i<4000;i++)rows.add(new Object[]{prefix+i,owner});
+        db.batchUpdate("INSERT INTO recipe(name,creator_id,visibility) VALUES(?,?,'public')",rows);
+        var ids=db.queryForList("SELECT id FROM recipe WHERE name LIKE ? ORDER BY id",Long.class,prefix+"%");
+        var tags=new ArrayList<Object[]>();
+        for(int i=0;i<ids.size();i++) {
+            tags.add(new Object[]{ids.get(i),"taste",i<40?"甜":"辣"});
+            tags.add(new Object[]{ids.get(i),"cuisine",i<40?"日式":"川菜"});
+            tags.add(new Object[]{ids.get(i),"taste","鲜香"});
+        }
+        db.batchUpdate("INSERT INTO recipe_tag(recipe_id,tag_type,tag_value) VALUES(?,?,?)",tags);
+        for(int i=0;i<40;i++) {
+            db.update("INSERT INTO user_favorite(user_id,recipe_id) VALUES(?,?)",owner,ids.get(i));
+            db.update("INSERT INTO recipe_cook(user_id,recipe_id,skill_level) VALUES(?,?,3)",owner,ids.get(i));
+            db.update("INSERT INTO recipe_view_history(user_id,recipe_id,viewed_at) VALUES(?,?,NOW())",owner,ids.get(i));
+        }
+        long started=System.nanoTime();
+        var page=assertTimeout(Duration.ofSeconds(5),()->workflows.browse(owner,null,"discovery","all","","",null,null,false,"stable",1));
+        System.out.println("Discovery benchmark: 4000 recipes / 12000 tags / 40 preferences: "+((System.nanoTime()-started)/1_000_000)+" ms");
+        assertEquals(20,page.getList().size());
+        assertTrue(ids.subList(0,40).containsAll(page.getList().stream().map(Recipe::getId).toList()));
+        var again=workflows.browse(owner,null,"discovery","all","","",null,null,false,"stable",1);
+        assertEquals(page.getList().stream().map(Recipe::getId).toList(),again.getList().stream().map(Recipe::getId).toList());
+        var next=workflows.browse(owner,null,"discovery","all","","",null,null,false,"stable",2);
+        assertTrue(Collections.disjoint(page.getList().stream().map(Recipe::getId).toList(),next.getList().stream().map(Recipe::getId).toList()));
+        assertTimeout(Duration.ofSeconds(5),()->workflows.browse(null,null,"discovery","all","","",null,null,false,"stable",1));
+    }
+
+    @Test void hierarchicalCuisineFiltersIncludeLegacyAliasesAndProtectVisibility() throws Exception {
+        String name="cuisine-tree-"+UUID.randomUUID();
+        var japanese=recipe("public");var chinese=recipe("public");var hidden=recipe("private");
+        for(var r:List.of(japanese,chinese,hidden))db.update("UPDATE recipe SET name=? WHERE id=?",name,r.getId());
+        db.update("INSERT INTO recipe_tag(recipe_id,tag_type,tag_value) VALUES(?,'cuisine','JP'),(?,'cuisine','川菜'),(?,'cuisine','日本')",japanese.getId(),chinese.getId(),hidden.getId());
+        assertEquals(1,workflows.browse(outsider,null,"discovery","all",name,"",null,null,false,"0",1,"region:east-asia").getTotal());
+        assertEquals(1,workflows.browse(outsider,null,"discovery","all",name,"",null,null,false,"0",1,"日式").getTotal());
+        assertEquals(1,workflows.browse(outsider,null,"discovery","all",name,"",null,null,false,"0",1,"region:china-eight").getTotal());
+        mvc.perform(get("/api/recipes/cuisines/tree").header("Accept-Language","en"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data[0].name").value("China"));
     }
 
     @Test void translatedSearchWithLargeCatalogCompletesWithoutDetailFanout() {

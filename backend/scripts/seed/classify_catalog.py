@@ -8,7 +8,10 @@ import argparse,json,os,re,time,urllib.request
 from pathlib import Path
 from collect_open_sources import OUT,ROOT,write_json
 TASTES=['清淡','鲜香','酸','甜','辣','麻','苦','待确认']
-CUISINES=['川菜','粤菜','湘菜','鲁菜','苏菜','浙菜','闽菜','徽菜','东北菜','西北菜','云南菜','港式','台湾菜','中式家常','日式','韩式','泰式','越南菜','印度菜','马来菜','新加坡菜','印尼菜','意大利菜','法国菜','西班牙菜','希腊菜','土耳其菜','墨西哥菜','美式','英式','非洲菜','中东菜','其他','待确认']
+def cuisine_leaves(nodes):
+    return [value for node in nodes for value in (cuisine_leaves(node['children']) if node['children'] else [node['value']])]
+CUISINES=cuisine_leaves(json.loads((ROOT/'backend/src/main/resources/cuisines.json').read_text()))+['待确认']
+
 def validate(value):
     if not isinstance(value,dict):raise ValueError('Expected classification object')
     for key,allowed in [('taste',TASTES),('cuisine',CUISINES)]:

@@ -15,9 +15,10 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/catalog")
 public class CatalogImportController {
+    private final CuisineRefinementService refinement;
     private final JdbcTemplate db; private final ObjectMapper json; private final RecipeService recipes; private final FridgeService fridge;
     @Value("${app.catalog.admin-user-id:0}") private long admin;
-    public CatalogImportController(JdbcTemplate db,ObjectMapper json,RecipeService recipes,FridgeService fridge) {this.db=db;this.json=json;this.recipes=recipes;this.fridge=fridge;}
+    public CatalogImportController(JdbcTemplate db,ObjectMapper json,RecipeService recipes,FridgeService fridge,CuisineRefinementService refinement) {this.refinement=refinement;this.db=db;this.json=json;this.recipes=recipes;this.fridge=fridge;}
     private void requireAdmin(HttpServletRequest r) {if(admin<=0 || !Long.valueOf(admin).equals(r.getAttribute("userId")))throw new ApiException(403,"仅数据管理员可执行");}
     @GetMapping("/status") public Result<Map<String,Object>> status(HttpServletRequest r) {
         requireAdmin(r);return Result.success(Map.of("classification",db.queryForList("SELECT status,COUNT(*) AS count FROM recipe_classification GROUP BY status"),"translations",db.queryForList("SELECT status,COUNT(*) AS count FROM content_translations GROUP BY status"),"imported",db.queryForObject("SELECT COUNT(*) FROM recipe_provenance",Long.class)));
@@ -27,6 +28,13 @@ public class CatalogImportController {
     }
     @PostMapping("/classification/retry") public Result<Integer> retryClassification(HttpServletRequest r) {
         requireAdmin(r);return Result.success(db.update("DELETE FROM recipe_classification WHERE status IN ('failed','needs_review')"));
+    }
+    @GetMapping("/cuisine-refinement") public Result<Map<String,Object>> refinementStatus(HttpServletRequest r) {
+        requireAdmin(r);return Result.success(refinement.audit());
+    }
+    @PostMapping("/cuisine-refinement") public Result<Map<String,Object>> enqueueRefinement(
+            @RequestParam(defaultValue="5") int limit,HttpServletRequest r) {
+        requireAdmin(r);return Result.success(Map.of("queued",refinement.enqueue(admin,limit),"taxonomy_version",CuisineRefinementService.VERSION));
     }
     @GetMapping("/imported") public Result<List<Map<String,Object>>> imported(HttpServletRequest r) {
         requireAdmin(r);return Result.success(db.queryForList("SELECT source_identity,recipe_id FROM recipe_provenance ORDER BY recipe_id"));

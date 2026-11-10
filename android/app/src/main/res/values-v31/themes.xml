@@ -8,9 +8,9 @@
         
         <!-- Android 12+ Splash Screen API 配置 - 让系统splash立即消失 -->
         <item name="android:windowSplashScreenBackground">@color/primary</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_app_logo</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
         <item name="android:windowSplashScreenAnimationDuration">0</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_app_logo</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
         <item name="windowSplashScreenAnimationDuration">0</item>
         <item name="windowSplashScreenBackground">@color/primary</item>
     </style>

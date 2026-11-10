@@ -111,8 +111,9 @@ public class RecipeWorkflowService {
       args.add(minutes);
     }
     if (!cuisine.isBlank()) {
-      where += " AND EXISTS(SELECT 1 FROM recipe_tag t WHERE t.recipe_id=r.id AND t.tag_type='cuisine' AND t.tag_value=?)";
-      args.add(cuisine);
+      var values=CuisineCatalog.expand(cuisine);
+      where += " AND EXISTS(SELECT 1 FROM recipe_tag t WHERE t.recipe_id=r.id AND t.tag_type='cuisine' AND t.tag_value IN ("+String.join(",",Collections.nCopies(values.size(),"?"))+"))";
+      args.addAll(values);
     }
     if (missing != null) {
       where +=
@@ -135,7 +136,7 @@ public class RecipeWorkflowService {
       Collections.addAll(args,keyword,keyword,"%"+keyword+"%","%"+keyword+"%","%"+keyword+"%");
     }
     if(scope.equals("discovery") && keyword.isBlank()) {
-      String score=com.familyrecipes.mapper.RecommendationScore.SQL;
+      String score=user==null ? "MOD(CRC32(CONCAT(r.id,':',#{seed})),100)/50.0" : com.familyrecipes.mapper.RecommendationScore.SQL;
       int viewers=score.split("#\\{viewerId\\}",-1).length-1;
       for(int i=0;i<viewers;i++) args.add(user);
       args.add(seed);
