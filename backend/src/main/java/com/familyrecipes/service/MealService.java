@@ -95,6 +95,12 @@ public class MealService {
       if (d.getName() == null || d.getName().isBlank() || d.getName().length() > 100)
         throw new ApiException(400, "菜名须为1至100字");
       if (d.getRecipeId() != null) recipes.requireRead(d.getRecipeId(), user);
+      if (d.getIngredients() != null) {
+        if (d.getIngredients().size() > 100) throw new ApiException(400, "每道菜的食材过多");
+        for (var item : d.getIngredients())
+          if (item == null || item.isBlank() || item.length() > 200)
+            throw new ApiException(400, "食材名称须为1至200字");
+      }
     }
     for (var d : m.getShopping())
       if (d.getName() == null || d.getName().isBlank() || d.getName().length() > 200)

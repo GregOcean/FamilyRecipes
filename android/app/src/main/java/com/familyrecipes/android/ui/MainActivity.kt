@@ -31,6 +31,7 @@ import com.familyrecipes.android.data.local.LocalStore
 class MainActivity : AppCompatActivity() {
     private lateinit var drawer: DrawerLayout
     private lateinit var recipeSearch: com.google.android.material.button.MaterialButton
+    private lateinit var inventorySearch: EditText
     private lateinit var kitchenLabel: Button
     private lateinit var container: FrameLayout
     private lateinit var bottom: LinearLayout
@@ -85,6 +86,39 @@ class MainActivity : AppCompatActivity() {
             gravity=Gravity.START or Gravity.CENTER_VERTICAL
         }
         top.addView(recipeSearch,LinearLayout.LayoutParams(0,-2,1f).apply{marginEnd=4.dp()})
+        inventorySearch = EditText(this).apply {
+            hint = getString(R.string.ui_93e4998872)
+            textSize = 14f
+            setSingleLine(true)
+            inputType = android.text.InputType.TYPE_CLASS_TEXT
+            background = androidx.core.content.ContextCompat.getDrawable(this@MainActivity, R.drawable.search_background)
+            setPadding(12.dp(), 8.dp(), 12.dp(), 8.dp())
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            imeOptions = android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH
+            visibility = android.view.View.GONE
+            val icon = androidx.core.content.ContextCompat.getDrawable(this@MainActivity, R.drawable.ic_search)
+            setCompoundDrawablesRelativeWithIntrinsicBounds(icon, null, null, null)
+            compoundDrawablePadding = 8.dp()
+            androidx.core.widget.TextViewCompat.setCompoundDrawableTintList(
+                this, android.content.res.ColorStateList.valueOf(Ui.blue))
+        }
+        inventorySearch.setOnEditorActionListener { _, action, _ ->
+            if (action == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH) {
+                hideKeyboard()
+                true
+            } else false
+        }
+        top.addView(inventorySearch, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = 4.dp() })
+        inventorySearch.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: android.text.Editable?) {
+                val query = s?.toString()?.trim() ?: ""
+                val fridge = supportFragmentManager.findFragmentByTag("main:stock") as? FridgeFragment
+                fridge?.filterByQuery(query)
+            }
+        })
         avatar=FrameLayout(this).apply {
             contentDescription=getString(R.string.ui_c32eedbf88)
             isFocusable=true
@@ -238,12 +272,28 @@ class MainActivity : AppCompatActivity() {
         transaction.setMaxLifecycle(found ?: fragment,Lifecycle.State.RESUMED)
         transaction.commit()
         if(page=="recipes")setRecipeSearchQuery((found as? RecipeListFragment)?.currentQuery().orEmpty())
+        if(page=="stock") {
+            supportFragmentManager.executePendingTransactions()
+            val fridge = supportFragmentManager.findFragmentByTag(tag) as? FridgeFragment
+            inventorySearch.setText(fridge?.externalQueryText().orEmpty())
+        } else hideKeyboard()
         drawNavigation()
+    }
+
+    private fun hideKeyboard() {
+        val input = currentFocus ?: return
+        val manager = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+        manager.hideSoftInputFromWindow(input.windowToken, 0)
+        input.clearFocus()
     }
 
     private fun updateHeaderLayout() {
         recipeSearch.visibility=if(selected=="recipes")android.view.View.VISIBLE else android.view.View.GONE
-        kitchenLabel.layoutParams=LinearLayout.LayoutParams(if(selected=="recipes")96.dp() else 0,-2,if(selected=="recipes")0f else 1f)
+        inventorySearch.visibility=if(selected=="stock")android.view.View.VISIBLE else android.view.View.GONE
+        // Show kitchen label for both recipes and stock pages
+        val showKitchen = selected=="recipes" || selected=="stock"
+        kitchenLabel.visibility = if(showKitchen) android.view.View.VISIBLE else android.view.View.GONE
+        kitchenLabel.layoutParams=LinearLayout.LayoutParams(if(showKitchen)96.dp() else 0,-2,if(showKitchen)0f else 1f)
     }
 
     fun setRecipeSearchQuery(query:String) {

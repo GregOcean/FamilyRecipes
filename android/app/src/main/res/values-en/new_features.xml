@@ -27,6 +27,7 @@
 <string name="filter_time">Time</string>
 <string name="filter_stock">Stock</string>
 <string name="filter_any">Any</string>
+<string name="login_account_hint">Username or email</string>
 <string name="search_timeout">Search timed out. Tap to retry</string>
 <string name="group_add_friends">Add friends to group</string>
 <string name="group_add_capacity">Room for %1$d more members</string>
@@ -50,4 +51,35 @@
 <string name="meal_open_recipe">View recipe</string>
 <string name="meal_rename_dish">Rename</string>
 <string name="meal_remove_dish">Remove</string>
+<string name="recipe_comments_title">Comments</string>
+<string name="recipe_comments_empty">No comments yet. Be the first!</string>
+<string name="recipe_comment_hint">Write a comment</string>
+<string name="recipe_comment_send">Send</string>
+<string name="recipe_comment_delete">Delete</string>
+<string name="meal_quick_order_title">What would you like?</string>
+<string name="meal_quick_order_hint">Type what you want, e.g. braised pork, stir-fried greens</string>
+<string name="meal_quick_send">Send to group</string>
+<string name="meal_quick_more">Pick recipes / Edit</string>
+<string name="meal_quick_empty">Write what you want first</string>
+<string name="meal_group_pick">Send to which group</string>
+<string name="meal_my_order">Sent requests</string>
+<string name="meal_my_prep">My prep plans</string>
+<string name="meal_prep_new">New prep plan</string>
+<string name="meal_prep_ingredients">To buy: %1$s</string>
+<string name="meal_dish_ingredients">Ingredients</string>
+<string name="meal_add_by_text">Add as text</string>
+<string name="meal_text_hint">One dish per line, ingredients after a colon, e.g.:
+Braised pork: pork belly, rock sugar, soy sauce
+Steamed fish: sea bass, scallion, ginger</string>
+<string name="meal_parse_add">Add to menu</string>
+<string name="meal_generate_ingredients">Build shopping list from recipes</string>
+<string name="meal_need_buy">Shopping list</string>
+<string name="meal_order_text">Dishes you want</string>
+<string name="meal_order_share">Send to group</string>
+<string name="meal_order_empty">Type what you want and send it straight to the group.</string>
+<string name="meal_clear_meal">Clear this meal</string>
+<string name="meal_prep_menu">Menu &amp; ingredients</string>
+<string name="meal_no_ingredients">No ingredients yet. Build them from recipes or add manually</string>
+<string name="meal_add_shopping_hint">Add a shopping item</string>
+<string name="meal_when">This meal</string>
 </resources>

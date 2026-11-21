@@ -19,14 +19,15 @@
             <if test="keyword != null and keyword != ''">
                 AND (r.name LIKE CONCAT('%', #{keyword}, '%')
                 OR r.description LIKE CONCAT('%', #{keyword}, '%')
+                OR EXISTS (SELECT 1 FROM recipe_tag kt WHERE kt.recipe_id = r.id AND kt.tag_value LIKE CONCAT('%', #{keyword}, '%'))
                 OR (EXISTS(SELECT 1 FROM content_translations ct WHERE ct.source_hash=SHA2(r.name,256) AND ct.kind='content' AND ct.status='ready' AND ct.translated_text LIKE CONCAT('%',#{keyword},'%')) OR EXISTS(SELECT 1 FROM content_translations ct WHERE ct.source_hash=SHA2(r.description,256) AND ct.kind='content' AND ct.status='ready' AND ct.translated_text LIKE CONCAT('%',#{keyword},'%'))))
             </if>
-            <if test="tagType != null and tagValue != null">
+            <if test="tagValue != null and tagValue != ''">
                 AND EXISTS (
                     SELECT 1 FROM recipe_tag
                     WHERE recipe_id = r.id
-                    AND tag_type = #{tagType}
-                    AND tag_value = #{tagValue}
+                    <if test="tagType != null and tagType != ''">AND tag_type = #{tagType}</if>
+                    AND tag_value LIKE CONCAT('%', #{tagValue}, '%')
                 )
             </if>
             <if test="ingredientIds != null and ingredientIds.size() > 0">
@@ -94,14 +95,15 @@
             <if test="keyword != null and keyword != ''">
                 AND (r.name LIKE CONCAT('%', #{keyword}, '%')
                 OR r.description LIKE CONCAT('%', #{keyword}, '%')
+                OR EXISTS (SELECT 1 FROM recipe_tag kt WHERE kt.recipe_id = r.id AND kt.tag_value LIKE CONCAT('%', #{keyword}, '%'))
                 OR (EXISTS(SELECT 1 FROM content_translations ct WHERE ct.source_hash=SHA2(r.name,256) AND ct.kind='content' AND ct.status='ready' AND ct.translated_text LIKE CONCAT('%',#{keyword},'%')) OR EXISTS(SELECT 1 FROM content_translations ct WHERE ct.source_hash=SHA2(r.description,256) AND ct.kind='content' AND ct.status='ready' AND ct.translated_text LIKE CONCAT('%',#{keyword},'%'))))
             </if>
-            <if test="tagType != null and tagValue != null">
+            <if test="tagValue != null and tagValue != ''">
                 AND EXISTS (
                     SELECT 1 FROM recipe_tag
                     WHERE recipe_id = r.id
-                    AND tag_type = #{tagType}
-                    AND tag_value = #{tagValue}
+                    <if test="tagType != null and tagType != ''">AND tag_type = #{tagType}</if>
+                    AND tag_value LIKE CONCAT('%', #{tagValue}, '%')
                 )
             </if>
             <if test="ingredientIds != null and ingredientIds.size() > 0">

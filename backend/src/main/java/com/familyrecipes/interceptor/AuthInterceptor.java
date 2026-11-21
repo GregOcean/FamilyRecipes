@@ -26,6 +26,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         boolean publicRead = "GET".equals(request.getMethod()) && (
             path.equals("/api/recipes/cuisines/tree") || path.equals("/api/recipes/browse") || path.equals("/api/recipes/search") || path.matches("/api/recipes/[0-9]+") ||
             path.equals("/api/recipes/recently-cooked") || path.startsWith("/api/recipes/tags/") ||
+            path.matches("/api/recipes/[0-9]+/comments") ||
             path.equals("/api/catalog/sources") || path.equals("/api/search/global") || path.startsWith("/api/config/") ||
             path.startsWith("/api/upload/files/") || path.startsWith("/api/inventory/categories/"));
         return publicRead || reject(response);

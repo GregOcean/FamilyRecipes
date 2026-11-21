@@ -46,6 +46,7 @@ class FridgeFragment : Fragment(), SearchableFragment {
     
     private var currentTab = TAB_CURRENT  // 当前选中的Tab
     private var selectedCategoryId: Long? = null // 当前选中的分类ID
+    private var externalQuery: String = "" // 来自顶部搜索栏的查询
     
     companion object {
         private const val TAB_CURRENT = 0    // 当前库存
@@ -59,6 +60,16 @@ class FridgeFragment : Fragment(), SearchableFragment {
         if (result.resultCode == Activity.RESULT_OK) {
             loadData()
         }
+    }
+
+    override fun onCreate(state: Bundle?) {
+        super.onCreate(state)
+        externalQuery = state?.getString("inventory_query").orEmpty()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putString("inventory_query", externalQuery)
+        super.onSaveInstanceState(outState)
     }
 
     override fun onCreateView(
@@ -97,10 +108,22 @@ class FridgeFragment : Fragment(), SearchableFragment {
                 val selected=choices.getOrNull(index-1);selectedCategoryId=selected?.id;binding.btnCategories.setValue(selected?.name?:getString(R.string.ui_1a75030502));filterItemsByCategory()
             }.show()
         }
-        binding.etInventorySearch.doAfterTextChanged { filterItemsByCategory() }
         binding.btnCategories.setLabel(getString(R.string.inventory_category_filter))
         binding.btnCategories.setValue(categories.flatMap{listOf(it)+it.children.orEmpty()}.find{it.id==selectedCategoryId}?.name ?: getString(R.string.ui_1a75030502))
     }
+
+    /**
+     * 由外部（MainActivity 顶部搜索栏）调用，设置搜索关键词并过滤
+     */
+    fun filterByQuery(query: String) {
+        externalQuery = query
+        if (::fridgeAdapter.isInitialized) filterItemsByCategory()
+    }
+
+    /**
+     * 返回当前搜索关键词，供 MainActivity 恢复搜索框文本
+     */
+    fun externalQueryText(): String = externalQuery
 
     /**
      * 加载分类数据
@@ -130,8 +153,8 @@ class FridgeFragment : Fragment(), SearchableFragment {
      */
     private fun filterItemsByCategory() {
         items.clear()
-        val query = binding.etInventorySearch.text.toString().trim()
-        val searched = allItems.filter { when(currentTab){2->it.status==FridgeItem.STATUS_EXPIRING;3->it.status==FridgeItem.STATUS_EXPIRED;4->it.status!=FridgeItem.STATUS_EXPIRING && it.status!=FridgeItem.STATUS_EXPIRED;else->true} }.filter { query.isEmpty() || it.displayName?.contains(query, ignoreCase=true) == true || it.originalContent?.values?.any{value->value.contains(query,ignoreCase=true)}==true || it.ingredient?.name?.contains(query, ignoreCase=true) == true || it.ingredient?.aliases?.contains(query, ignoreCase=true) == true }
+        val query = externalQuery
+        val searched = allItems.filter { when(currentTab){2->it.status==FridgeItem.STATUS_EXPIRING;3->it.status==FridgeItem.STATUS_EXPIRED;4->it.status!=FridgeItem.STATUS_EXPIRING && it.status!=FridgeItem.STATUS_EXPIRED;else->true} }.filter { query.isEmpty() || it.displayName?.contains(query, ignoreCase=true) == true || it.storageLocation?.contains(query, ignoreCase=true) == true || it.originalContent?.values?.any{value->value.contains(query,ignoreCase=true)}==true || it.ingredient?.name?.contains(query, ignoreCase=true) == true || it.ingredient?.aliases?.contains(query, ignoreCase=true) == true || it.categoryOverrideName?.contains(query, ignoreCase=true) == true }
         val ids = selectedCategoryId?.let { com.familyrecipes.android.util.InventoryCategories.descendants(it, categories) }
         items.addAll(searched.filter { ids == null || (it.categoryOverrideId ?: it.ingredient?.categoryId) in ids })
         binding.tvInventoryEmpty.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
@@ -278,7 +301,7 @@ class FridgeFragment : Fragment(), SearchableFragment {
     
     private fun setupStatusFilter() {
         val choices=listOf(
-            TAB_CURRENT to R.string.inventory_status_all,
+            TAB_CURRENT to R.string.filter_any,
             4 to R.string.inventory_status_fresh,
             2 to R.string.ui_ac148b4c87,
             3 to R.string.ui_4d5ccd0118,
@@ -393,7 +416,7 @@ class FridgeFragment : Fragment(), SearchableFragment {
         }
     }
 
-    private fun loadFridgeItems(keyword: String? = null) {
+    private fun loadFridgeItems() {
         val revision=++loadGeneration
         val kitchen=com.familyrecipes.android.data.local.PreferenceManager.currentKitchenId
         loadJob?.cancel()
@@ -408,26 +431,6 @@ class FridgeFragment : Fragment(), SearchableFragment {
                     
                     // 应用分类筛选
                     filterItemsByCategory()
-                    
-                    // 如果有搜索关键词，进一步过滤
-                    if (!keyword.isNullOrEmpty()) {
-                        val searchFiltered = items.filter { 
-                            it.ingredient?.name?.contains(keyword, ignoreCase = true) == true ||
-                            it.storageLocation?.contains(keyword, ignoreCase = true) == true
-                        }
-                        items.clear()
-                        items.addAll(searchFiltered)
-                        fridgeAdapter.notifyDataSetChanged()
-                        
-                        if (searchFiltered.isEmpty()) {
-                            Toast.makeText(context, UiStrings.s(com.familyrecipes.android.R.string.ui_51417b630e), Toast.LENGTH_SHORT).show()
-                        } else {
-                            Toast.makeText(context, "找到 ${searchFiltered.size} 个库存", Toast.LENGTH_SHORT).show()
-                        }
-                    } else {
-                        // 检查即将过期的食材
-                        // Expiry badges are shown in rows; reminders are rate limited by the worker.
-                    }
                 } else {
                     Toast.makeText(context, UiStrings.s(com.familyrecipes.android.R.string.ui_866b795eae), Toast.LENGTH_SHORT).show()
                 }
@@ -441,7 +444,7 @@ class FridgeFragment : Fragment(), SearchableFragment {
         }
     }
     
-    private fun loadConsumedItems(keyword: String? = null) {
+    private fun loadConsumedItems() {
         val revision=++loadGeneration
         val kitchen=com.familyrecipes.android.data.local.PreferenceManager.currentKitchenId
         loadJob?.cancel()
@@ -456,25 +459,6 @@ class FridgeFragment : Fragment(), SearchableFragment {
                     
                     // 应用分类筛选
                     filterItemsByCategory()
-                    
-                    // 如果有搜索关键词，进一步过滤
-                    if (!keyword.isNullOrEmpty()) {
-                        val searchFiltered = items.filter { 
-                            it.ingredient?.name?.contains(keyword, ignoreCase = true) == true ||
-                            it.storageLocation?.contains(keyword, ignoreCase = true) == true
-                        }
-                        items.clear()
-                        items.addAll(searchFiltered)
-                        fridgeAdapter.notifyDataSetChanged()
-                        
-                        if (searchFiltered.isEmpty()) {
-                            Toast.makeText(context, UiStrings.s(com.familyrecipes.android.R.string.ui_51417b630e), Toast.LENGTH_SHORT).show()
-                        } else {
-                            Toast.makeText(context, "找到 ${searchFiltered.size} 个库存", Toast.LENGTH_SHORT).show()
-                        }
-                    } else if (items.isEmpty()) {
-                        Toast.makeText(context, UiStrings.s(com.familyrecipes.android.R.string.ui_31639b9c4a), Toast.LENGTH_SHORT).show()
-                    }
                 } else {
                     Toast.makeText(context, UiStrings.s(com.familyrecipes.android.R.string.ui_866b795eae), Toast.LENGTH_SHORT).show()
                 }
@@ -523,23 +507,8 @@ class FridgeFragment : Fragment(), SearchableFragment {
 
     override fun performSearch(keyword: String) {
         // 库存页面：只搜索用户自己的库存（本地过滤）
-        binding.swipeRefresh.isRefreshing = true
-        viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                // 重新加载数据
-                when (currentTab) {
-                    TAB_CURRENT, 2, 3, 4 -> loadFridgeItems(keyword)
-                    TAB_CONSUMED -> loadConsumedItems(keyword)
-                }
-            } catch (e: kotlinx.coroutines.CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Toast.makeText(context, "搜索失败: ${e.message}", Toast.LENGTH_SHORT).show()
-                e.printStackTrace()
-            } finally {
-                _binding?.swipeRefresh?.isRefreshing = false
-            }
-        }
+        externalQuery = keyword
+        filterItemsByCategory()
     }
     
     /**

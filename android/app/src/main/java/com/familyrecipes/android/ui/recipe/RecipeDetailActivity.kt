@@ -29,6 +29,7 @@ class RecipeDetailActivity : AppCompatActivity() {
     private var loadedContext=""
     private var loadedAccount=""
     private var recordsJob:Job?=null
+    private var commentsJob:Job?=null
     private var pendingAction:(()->Unit)?=null
     private var reactionBusy=false
     private fun Int.dp()=(this*resources.displayMetrics.density).toInt()
@@ -321,6 +322,15 @@ class RecipeDetailActivity : AppCompatActivity() {
             binding.cardExternalLinks.visibility = View.GONE
         }
         
+        // 评论
+        binding.btnSendComment.setOnClickListener { sendComment() }
+        binding.etCommentInput.setOnEditorActionListener { _, action, _ ->
+            if (action == android.view.inputmethod.EditorInfo.IME_ACTION_SEND) {
+                sendComment(); true
+            } else false
+        }
+        loadComments()
+
         // 设置收藏按钮
         updateFavoriteButton(recipe.isFavorite == true)
         binding.btnFavorite.setOnClickListener {
@@ -333,6 +343,86 @@ class RecipeDetailActivity : AppCompatActivity() {
             toggleDislike()
         }
         returnUpdatedRecipe()
+    }
+
+    private fun loadComments() {
+        commentsJob?.cancel()
+        commentsJob = lifecycleScope.launch {
+            try {
+                renderComments(Ui.data(ApiClient.getService().getComments(recipeId)))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // 评论加载失败不影响菜谱正文阅读
+                if (::binding.isInitialized) {
+                    binding.commentsList.removeAllViews()
+                    binding.tvCommentsEmpty.visibility = View.GONE
+                }
+            }
+        }
+    }
+
+    private fun renderComments(comments: List<com.familyrecipes.android.data.model.RecipeComment>) {
+        binding.commentsList.removeAllViews()
+        binding.tvCommentsEmpty.visibility = if (comments.isEmpty()) View.VISIBLE else View.GONE
+        comments.forEach { comment ->
+            val card = Ui.box(this, 0).apply { setPadding(0, 8.dp(), 0, 8.dp()) }
+            val header = Ui.row(this)
+            header.addView(
+                com.familyrecipes.android.ui.design.UserAvatar.create(
+                    this, comment.user?.username.orEmpty(), comment.user?.avatar),
+                android.widget.LinearLayout.LayoutParams(32.dp(), 32.dp()).apply { marginEnd = 8.dp() })
+            val names = Ui.box(this, 0).apply { setBackgroundColor(android.graphics.Color.TRANSPARENT) }
+            names.addView(Ui.text(this, comment.user?.username ?: UiStrings.s(R.string.ui_1622dc9b6b), 15f, true).apply { setPadding(0, 0, 0, 0) })
+            names.addView(Ui.text(this, formatCommentTime(comment.createdAt), 12f).apply { setTextColor(Ui.muted); setPadding(0, 0, 0, 0) })
+            header.addView(names, android.widget.LinearLayout.LayoutParams(0, -2, 1f))
+            if (comment.user?.id != null && comment.user.id == PreferenceManager.userId) {
+                header.addView(Ui.button(this, getString(R.string.recipe_comment_delete)) { deleteComment(comment) }.apply { textSize = 13f; minHeight = (36 * resources.displayMetrics.density).toInt() })
+            }
+            card.addView(header)
+            card.addView(Ui.text(this, comment.content, 15f).apply { setPadding(0, 6.dp(), 0, 4.dp()); setLineSpacing(2.dp().toFloat(), 1.05f) })
+            binding.commentsList.addView(card)
+        }
+    }
+
+    private fun formatCommentTime(value: String?): String =
+        value.orEmpty().replace('T', ' ').take(16)
+
+    private fun sendComment() {
+        val content = binding.etCommentInput.text.toString().trim()
+        if (content.isEmpty()) return
+        authenticated {
+            binding.btnSendComment.isEnabled = false
+            lifecycleScope.launch {
+                try {
+                    Ui.ok(ApiClient.getService().addComment(recipeId, mapOf("content" to content)))
+                    binding.etCommentInput.setText("")
+                    loadComments()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Ui.toast(this@RecipeDetailActivity, e)
+                } finally {
+                    binding.btnSendComment.isEnabled = true
+                }
+            }
+        }
+    }
+
+    private fun deleteComment(comment: com.familyrecipes.android.data.model.RecipeComment) {
+        val id = comment.id ?: return
+        authenticated {
+            lifecycleScope.launch {
+                try {
+                    Ui.ok(ApiClient.getService().deleteComment(recipeId, id))
+                    loadComments()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Ui.toast(this@RecipeDetailActivity, e)
+                }
+            }
+        }
     }
 
     private fun addPhoto(url:String,caption:String?) {

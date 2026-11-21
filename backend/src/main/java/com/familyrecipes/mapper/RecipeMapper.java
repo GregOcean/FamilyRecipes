@@ -75,13 +75,19 @@ public interface RecipeMapper {
     
     // 按关键词搜索菜谱（用于全局搜索）
     @Select("SELECT r.* FROM recipe r WHERE (name LIKE CONCAT('%', #{keyword}, '%') " +
-            "OR description LIKE CONCAT('%', #{keyword}, '%') OR (EXISTS(SELECT 1 FROM content_translations ct WHERE ct.source_hash=SHA2(r.name,256) AND ct.kind='content' AND ct.status='ready' AND ct.translated_text LIKE CONCAT('%',#{keyword},'%')) OR EXISTS(SELECT 1 FROM content_translations ct WHERE ct.source_hash=SHA2(r.description,256) AND ct.kind='content' AND ct.status='ready' AND ct.translated_text LIKE CONCAT('%',#{keyword},'%')))) AND " + VISIBLE)
+            "OR description LIKE CONCAT('%', #{keyword}, '%') " +
+            "OR EXISTS(SELECT 1 FROM recipe_tag rt0 WHERE rt0.recipe_id=r.id AND rt0.tag_value LIKE CONCAT('%', #{keyword}, '%')) " +
+            "OR (EXISTS(SELECT 1 FROM content_translations ct WHERE ct.source_hash=SHA2(r.name,256) AND ct.kind='content' AND ct.status='ready' AND ct.translated_text LIKE CONCAT('%',#{keyword},'%')) OR EXISTS(SELECT 1 FROM content_translations ct WHERE ct.source_hash=SHA2(r.description,256) AND ct.kind='content' AND ct.status='ready' AND ct.translated_text LIKE CONCAT('%',#{keyword},'%')))) AND " + VISIBLE)
     List<Recipe> searchByKeyword(@Param("keyword") String keyword, @Param("viewerId") Long viewerId);
     
-    // 按tag精确搜索菜谱
+    // 按tag搜索菜谱（精确匹配优先，模糊匹配补充）
     @Select("SELECT DISTINCT r.* FROM recipe r " +
             "INNER JOIN recipe_tag rt ON r.id = rt.recipe_id " +
-            "WHERE rt.tag_value = #{tagValue} AND " + VISIBLE)
+            "WHERE rt.tag_value = #{tagValue} AND " + VISIBLE +
+            " UNION DISTINCT " +
+            "SELECT DISTINCT r.* FROM recipe r " +
+            "INNER JOIN recipe_tag rt ON r.id = rt.recipe_id " +
+            "WHERE rt.tag_value LIKE CONCAT('%', #{tagValue}, '%') AND rt.tag_value != #{tagValue} AND " + VISIBLE)
     List<Recipe> searchByTag(@Param("tagValue") String tagValue, @Param("viewerId") Long viewerId);
     @Select("SELECT DISTINCT rt.tag_value FROM recipe_tag rt JOIN recipe r ON r.id=rt.recipe_id WHERE rt.tag_type=#{tagType} AND " + VISIBLE)
     List<String> visibleTags(@Param("tagType") String tagType, @Param("viewerId") Long viewerId);

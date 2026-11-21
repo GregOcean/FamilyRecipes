@@ -66,20 +66,28 @@ public class UserService {
         return user;
     }
 
+    public record LoginResult(String token, User user) {}
+
     /**
-     * 用户登录
+     * 用户登录（支持邮箱或用户名）。用户名并非唯一索引，因此按密码匹配唯一账号。
      */
-    public String login(String email, String password) {
-        User user = userMapper.findByEmail(EmailVerificationService.normalize(email));
-        if (user == null) {
-            throw new com.familyrecipes.common.ApiException(401, "邮箱或密码错误");
+    public LoginResult login(String account, String password) {
+        String value = account == null ? "" : account.trim();
+        User user = null;
+        if (value.contains("@")) {
+            user = userMapper.findByEmail(EmailVerificationService.normalize(value));
+        } else {
+            for (User candidate : userMapper.findByUsername(value)) {
+                if (passwords.matches(password, candidate.getPassword())) {
+                    user = candidate;
+                    break;
+                }
+            }
         }
-
-        if (!passwords.matches(password, user.getPassword())) {
-            throw new com.familyrecipes.common.ApiException(401, "邮箱或密码错误");
+        if (user == null || !passwords.matches(password, user.getPassword())) {
+            throw new com.familyrecipes.common.ApiException(401, "账号或密码错误");
         }
-
-        return jwtUtil.generateToken(user.getId(), user.getEmail());
+        return new LoginResult(jwtUtil.generateToken(user.getId(), user.getEmail()), user);
     }
 
     /**
@@ -98,6 +106,17 @@ public class UserService {
      */
     public User getUserByEmail(String email) {
         return userMapper.findByEmail(EmailVerificationService.normalize(email));
+    }
+
+    /**
+     * 根据账号（邮箱或用户名）获取用户
+     */
+    public User getUserByAccount(String account) {
+        if (account != null && account.contains("@")) {
+            return userMapper.findByEmail(EmailVerificationService.normalize(account));
+        }
+        var users = userMapper.findByUsername(account == null ? "" : account.trim());
+        return users.isEmpty() ? null : users.get(0);
     }
 
     /**

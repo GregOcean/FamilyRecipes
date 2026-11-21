@@ -324,6 +324,16 @@ public class RecipeService {
         Long favoritedByUserId,Long cookedByUserId,String creatorUsername,String orderBy,Integer pageNum,Integer pageSize,Long viewerId,Long kitchenId) {
         if(kitchenId!=null) kitchens.requireMember(kitchenId,viewerId);
 
+        // “#标签”作为关键词时按标签搜索
+        if (keyword != null && keyword.trim().startsWith("#")) {
+            String tag = keyword.trim().substring(1).trim();
+            if (!tag.isEmpty()) {
+                keyword = null;
+                tagType = null;
+                tagValue = tag;
+            }
+        }
+
         if (pageNum < 1 || pageSize < 1 || pageSize > 100 || pageNum > 1000000)
             throw new com.familyrecipes.common.ApiException(400, "分页参数不合法");
         Map<String, Object> params = new HashMap<>();

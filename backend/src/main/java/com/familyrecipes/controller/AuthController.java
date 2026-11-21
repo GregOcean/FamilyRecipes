@@ -41,13 +41,15 @@ public class AuthController {
     }
 
     /**
-     * 用户登录
+     * 用户登录（支持邮箱或用户名）
      */
     @PostMapping("/login")
     public Result<LoginResponse> login(@jakarta.validation.Valid @RequestBody LoginRequest request) {
         try {
-            String token = userService.login(request.getEmail(), request.getPassword());
-            User user = userService.getUserByEmail(request.getEmail());
+            String account = request.resolvedAccount();
+            var login = userService.login(account, request.getPassword());
+            String token = login.token();
+            User user = login.user();
             user.setPassword(null);
             
             LoginResponse response = new LoginResponse();
@@ -122,13 +124,24 @@ public class AuthController {
 
     @Data
     static class LoginRequest {
-        @NotBlank(message = "邮箱不能为空")
+        @jakarta.validation.constraints.Size(max = 100)
+        private String account;
+
+        /** 兼容旧版客户端和管理后台使用的 email 字段 */
         @jakarta.validation.constraints.Size(max = 100)
         private String email;
 
         @NotBlank(message = "密码不能为空")
         @jakarta.validation.constraints.Size(min = 8, max = 72, message="密码至少8位，最多72个字符")
         private String password;
+
+        String resolvedAccount() {
+            String value = account != null && !account.isBlank() ? account : email;
+            if (value == null || value.isBlank()) {
+                throw new com.familyrecipes.common.ApiException(400, "账号不能为空");
+            }
+            return value.trim();
+        }
     }
 
     @Data

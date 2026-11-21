@@ -39,7 +39,7 @@ class CompactFlowsTest {
                 root.addView(row)
                 val inventory=LayoutInflater.from(c).inflate(R.layout.fragment_fridge,root,false)
                 inventory.findViewById<FilterButton>(R.id.btn_categories).apply {setLabel(c.getString(R.string.inventory_category_filter));setValue(c.getString(R.string.ui_1a75030502))}
-                inventory.findViewById<FilterButton>(R.id.btn_status).apply {setLabel(c.getString(R.string.inventory_expiry_filter));setValue(c.getString(R.string.inventory_status_all))}
+                inventory.findViewById<FilterButton>(R.id.btn_status).apply {setLabel(c.getString(R.string.inventory_expiry_filter));setValue(c.getString(R.string.filter_any))}
                 // Move the actual inventory header into the fixture; rows below use the production adapter.
                 val header=inventory as LinearLayout
                 repeat(2){val v=header.getChildAt(0);header.removeView(v);root.addView(v)}

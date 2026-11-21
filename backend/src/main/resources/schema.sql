@@ -556,3 +556,15 @@ CREATE TABLE IF NOT EXISTS ingredient_user_alias (
  PRIMARY KEY(user_id,alias_text),FOREIGN KEY(user_id) REFERENCES user(id) ON DELETE CASCADE,
  FOREIGN KEY(ingredient_id) REFERENCES ingredient(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 菜谱评论表
+CREATE TABLE IF NOT EXISTS `recipe_comment` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '评论ID',
+    `recipe_id` BIGINT NOT NULL COMMENT '菜谱ID',
+    `user_id` BIGINT NOT NULL COMMENT '评论者ID',
+    `content` VARCHAR(500) NOT NULL COMMENT '评论内容',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    FOREIGN KEY (`recipe_id`) REFERENCES `recipe`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE CASCADE,
+    INDEX idx_comment_recipe (`recipe_id`, `created_at` DESC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='菜谱评论表';

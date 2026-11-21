@@ -26,7 +26,8 @@ class MealEditorActivity : AppCompatActivity() {
     private lateinit var title: EditText
     private lateinit var dishList: LinearLayout
     private lateinit var date: EditText
-    private lateinit var shopping: EditText
+    private lateinit var textAdd: EditText
+    private lateinit var shoppingList: LinearLayout
     private var meal = ""
     private var ready = false
     private var busy = false
@@ -76,7 +77,7 @@ class MealEditorActivity : AppCompatActivity() {
                 model =
                     if (stored != null) Gson().fromJson(stored, MealArrangement::class.java)
                     else if (id != null) Ui.data(ApiClient.getService().meal(id)) else model
-                if(stored==null && id==null && model.kind=="order") {
+                if(stored==null && id==null) {
                     val next=MealDefaults.next(java.time.LocalDateTime.now())
                     model=model.copy(title="${next.date} - ${UiStrings.domain(next.meal)}",mealDate=next.date.toString(),meal=next.meal)
                 }
@@ -109,34 +110,24 @@ class MealEditorActivity : AppCompatActivity() {
         b.putString("key", key)
     }
 
+    private fun sectionTitle(value: String): TextView =
+        Ui.text(this, value, 20f, true).apply { setPadding(0, dp(14), 0, dp(2)) }
+
     private fun draw() {
         ready = false
         root.removeAllViews()
+        val isPrep = model.kind == "prep"
         val heading=Ui.row(this)
         heading.addView(Ui.back(this){finish()})
-        heading.addView(Ui.text(this,if(model.kind=="prep")getString(R.string.ui_90e2746c75) else getString(R.string.ui_d85522beda),22f,true))
+        heading.addView(Ui.text(this,if(isPrep)getString(R.string.ui_90e2746c75) else getString(R.string.ui_d85522beda),22f,true))
         root.addView(heading)
         val editable = model.ownerId == null || model.ownerId == PreferenceManager.userId
+
         title = Ui.field(this, UiStrings.s(com.familyrecipes.android.R.string.ui_8ee9f276a6), model.title)
         root.addView(title)
-        root.addView(Ui.text(this,getString(com.familyrecipes.android.R.string.meal_dish_list),20f,true))
-        dishList=Ui.box(this,0);root.addView(dishList)
-        renderDishes()
-        if(editable)root.addView(Ui.button(this,getString(com.familyrecipes.android.R.string.meal_manual_add)) {
-            val input=Ui.field(this,getString(com.familyrecipes.android.R.string.meal_dish_name))
-            val dialog=androidx.appcompat.app.AlertDialog.Builder(this).setTitle(com.familyrecipes.android.R.string.meal_manual_add)
-                .setView(input).setNegativeButton(android.R.string.cancel,null).setPositiveButton(android.R.string.ok,null).create()
-            dialog.setOnShowListener {dialog.getButton(-1).setOnClickListener {
-                val name=input.text.toString().trim()
-                if(name.isBlank()){input.error=getString(com.familyrecipes.android.R.string.meal_dish_name);return@setOnClickListener}
-                saved=false;model=model.copy(dishes=model.dishes+MealDish(name=name));renderDishes();draft();dialog.dismiss()
-            }};dialog.show()
-        })
-        val choose =
-            Ui.button(this, UiStrings.s(com.familyrecipes.android.R.string.ui_805cb9cde8)) {
-                picker.launch(Intent(this, RecipePickerActivity::class.java))
-            }
-        root.addView(choose)
+
+        // 1. 这一餐：先确认时间，再决定吃什么。
+        root.addView(sectionTitle(getString(R.string.meal_when)))
         date = Ui.field(this, getString(R.string.review_date_hint), model.mealDate.orEmpty()).apply {
             isFocusable=false
             setOnClickListener {
@@ -158,34 +149,54 @@ class MealEditorActivity : AppCompatActivity() {
                 draft()
             }
         root.addView(select)
-        shopping = Ui.field(this, UiStrings.s(com.familyrecipes.android.R.string.ui_be850c21d5), model.shopping.joinToString("\n") { it.name }, true)
-        if (model.kind == "prep") {
-            root.addView(Ui.text(this, UiStrings.s(com.familyrecipes.android.R.string.ui_ca89d33725), 20f, true))
-            root.addView(shopping)
-            root.addView(Ui.button(this, UiStrings.s(com.familyrecipes.android.R.string.ui_6d58daf417)) { generateShopping() })
-            model.shopping.forEachIndexed { i, item ->
-                root.addView(
-                    CheckBox(this).apply {
-                        text = item.name
-                        isChecked = item.done
-                        isEnabled = editable
-                        setOnCheckedChangeListener { _, v ->
-                            saved=false
-                            model =
-                                model.copy(
-                                    shopping =
-                                        model.shopping.mapIndexed { j, x ->
-                                            if (j == i) x.copy(done = v) else x
-                                        })
-                            draft()
-                        }
-                    })
+
+        // 2. 菜单：备菜按“菜 → 所需食材”展示。
+        root.addView(sectionTitle(if(isPrep)getString(R.string.meal_prep_menu) else getString(R.string.meal_dish_list)))
+        dishList=Ui.box(this,0);root.addView(dishList)
+        renderDishes()
+
+        // 3. 文字添加：一行一道菜，冒号后接食材。
+        root.addView(sectionTitle(getString(R.string.meal_add_by_text)))
+        textAdd = Ui.field(this, getString(R.string.meal_text_hint), multi = true).apply { minLines = 3 }
+        root.addView(textAdd)
+        root.addView(Ui.button(this, getString(R.string.meal_parse_add)) { addFromText() })
+        val choose =
+            Ui.button(this, UiStrings.s(com.familyrecipes.android.R.string.ui_805cb9cde8)) {
+                picker.launch(Intent(this, RecipePickerActivity::class.java))
             }
+        root.addView(choose)
+        if (isPrep)
+            root.addView(Ui.button(this, getString(R.string.meal_generate_ingredients)) { generateIngredients() })
+
+        // 4. 备菜的采购清单，按食材逐项打勾。
+        if (isPrep) {
+            root.addView(sectionTitle(getString(R.string.meal_need_buy)))
+            shoppingList = Ui.box(this, 0)
+            root.addView(shoppingList)
+            renderShopping()
+            val addRow = Ui.row(this)
+            val itemAdd = Ui.field(this, getString(R.string.meal_add_shopping_hint)).apply {
+                layoutParams = LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = dp(8) }
+            }
+            addRow.addView(itemAdd)
+            addRow.addView(Ui.button(this, getString(R.string.meal_parse_add)) {
+                val name = itemAdd.text.toString().trim()
+                if (name.isNotBlank()) {
+                    saved = false
+                    model = model.copy(shopping = mergeShopping(model.shopping, listOf(name)))
+                    itemAdd.setText("")
+                    renderShopping()
+                    draft()
+                }
+            })
+            root.addView(addRow)
         }
-        listOf(title, date, shopping).forEach {
+
+        listOf(title, date).forEach {
             it.isEnabled = editable
             it.doAfterTextChanged { if(ready && !busy)saved=false;draft() }
         }
+        textAdd.isEnabled = editable
         choose.isEnabled = editable
         select.isEnabled = editable
         if (editable) {
@@ -215,6 +226,7 @@ class MealEditorActivity : AppCompatActivity() {
     private fun renderDishes() {
         dishList.removeAllViews()
         val editable=model.ownerId==null || model.ownerId==PreferenceManager.userId
+        val isPrep = model.kind == "prep"
         if(model.dishes.isEmpty())dishList.addView(Ui.text(this,getString(R.string.meal_dishes_empty)))
         model.dishes.forEachIndexed { index,dish ->
             val card=Ui.card(this)
@@ -235,6 +247,18 @@ class MealEditorActivity : AppCompatActivity() {
                     saved=false;renderDishes();draft();dialog.dismiss()
                 }};dialog.show()
             }
+            fun editIngredients(){
+                val input=Ui.field(this,getString(R.string.meal_dish_ingredients),dish.ingredients.orEmpty().joinToString("、"),true)
+                val dialog=androidx.appcompat.app.AlertDialog.Builder(this).setTitle(R.string.meal_dish_ingredients)
+                    .setView(input).setNegativeButton(android.R.string.cancel,null).setPositiveButton(android.R.string.ok,null).create()
+                dialog.setOnShowListener {dialog.getButton(-1).setOnClickListener {
+                    val items=parseIngredients(input.text.toString())
+                    model=model.copy(
+                        dishes=model.dishes.mapIndexed { i,d->if(i==index)d.copy(ingredients=items) else d },
+                        shopping=mergeShopping(model.shopping,items))
+                    saved=false;renderDishes();if(::shoppingList.isInitialized)renderShopping();draft();dialog.dismiss()
+                }};dialog.show()
+            }
             if(dish.recipeId!=null){card.isFocusable=true;card.setOnClickListener{openRecipe()}}
             if(editable) {
                 val more=androidx.appcompat.widget.AppCompatImageButton(this).apply {
@@ -245,18 +269,111 @@ class MealEditorActivity : AppCompatActivity() {
                     setOnClickListener {anchor->PopupMenu(this@MealEditorActivity,anchor).apply {
                         if(dish.recipeId!=null)menu.add(0,0,0,R.string.meal_open_recipe)
                         menu.add(0,1,1,R.string.meal_rename_dish)
-                        menu.add(0,2,2,R.string.meal_remove_dish)
+                        if(isPrep)menu.add(0,2,2,R.string.meal_dish_ingredients)
+                        menu.add(0,3,3,R.string.meal_remove_dish)
                         setOnMenuItemClickListener {item->when(item.itemId){
                             0->openRecipe()
                             1->rename()
-                            2->{model=model.copy(dishes=model.dishes.filterIndexed { i,_->i!=index });saved=false;renderDishes();draft()}
+                            2->editIngredients()
+                            3->{model=model.copy(dishes=model.dishes.filterIndexed { i,_->i!=index });saved=false;renderDishes();if(::shoppingList.isInitialized)renderShopping();draft()}
+                            else->{}
                         };true};show()
                     }}
                 }
                 row.addView(more,LinearLayout.LayoutParams(dp(48),dp(48)))
             } else if(dish.recipeId!=null)row.addView(Ui.text(this,"›",24f))
-            card.addView(row);dishList.addView(card)
+            card.addView(row)
+            if (!dish.ingredients.isNullOrEmpty()) {
+                card.addView(Ui.text(this, getString(R.string.meal_prep_ingredients, dish.ingredients.orEmpty().joinToString("、")), 14f).apply {
+                    setTextColor(Ui.muted); setPadding(0, 0, 0, dp(2))
+                })
+            } else if (isPrep) {
+                card.addView(Ui.text(this, getString(R.string.meal_no_ingredients), 13f).apply {
+                    setTextColor(Ui.muted); setPadding(0, 0, 0, dp(2))
+                })
+            }
+            dishList.addView(card)
         }
+    }
+
+    private fun renderShopping() {
+        if (!::shoppingList.isInitialized) return
+        shoppingList.removeAllViews()
+        if (model.shopping.isEmpty()) {
+            shoppingList.addView(Ui.text(this, getString(R.string.meal_dishes_empty), 14f).apply { setTextColor(Ui.muted) })
+            return
+        }
+        model.shopping.forEachIndexed { i, item ->
+            val row = Ui.row(this)
+            row.addView(
+                CheckBox(this).apply {
+                    text = item.name
+                    isChecked = item.done
+                    setOnCheckedChangeListener { _, v ->
+                        saved = false
+                        model = model.copy(shopping = model.shopping.mapIndexed { j, x -> if (j == i) x.copy(done = v) else x })
+                        draft()
+                    }
+                }, LinearLayout.LayoutParams(0, -2, 1f))
+            row.addView(Ui.button(this, getString(R.string.draft_delete)) {
+                saved = false
+                model = model.copy(shopping = model.shopping.filterIndexed { j, _ -> j != i })
+                renderShopping(); draft()
+            }.apply { textSize = 13f; minHeight = (36 * resources.displayMetrics.density).toInt() })
+            shoppingList.addView(row)
+        }
+    }
+
+    private fun parseIngredients(text: String): List<String> =
+        text.lines().flatMap { it.split('、', '，', ',', '；', ';') }
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .take(30)
+
+    private fun mergeShopping(existing: List<ShoppingItem>, names: List<String>): List<ShoppingItem> {
+        val byName = existing.associateBy { it.name }
+        return (existing.map { it.name } + names)
+            .distinct()
+            .map { byName[it] ?: ShoppingItem(it) }
+            .take(200)
+    }
+
+    /** 一行一道菜：菜名：食材1、食材2；没有冒号时只添加菜名。 */
+    private fun addFromText() {
+        val raw = textAdd.text.toString().trim()
+        if (raw.isBlank()) {
+            Toast.makeText(this, getString(R.string.meal_quick_empty), Toast.LENGTH_SHORT).show()
+            return
+        }
+        val parsed = raw.lines().mapNotNull { line ->
+            val value = line.trim().removePrefix("-").trim()
+            if (value.isBlank()) return@mapNotNull null
+            val parts = value.split('：', ':', limit = 2)
+            val name = parts[0].trim().take(100)
+            if (name.isBlank()) return@mapNotNull null
+            MealDish(name = name, ingredients = if (parts.size > 1) parseIngredients(parts[1]) else emptyList())
+        }
+        if (parsed.isEmpty()) return
+        var dishes = model.dishes
+        val addedIngredients = mutableListOf<String>()
+        parsed.forEach { dish ->
+            val existing = dishes.indexOfFirst { it.name == dish.name }
+            if (existing >= 0) {
+                dishes = dishes.mapIndexed { i, d ->
+                    if (i == existing) d.copy(ingredients = (d.ingredients.orEmpty() + dish.ingredients.orEmpty()).distinct()) else d
+                }
+            } else if (dishes.size < 100) {
+                dishes = dishes + dish
+            }
+            addedIngredients.addAll(dish.ingredients.orEmpty())
+        }
+        saved = false
+        model = model.copy(dishes = dishes, shopping = mergeShopping(model.shopping, addedIngredients))
+        textAdd.setText("")
+        renderDishes()
+        if (::shoppingList.isInitialized) renderShopping()
+        draft()
     }
 
     private fun value() =
@@ -265,17 +382,10 @@ class MealEditorActivity : AppCompatActivity() {
             mealDate = date.text.toString().trim().ifBlank { null },
             meal = meal.ifBlank { null },
             dishes = model.dishes,
-            shopping =
-                shopping.text
-                    .toString()
-                    .lines()
-                    .map { it.trim() }
-                    .filter { it.isNotBlank() }
-                    .distinct()
-                    .map { n -> model.shopping.find { it.name == n } ?: ShoppingItem(n) })
+            shopping = model.shopping)
 
     private fun draft() {
-        if (ready && !hasDraft && title.text.isBlank() && model.dishes.isEmpty() && shopping.text.isBlank()) return
+        if (ready && !hasDraft && title.text.isBlank() && model.dishes.isEmpty() && model.shopping.isEmpty()) return
         if (ready &&
             !saved &&
             !busy &&
@@ -288,7 +398,8 @@ class MealEditorActivity : AppCompatActivity() {
         super.onStop()
     }
 
-    private fun generateShopping() {
+    /** 从关联菜谱和库存生成每道菜要买的食材。 */
+    private fun generateIngredients() {
         if (busy) return
         busy = true
         lifecycleScope.launch {
@@ -299,25 +410,19 @@ class MealEditorActivity : AppCompatActivity() {
                         .filter { it.status != "expired" }
                         .map { it.ingredientId }
                         .toSet()
-                val extra = mutableListOf<String>()
-                for (d in snapshot.dishes) {
-                    d.recipeId?.let { id ->
-                        Ui.data(ApiClient.getService().getRecipeDetail(id))
-                            .ingredients
-                            .orEmpty()
-                            .filter { it.ingredientId !in stock }
-                            .forEach {
-                                extra.add(
-                                    "${it.ingredient?.name.orEmpty()} ${it.amount.orEmpty()}"
-                                        .trim())
-                            }
-                    }
-                }
-                shopping.setText(
-                    (shopping.text.toString().lines() + extra)
+                val dishes = snapshot.dishes.map { dish ->
+                    val id = dish.recipeId ?: return@map dish
+                    val items = Ui.data(ApiClient.getService().getRecipeDetail(id))
+                        .ingredients
+                        .orEmpty()
+                        .filter { it.ingredientId !in stock }
+                        .map { "${it.ingredient?.name.orEmpty()} ${it.amount.orEmpty()}".trim() }
                         .filter { it.isNotBlank() }
-                        .distinct()
-                        .joinToString("\n"))
+                    dish.copy(ingredients = (dish.ingredients.orEmpty() + items).distinct())
+                }
+                val all = dishes.flatMap { it.ingredients.orEmpty() }.distinct()
+                model = snapshot.copy(dishes = dishes, shopping = mergeShopping(snapshot.shopping, all))
+                renderDishes(); renderShopping()
                 Toast.makeText(this@MealEditorActivity, UiStrings.s(com.familyrecipes.android.R.string.ui_24ea6b09e1), Toast.LENGTH_LONG)
                     .show()
             } catch (e: CancellationException) {
@@ -384,6 +489,13 @@ class MealEditorActivity : AppCompatActivity() {
         if(groups.isEmpty()) {
             Toast.makeText(this,getString(R.string.review_saved_no_group),Toast.LENGTH_LONG).show()
             finish();return
+        }
+        if (groups.size == 1) {
+            // 只有一个群时直接转发，减少一次点击。
+            Ui.data(ApiClient.getService().shareMeal(m.id!!, ChatShareRequest(groups.first().id!!)))
+            Toast.makeText(this, UiStrings.s(com.familyrecipes.android.R.string.ui_54bba45c94), Toast.LENGTH_SHORT).show()
+            finish()
+            return
         }
         androidx.appcompat.app.AlertDialog.Builder(this)
             .setOnCancelListener { saved=false }

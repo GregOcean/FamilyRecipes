@@ -98,6 +98,16 @@ interface ApiService {
     @GET("/api/recipes/{id}")
     suspend fun getRecipeDetail(@Path("id") id: Long, @Header("X-Content-Original") original: Boolean = false): Response<ApiResponse<Recipe>>
 
+    // ========== 菜谱评论 ==========
+    @GET("/api/recipes/{recipeId}/comments")
+    suspend fun getComments(@Path("recipeId") recipeId: Long): Response<ApiResponse<List<RecipeComment>>>
+
+    @POST("/api/recipes/{recipeId}/comments")
+    suspend fun addComment(@Path("recipeId") recipeId: Long, @Body request: Map<String, String>): Response<ApiResponse<RecipeComment>>
+
+    @DELETE("/api/recipes/{recipeId}/comments/{commentId}")
+    suspend fun deleteComment(@Path("recipeId") recipeId: Long, @Path("commentId") commentId: Long): Response<ApiResponse<Unit>>
+
     @GET("/api/recipes/search")
     suspend fun searchRecipes(
         @Query("kitchenId") kitchenId: Long? = null,

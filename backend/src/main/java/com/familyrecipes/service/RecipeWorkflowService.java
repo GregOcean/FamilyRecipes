@@ -59,6 +59,10 @@ public class RecipeWorkflowService {
       Long user, Long kitchen, String scope, String origin, String keyword, String taste,
       Integer minutes, Integer missing, boolean known, String seed, int page, String cuisine,
       String sources, String tastes, String cuisines, String times, String stocks) {
+    // “#标签”前缀表示按标签搜索，标签本身不带 # 存储。
+    boolean tagOnly = keyword != null && keyword.trim().startsWith("#");
+    if (tagOnly) keyword = keyword.trim().substring(1).trim();
+    if (keyword == null) keyword = "";
     var tasteValues=selections(tastes,12,20);
     var cuisineValues=selections(cuisines,100,50);
     var timeValues=selections(times,4,3);
@@ -133,7 +137,10 @@ public class RecipeWorkflowService {
       where += " AND EXISTS(SELECT 1 FROM recipe_cook c WHERE c.recipe_id=r.id AND c.user_id=?)";
       args.add(user);
     }
-    if (!keyword.isBlank()) {
+    if (tagOnly && !keyword.isBlank()) {
+      where += " AND EXISTS(SELECT 1 FROM recipe_tag t WHERE t.recipe_id=r.id AND t.tag_value LIKE ?)";
+      args.add("%" + keyword + "%");
+    } else if (!keyword.isBlank()) {
       where +=
           " AND (r.name LIKE ? OR r.description LIKE ? OR EXISTS(SELECT 1 FROM recipe_tag t WHERE"
               + " t.recipe_id=r.id AND t.tag_value LIKE ?) OR EXISTS(SELECT 1 FROM"
@@ -189,7 +196,11 @@ public class RecipeWorkflowService {
     Long total =
         db.queryForObject("SELECT COUNT(*) FROM recipe r" + where, Long.class, args.toArray());
     String order=" ORDER BY r.id DESC";
-    if(!keyword.isBlank()) {
+    if(tagOnly && !keyword.isBlank()) {
+      order=" ORDER BY CASE WHEN EXISTS(SELECT 1 FROM recipe_tag t WHERE t.recipe_id=r.id AND t.tag_value=?) THEN 0 ELSE 1 END,"
+          + " COALESCE(r.view_count,0) DESC, COALESCE(r.favorite_count,0) DESC,r.id DESC";
+      args.add(keyword);
+    } else if(!keyword.isBlank()) {
       order=" ORDER BY CASE WHEN r.name=? OR EXISTS(SELECT 1 FROM content_translations ct WHERE ct.source_hash=SHA2(r.name,256) AND ct.kind='content' AND ct.status='ready' AND ct.translated_text=?) THEN 0 "
           + "WHEN r.name LIKE ? OR EXISTS(SELECT 1 FROM content_translations ct WHERE ct.source_hash=SHA2(r.name,256) AND ct.kind='content' AND ct.status='ready' AND ct.translated_text LIKE ?) THEN 1 "
           + "WHEN EXISTS(SELECT 1 FROM recipe_ingredient ri JOIN ingredient i ON i.id=ri.ingredient_id WHERE ri.recipe_id=r.id AND i.name LIKE ?) THEN 2 ELSE 3 END,"

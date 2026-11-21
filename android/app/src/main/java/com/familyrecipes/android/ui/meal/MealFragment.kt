@@ -12,7 +12,6 @@ import com.familyrecipes.android.data.model.*
 import com.familyrecipes.android.data.remote.ApiClient
 import com.familyrecipes.android.ui.design.Ui
 import com.familyrecipes.android.ui.design.Ui.dp
-import com.familyrecipes.android.ui.recipe.EditRecipeActivity
 import com.google.gson.Gson
 import kotlinx.coroutines.*
 
@@ -21,6 +20,10 @@ class MealFragment : Fragment() {
     private lateinit var drafts: LinearLayout
     private lateinit var heading: TextView
     private lateinit var addButton: com.google.android.material.button.MaterialButton
+    private lateinit var composer: LinearLayout
+    private lateinit var quickInput: EditText
+    private lateinit var quickSend: com.google.android.material.button.MaterialButton
+    private var quickBusy = false
     private var tab = "order"
     private val tabButtons=mutableMapOf<String,com.google.android.material.button.MaterialButton>()
     private var job: Job? = null
@@ -34,13 +37,15 @@ class MealFragment : Fragment() {
             tabButtons[key]=button
             row.addView(
                 button,
-                LinearLayout.LayoutParams(0, -2, 1f))
+                LinearLayout.LayoutParams(0, -2, 1f).apply { marginStart = requireContext().dp(2); marginEnd = requireContext().dp(2) })
         }
         root.addView(row)
+        composer = buildOrderComposer()
+        root.addView(composer)
         val section=Ui.row(requireContext())
         heading=Ui.text(requireContext(),UiStrings.s(com.familyrecipes.android.R.string.ui_e92d29c51a),17f,true)
         section.addView(heading,LinearLayout.LayoutParams(0,-2,1f))
-        addButton=Ui.button(requireContext(),UiStrings.s(com.familyrecipes.android.R.string.ui_f9616f9a11),true) {
+        addButton=Ui.button(requireContext(),UiStrings.s(com.familyrecipes.android.R.string.ui_f9616f9a11)) {
             startActivity(Intent(requireContext(),MealEditorActivity::class.java).putExtra("kind",if(tab=="prep")"prep" else "order"))
         }
         section.addView(addButton,LinearLayout.LayoutParams(-2,-2));root.addView(section)
@@ -50,6 +55,93 @@ class MealFragment : Fragment() {
         content.addView(list);content.addView(drafts)
         root.addView(Ui.scroll(requireContext(), content), LinearLayout.LayoutParams(-1, 0, 1f))
         return root
+    }
+
+    /**
+     * 点菜默认只保留一个自由输入框，输入后即可转发到群。
+     */
+    private fun buildOrderComposer(): LinearLayout {
+        val ctx = requireContext()
+        return Ui.card(ctx).apply {
+            addView(Ui.text(ctx, getString(com.familyrecipes.android.R.string.meal_quick_order_title), 20f, true))
+            quickInput = Ui.field(ctx, getString(com.familyrecipes.android.R.string.meal_quick_order_hint), multi = true).apply {
+                minLines = 2
+                maxLines = 4
+                setPadding(ctx.dp(12), ctx.dp(10), ctx.dp(12), ctx.dp(10))
+            }
+            addView(quickInput)
+            quickSend = Ui.button(ctx, getString(com.familyrecipes.android.R.string.meal_quick_send), true) { sendQuickOrder() }
+            addView(quickSend, LinearLayout.LayoutParams(-1, -2))
+        }
+    }
+
+    private fun sendQuickOrder() {
+        if (quickBusy) return
+        val text = quickInput.text.toString().trim()
+        if (text.isBlank()) {
+            Toast.makeText(requireContext(), getString(com.familyrecipes.android.R.string.meal_quick_empty), Toast.LENGTH_SHORT).show()
+            return
+        }
+        val kitchen = PreferenceManager.currentKitchenId
+        if (kitchen == null) {
+            Toast.makeText(requireContext(), getString(com.familyrecipes.android.R.string.ui_eb006cd6f1), Toast.LENGTH_SHORT).show()
+            return
+        }
+        val dishes = parseQuickDishes(text)
+        val title = text.lineSequence().firstOrNull()?.trim().orEmpty().take(80).ifBlank { text.take(80) }
+        quickBusy = true
+        quickSend.isEnabled = false
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val saved = Ui.data(
+                    ApiClient.getService().saveMeal(
+                        MealArrangement(kitchenId = kitchen, kind = "order", title = title, dishes = dishes)))
+                val groups = Ui.data(ApiClient.getService().getGroupsList())
+                when {
+                    groups.isEmpty() -> Toast.makeText(
+                        requireContext(), getString(com.familyrecipes.android.R.string.review_saved_no_group), Toast.LENGTH_LONG).show()
+                    groups.size == 1 -> shareAndFinish(saved.id!!, groups.first().id!!)
+                    else -> androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                        .setTitle(getString(com.familyrecipes.android.R.string.meal_group_pick))
+                        .setItems(groups.map { it.name }.toTypedArray()) { _, index ->
+                            viewLifecycleOwner.lifecycleScope.launch {
+                                try { shareAndFinish(saved.id!!, groups[index].id!!) }
+                                catch (e: CancellationException) { throw e }
+                                catch (e: Exception) { Ui.toast(requireContext(), e) }
+                            }
+                        }
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .show()
+                }
+                if (groups.isNotEmpty()) load()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Ui.toast(requireContext(), e)
+            } finally {
+                quickBusy = false
+                if (::quickSend.isInitialized) quickSend.isEnabled = true
+            }
+        }
+    }
+
+    private suspend fun shareAndFinish(mealId: Long, groupId: Long) {
+        Ui.data(ApiClient.getService().shareMeal(mealId, ChatShareRequest(groupId)))
+        if (!isAdded) return
+        Toast.makeText(requireContext(), getString(com.familyrecipes.android.R.string.ui_54bba45c94), Toast.LENGTH_SHORT).show()
+        quickInput.setText("")
+    }
+
+    /** 把自由输入拆成菜品：支持换行、顿号、逗号和分号分隔。 */
+    private fun parseQuickDishes(text: String): List<MealDish> {
+        val names = text.lines()
+            .flatMap { line -> line.split('、', '，', ',', '；', ';') }
+            .map { it.trim().removePrefix("-").trim() }
+            .filter { it.isNotBlank() }
+            .map { it.take(100) }
+            .distinct()
+            .take(30)
+        return (if (names.isEmpty()) listOf(text.take(80)) else names).map { MealDish(name = it) }
     }
 
     override fun onSaveInstanceState(b: Bundle) {
@@ -71,8 +163,11 @@ class MealFragment : Fragment() {
 
     private fun load() {
         if (!::list.isInitialized) return
-        heading.text=when(tab){"prep"->UiStrings.s(com.familyrecipes.android.R.string.ui_e92d29c51a);"order"->UiStrings.s(com.familyrecipes.android.R.string.ui_3368ec1127);else->UiStrings.s(com.familyrecipes.android.R.string.ui_82bb31b616)}
-        addButton.text=if(tab=="prep")UiStrings.s(com.familyrecipes.android.R.string.ui_f9616f9a11) else UiStrings.s(com.familyrecipes.android.R.string.ui_880468380a)
+        composer.visibility = if (tab == "order") View.VISIBLE else View.GONE
+        heading.text=if(tab=="prep")getString(com.familyrecipes.android.R.string.meal_my_prep)
+            else getString(com.familyrecipes.android.R.string.meal_my_order)
+        addButton.text=if(tab=="prep")getString(com.familyrecipes.android.R.string.meal_prep_new)
+            else getString(com.familyrecipes.android.R.string.meal_quick_more)
         tabButtons.forEach{(key,b)->
             b.setTextColor(if(key==tab)Ui.blue else Ui.muted)
             b.backgroundTintList=android.content.res.ColorStateList.valueOf(if(key==tab)Ui.pale else Ui.bg)
@@ -107,6 +202,11 @@ class MealFragment : Fragment() {
                                     14f))
                             card.addView(
                                 Ui.text(requireContext(), m.dishes.joinToString("、") { it.name }))
+                            if (kind == "prep") {
+                                val items = m.dishes.flatMap { it.ingredients.orEmpty() }.filter { it.isNotBlank() }.distinct()
+                                if (items.isNotEmpty())
+                                    card.addView(Ui.text(requireContext(), getString(com.familyrecipes.android.R.string.meal_prep_ingredients, items.joinToString("、")), 14f).apply { setTextColor(Ui.muted) })
+                            }
                             card.addView(
                                 Ui.text(
                                     requireContext(),

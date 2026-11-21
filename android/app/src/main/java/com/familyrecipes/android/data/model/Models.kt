@@ -315,7 +315,7 @@ data class Kitchen(val id: Long? = null, @SerializedName("group_id") val groupId
     val name: String, @SerializedName("group_name") val groupName: String? = null)
 data class RecipeImage(val url: String, val category: String = "screenshot", val caption: String? = null, val position: Int = 0)
 
-data class MealDish(@SerializedName("recipe_id") val recipeId:Long?=null,val name:String)
+data class MealDish(@SerializedName("recipe_id") val recipeId:Long?=null,val name:String,val ingredients:List<String>?=null)
 data class ShoppingItem(val name:String,val done:Boolean=false)
 data class MealArrangement(val id:Long?=null,@SerializedName("owner_id") val ownerId:Long?=null,
  @SerializedName("kitchen_id") val kitchenId:Long?,val kind:String="order",val title:String="",
@@ -338,3 +338,14 @@ data class FriendInvitation(val id:Long,@SerializedName("sender_id") val senderI
 // Receipt drafts stay editable until one atomic, idempotent inventory import.
 data class ReceiptItem(val name: String?, val quantity: String?, val storage: String?, @SerializedName("estimated_days") val estimatedDays: Int?, @SerializedName("ingredient_id") val ingredientId: Long? = null, @SerializedName("expiry_date") val expiryDate: String? = null)
 data class ReceiptImportRequest(@SerializedName("request_id") val requestId: String, @SerializedName("kitchen_id") val kitchenId: Long, val items: List<ReceiptItem>)
+
+/**
+ * 菜谱评论
+ */
+data class RecipeComment(
+    val id: Long? = null,
+    @SerializedName("recipe_id") val recipeId: Long? = null,
+    val content: String = "",
+    @SerializedName("created_at") val createdAt: String? = null,
+    val user: User? = null
+)

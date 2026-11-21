@@ -164,7 +164,10 @@ class ProfileFragment : Fragment() {
 
     private fun setupLoginListeners() {
         binding.tvForgotPassword.setOnClickListener {
-            startActivity(Intent(requireContext(),ForgotPasswordActivity::class.java).putExtra("email",binding.etEmail.text.toString().trim()))
+            // 忘记密码只支持邮箱，用户名登录时不预填。
+            val value = binding.etEmail.text.toString().trim()
+            startActivity(Intent(requireContext(),ForgotPasswordActivity::class.java)
+                .putExtra("email", if (value.contains("@")) value else ""))
         }
 
         // 登录按钮
@@ -194,10 +197,14 @@ class ProfileFragment : Fragment() {
         refreshCodeButton()
         if (isLoginMode) {
             binding.layoutUsername.visibility = View.GONE
+            binding.etEmail.hint = getString(R.string.login_account_hint)
+            binding.etEmail.inputType = android.text.InputType.TYPE_CLASS_TEXT
             binding.btnLogin.text = UiStrings.s(com.familyrecipes.android.R.string.ui_402d19e50f)
             binding.tvSwitchMode.text = UiStrings.s(com.familyrecipes.android.R.string.ui_d8f9fa703c)
         } else {
             binding.layoutUsername.visibility = View.VISIBLE
+            binding.etEmail.hint = UiStrings.s(com.familyrecipes.android.R.string.ui_3bc5e602b2)
+            binding.etEmail.inputType = android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
             binding.btnLogin.text = UiStrings.s(com.familyrecipes.android.R.string.ui_fe0e8bf768)
             binding.tvSwitchMode.text = UiStrings.s(com.familyrecipes.android.R.string.ui_7c1277e4fd)
         }
@@ -209,10 +216,10 @@ class ProfileFragment : Fragment() {
     }
 
     private fun performLogin() {
-        val email = binding.etEmail.text.toString().trim()
+        val account = binding.etEmail.text.toString().trim()
         val password = binding.etPassword.text.toString()
 
-        if (email.isEmpty() || password.isEmpty()) {
+        if (account.isEmpty() || password.isEmpty()) {
             android.widget.Toast.makeText(context, UiStrings.s(com.familyrecipes.android.R.string.ui_fe142a5429), android.widget.Toast.LENGTH_SHORT).show()
             return
         }
@@ -221,7 +228,7 @@ class ProfileFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val request = mapOf("email" to email, "password" to password)
+                val request = mapOf("account" to account, "password" to password)
                 val response = ApiClient.getService().login(request)
 
                 if (response.isSuccessful && response.body()?.code == 200) {

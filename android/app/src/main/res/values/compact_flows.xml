@@ -3,7 +3,7 @@
     <string name="feed_swipe_more">继续上滑加载更多</string>
     <string name="feed_retry_swipe">加载失败，再次上滑重试</string>
     <string name="inventory_category_filter">食材类别</string>
-    <string name="inventory_expiry_filter">过期状态</string>
+    <string name="inventory_expiry_filter">食材状态</string>
     <string name="inventory_status_all">全部在库</string>
     <string name="inventory_status_fresh">未临期</string>
     <string name="meal_continue_draft">继续编辑</string>

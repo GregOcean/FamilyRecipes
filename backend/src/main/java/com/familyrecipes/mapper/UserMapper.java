@@ -18,6 +18,9 @@ public interface UserMapper {
     @Select("SELECT * FROM user WHERE email = #{email}")
     User findByEmail(String email);
 
+    @Select("SELECT * FROM user WHERE username = #{username} ORDER BY id")
+    java.util.List<User> findByUsername(String username);
+
     @Insert("INSERT INTO user(email, password, username, avatar) " +
             "VALUES(#{email}, #{password}, #{username}, #{avatar})")
     @Options(useGeneratedKeys = true, keyProperty = "id")

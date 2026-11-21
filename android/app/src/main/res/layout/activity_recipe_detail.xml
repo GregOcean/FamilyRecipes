@@ -256,6 +256,83 @@
                 <TextView android:id="@+id/tv_favorite_count" android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:textColor="@color/text_secondary" android:textSize="14sp" />
             </LinearLayout>
+
+            <!-- Comments Section -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_comments"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="16dp"
+                app:cardBackgroundColor="@color/surface"
+                app:strokeWidth="0dp"
+                app:cardElevation="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/recipe_comments_title"
+                        android:textColor="@color/text_primary"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <LinearLayout
+                        android:id="@+id/comments_list"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginTop="8dp" />
+
+                    <TextView
+                        android:id="@+id/tv_comments_empty"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/recipe_comments_empty"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="14sp"
+                        android:layout_marginTop="8dp"
+                        android:visibility="gone" />
+
+                    <LinearLayout
+                        android:id="@+id/comments_input_row"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center_vertical">
+                        <EditText
+                            android:id="@+id/et_comment_input"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:minHeight="48dp"
+                            android:hint="@string/recipe_comment_hint"
+                            android:textSize="14sp"
+                            android:inputType="text"
+                            android:singleLine="true"
+                            android:background="@drawable/search_background"
+                            android:paddingHorizontal="12dp" />
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_send_comment"
+                            style="@style/Widget.Material3.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:minHeight="48dp"
+                            android:minWidth="48dp"
+                            android:text="@string/recipe_comment_send"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
             </LinearLayout>
 
         </FrameLayout>
