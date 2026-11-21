@@ -21,7 +21,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(authInterceptor)
                 .addPathPatterns("/api/**")  // 拦截所有API请求
-                .excludePathPatterns("/api/auth/login", "/api/auth/register", "/api/auth/registration-code");
+                .excludePathPatterns("/api/auth/login", "/api/auth/register", "/api/auth/registration-code", "/api/auth/password-reset-code", "/api/auth/password-reset");
     }
 
     @Override
@@ -38,6 +38,8 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
+        registry.addViewController("/admin").setViewName("forward:/admin/index.html");
+        registry.addViewController("/admin/").setViewName("forward:/admin/index.html");
         // 根路径重定向到index.html
         registry.addViewController("/").setViewName("forward:/index.html");
     }

@@ -1,0 +1,31 @@
+<resources>
+ <string name="inventory_unknown_expiry">有效期未知</string>
+ <string name="inventory_optional_expiry">预计天数（可留空）</string>
+ <string name="inventory_estimated">估算供安排食用参考，包装日期优先</string>
+ <string name="inventory_unresolved">未归类：保留原商品名，可选择标准食材</string>
+ <string name="inventory_match">匹配食材：%1$s</string>
+ <string name="inventory_use_estimate">按当前储存方式重新估算</string>
+ <string name="inventory_select_match">选择对应食材</string>
+ <string name="inventory_keep_name">保留原名，不关联</string>
+ <string name="inventory_date_optional">到期日期（YYYY-MM-DD，可留空）</string>
+ <string name="inventory_item_scan">识别食物与包装</string>
+ <string name="inventory_item_help">拍摄食物或包装。核对名称、数量与日期后入库。</string>
+ <string name="inventory_camera">拍照识别</string>
+ <string name="inventory_gallery">从相册识别</string>
+ <string name="inventory_camera_denied">需要相机权限才能拍照，也可以从相册选择。</string>
+ <string name="inventory_camera_missing">无法打开相机，请从相册选择图片。</string>
+ <string name="inventory_pending_save">上次入库结果未确认，重试不会重复添加。</string>
+ <string name="inventory_retry_save">重试上次入库</string>
+ <string name="inventory_receipt_optional">名称不能为空；数量、储存方式、天数可留空。</string>
+ <string name="scan_friend_title">扫描好友名片</string>
+ <string name="scan_gallery">从相册识别二维码</string>
+ <string name="scan_camera">打开相机</string>
+ <string name="scan_confirm_friend">添加 %1$s（ID %2$d）为好友？</string>
+ <string name="scan_invalid">未找到有效的好友名片二维码。</string>
+ <string name="scan_self">这是你自己的名片。</string>
+ <string name="scan_retry">识别失败，请重试或选择其他图片。</string>
+ <string name="inventory_replace_draft">替换当前食材草稿，改为录入所选食材？</string>
+ <string name="inventory_unclassified">待分类</string>
+ <string name="inventory_loading">正在准备厨房…</string>
+ <string name="inventory_loading_failed">厨房暂时无法加载，连接网络后可重试。</string>
+</resources>

@@ -16,6 +16,12 @@ import java.util.List;
 @Slf4j
 @Service
 public class MessageService {
+    public List<Message> search(Long userId,String query,Long beforeId) {
+        if(query==null || query.isBlank() || query.length()>100 || beforeId<1)
+            throw new com.familyrecipes.common.ApiException(400,"搜索内容须为1至100字符");
+        return messageMapper.search(userId,query.trim(),beforeId);
+    }
+
     
     @Autowired
     private MessageMapper messageMapper;
@@ -91,6 +97,12 @@ public class MessageService {
         if (!group.equals(prior.getGroupId()) || !prior.getContent().endsWith("\n" + link))
             throw new com.familyrecipes.common.ApiException(409, "消息编号已用于其他内容");
         return prior;
+    }
+
+    public List<Message> history(Long groupId,Long userId,Long beforeId,int limit) {
+        if(!groupChatMapper.isGroupMember(groupId,userId)) throw new com.familyrecipes.common.ApiException(404,"群组不存在或不可访问");
+        if(beforeId==null || beforeId<1 || limit<1 || limit>100) throw new com.familyrecipes.common.ApiException(400,"分页参数不合法");
+        return messageMapper.history(groupId,beforeId,limit);
     }
 
     public List<Message> catchUp(Long groupId,Long userId,Long afterId,int limit) {

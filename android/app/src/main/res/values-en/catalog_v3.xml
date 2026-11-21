@@ -1,0 +1,18 @@
+<resources>
+<string name="taste_bitter">Bitter</string>
+<string name="taste_pungent">Funky</string>
+<string name="time_under_hour">≤ 1 hour</string>
+<string name="time_over_hour">> 1 hour</string>
+<string name="stock_any_match">Missing allowed</string>
+<string name="stock_any_short">Any match</string>
+<string name="draft_delete">Delete draft</string>
+<string name="draft_delete_confirm">Delete this draft permanently?</string>
+<string name="recipe_drafts">Recipe and cooking drafts</string>
+<string name="messages_groups">Group chats</string>
+<string name="messages_alerts">Notifications</string>
+<string name="favorite_alerts">Recipe favorites</string>
+<string name="favorite_alert_count">%1$d unread favorites</string>
+<string name="favorite_alert_text">%1$s saved your recipe “%2$s”</string>
+<string name="favorite_alert_empty">No favorite notifications yet</string>
+<string name="read_all">Mark as read</string>
+</resources>

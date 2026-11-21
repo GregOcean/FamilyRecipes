@@ -37,13 +37,13 @@ class ChatWebSocketHandlerTest {
     @Test void senderComesFromHandshakeAndBroadcastUsesAndroidFieldNames() throws Exception {
         when(groups.isGroupMember(2L,7L)).thenReturn(true);
         handler.handleTextMessage(session,new TextMessage("{\"command\":\"SUBSCRIBE\",\"destination\":\"/topic/group/2\"}"));
-        Message saved=new Message();saved.setId(9L);saved.setGroupId(2L);saved.setSenderId(7L);saved.setContent("hello");saved.setCreatedAt(LocalDateTime.of(2026,11,1,10,0));
+        Message saved=new Message();saved.setId(9L);saved.setGroupId(2L);saved.setSenderId(7L);saved.setContent("hello");saved.setCreatedAt(java.time.Instant.parse("2026-11-01T10:00:00Z"));
         when(service.sendMessage(2L,7L,"hello",Message.MessageType.text)).thenReturn(saved);
         handler.handleTextMessage(session,new TextMessage("{\"command\":\"SEND\",\"body\":{\"groupId\":2,\"senderId\":999,\"content\":\"hello\"}}"));
         verify(service).sendMessage(2L,7L,"hello",Message.MessageType.text);
         handler.onMessage(saved); // committed-event delivery also covers HTTP sends
         var output=ArgumentCaptor.forClass(WebSocketMessage.class);verify(session,times(2)).sendMessage(output.capture());
-        String payload=output.getValue().getPayload().toString();assertTrue(payload.contains("\"sender_id\":7"));assertTrue(payload.contains("\"created_at\":\"2026-11-01T10:00:00\""));
+        String payload=output.getValue().getPayload().toString();assertTrue(payload.contains("\"sender_id\":7"));assertTrue(payload.contains("\"created_at\":\"2026-11-01T10:00:00Z\""));
     }
     @Test void expiredSessionCannotSend() throws Exception {
         when(jwt.validateToken("valid")).thenReturn(false);

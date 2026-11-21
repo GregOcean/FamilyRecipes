@@ -502,3 +502,57 @@ CREATE TABLE IF NOT EXISTS recipe_cuisine_refinement (
     KEY idx_cuisine_refinement_queue (status, next_attempt_at),
     FOREIGN KEY (recipe_id) REFERENCES recipe(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS recipe_favorite_notification (
+ id BIGINT PRIMARY KEY AUTO_INCREMENT,
+ recipient_id BIGINT NOT NULL,
+ actor_id BIGINT NOT NULL,
+ recipe_id BIGINT NOT NULL,
+ created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ read_at TIMESTAMP NULL,
+ UNIQUE KEY one_favorite_notice (recipient_id,actor_id,recipe_id),
+ INDEX recipient_unread (recipient_id,read_at,id),
+ FOREIGN KEY (recipient_id) REFERENCES `user`(id) ON DELETE CASCADE,
+ FOREIGN KEY (actor_id) REFERENCES `user`(id) ON DELETE CASCADE,
+ FOREIGN KEY (recipe_id) REFERENCES recipe(id) ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS recipe_enrichment (
+ recipe_id BIGINT PRIMARY KEY,
+ status VARCHAR(30) NOT NULL DEFAULT 'failed',
+ attempts INT NOT NULL DEFAULT 0,
+ next_attempt_at TIMESTAMP NULL,
+ source_hash VARCHAR(64),
+ model VARCHAR(100),
+ result_json JSON,
+ updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ FOREIGN KEY (recipe_id) REFERENCES recipe(id) ON DELETE CASCADE
+);
+
+-- v3 replaces the old coarse-to-province refinement queue.
+UPDATE recipe_cuisine_refinement SET status='superseded',last_error='SupersededByTaxonomyV3' WHERE status IN ('pending','running');
+
+CREATE TABLE IF NOT EXISTS password_reset_code LIKE registration_email_code;
+CREATE TABLE IF NOT EXISTS user_auth_version (
+ user_id BIGINT PRIMARY KEY, version BIGINT NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS catalog_admin_job (
+ id CHAR(36) PRIMARY KEY, status VARCHAR(20) NOT NULL, recipes JSON NOT NULL,
+ created_by BIGINT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ error VARCHAR(200), INDEX idx_catalog_admin_status(status,created_at)
+);
+CREATE TABLE IF NOT EXISTS catalog_media_credit (
+ recipe_id BIGINT NOT NULL, source_hash CHAR(64) NOT NULL, metadata JSON NOT NULL,
+ media_url VARCHAR(500) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ PRIMARY KEY(recipe_id,source_hash)
+);
+SET @q = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='ingredient' AND column_name='is_catalog')=0,'ALTER TABLE ingredient ADD is_catalog BOOLEAN NOT NULL DEFAULT TRUE','SELECT 1');
+PREPARE q FROM @q; EXECUTE q; DEALLOCATE PREPARE q;
+SET @q = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='fridge_item' AND column_name='display_name')=0,'ALTER TABLE fridge_item ADD display_name VARCHAR(100) NULL, ADD client_mutation_id VARCHAR(36) NULL, ADD UNIQUE KEY uk_stock_mutation(user_id,client_mutation_id)','SELECT 1');
+PREPARE q FROM @q; EXECUTE q; DEALLOCATE PREPARE q;
+ALTER TABLE fridge_item MODIFY expiry_date DATE NULL;
+CREATE TABLE IF NOT EXISTS ingredient_user_alias (
+ user_id BIGINT NOT NULL,alias_text VARCHAR(100) NOT NULL,ingredient_id BIGINT NOT NULL,
+ PRIMARY KEY(user_id,alias_text),FOREIGN KEY(user_id) REFERENCES user(id) ON DELETE CASCADE,
+ FOREIGN KEY(ingredient_id) REFERENCES ingredient(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

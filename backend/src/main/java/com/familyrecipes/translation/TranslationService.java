@@ -17,6 +17,7 @@ public class TranslationService {
     private final AiRoutes routes;
     private final ChatCompletionClient client;
     private volatile long providerRetryAt;
+    @org.springframework.beans.factory.annotation.Autowired private com.familyrecipes.service.TaskControl controls;
     @Value("${app.translation.version:v1}") private String version;
     @Value("${app.translation.enabled:false}") private boolean enabled;
     public TranslationService(JdbcTemplate db,AiRoutes routes,ChatCompletionClient client) { this.db=db; this.routes=routes;this.client=client; }
@@ -54,7 +55,7 @@ public class TranslationService {
     }
     @Scheduled(fixedDelayString="${app.translation.poll-ms:2000}")
     public synchronized void work() {
-        if(!enabled || System.currentTimeMillis()<providerRetryAt) return;
+        if(!enabled || controls.isPaused("translation") || System.currentTimeMillis()<providerRetryAt) return;
         // Single-machine worker. Recover work interrupted by process death.
         db.update("UPDATE content_translations SET status='pending' WHERE status='running' AND updated_at < DATE_SUB(NOW(),INTERVAL 10 MINUTE)");
         var jobs=db.queryForList("SELECT * FROM content_translations WHERE status='pending' AND next_attempt_at<=NOW() ORDER BY CASE WHEN kind='chat' THEN 0 ELSE 1 END,id LIMIT 1");

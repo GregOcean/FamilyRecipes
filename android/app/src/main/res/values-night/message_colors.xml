@@ -1,0 +1,9 @@
+<resources>
+<color name="chat_card_outline">#614D41</color>
+<color name="message_group_icon">#9DD8CA</color>
+<color name="message_group_bg">#263E38</color>
+<color name="message_friend_icon">#DDB0E5</color>
+<color name="message_friend_bg">#413046</color>
+<color name="message_reminder_icon">#F4CE87</color>
+<color name="message_reminder_bg">#443822</color>
+</resources>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feed_swipe_more">Swipe up for more</string>
+    <string name="feed_retry_swipe">Could not load. Swipe up to retry</string>
+    <string name="inventory_category_filter">Category</string>
+    <string name="inventory_expiry_filter">Expiry status</string>
+    <string name="inventory_status_all">All in stock</string>
+    <string name="inventory_status_fresh">Not expiring</string>
+    <string name="meal_continue_draft">Continue editing</string>
+</resources>

@@ -12,6 +12,7 @@ import java.util.*;
 public class TranslationBackfill {
     private final JdbcTemplate db; private final TranslationService translations; private final ObjectMapper json;
     @Value("${app.translation.enabled:false}") private boolean enabled;
+    @org.springframework.beans.factory.annotation.Autowired private com.familyrecipes.service.TaskControl controls;
     private final Map<String,Long> cursors=new HashMap<>();
     private static final Map<String,String> TABLES=Map.ofEntries(
         Map.entry("recipe","name,description"),Map.entry("ingredient","name,processing_method"),
@@ -22,7 +23,7 @@ public class TranslationBackfill {
     public TranslationBackfill(JdbcTemplate db,TranslationService translations,ObjectMapper json) {this.db=db;this.translations=translations;this.json=json;}
     @Scheduled(fixedDelay=30000,initialDelay=15000)
     public void scan() {
-        if(!enabled) return;
+        if(!enabled || controls.isPaused("translation")) return;
         for(var table:TABLES.entrySet()) {
             long cursor=cursors.getOrDefault(table.getKey(),0L);
             var rows=db.queryForList("SELECT id,"+table.getValue()+" FROM "+table.getKey()+" WHERE id>? ORDER BY id LIMIT 20",cursor);

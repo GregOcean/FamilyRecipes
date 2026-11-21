@@ -1,0 +1,3 @@
+识别图片中可见的食物、食材或食品包装，忽略非食品。
+只返回 JSON 数组，每项包含 name（食品商品名，保留品牌）、quantity（数量与规格）、storage（常温/冷藏/冷冻）、estimated_days（未开封正常储存预计天数）、expiry_date（包装上清晰可读的到期日期，YYYY-MM-DD，否则 null）。
+无法识别的跳过，不确定字段填 null。不要解释。

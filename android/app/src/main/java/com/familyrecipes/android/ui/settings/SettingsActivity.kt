@@ -17,6 +17,17 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 class SettingsActivity: AppCompatActivity(){
+    private var notificationButton:Button?=null
+    private var initiallyLoggedIn=false
+    override fun onResume() {
+        super.onResume()
+        refreshNotificationButton()
+        if(!initiallyLoggedIn && com.familyrecipes.android.data.local.PreferenceManager.isLoggedIn()){initiallyLoggedIn=true;recreate()}
+    }
+    private fun refreshNotificationButton() {
+        notificationButton?.text=getString(if(androidx.core.app.NotificationManagerCompat.from(this).areNotificationsEnabled())
+            com.familyrecipes.android.R.string.ui_0439b015f3 else com.familyrecipes.android.R.string.friend_notification_enable)
+    }
     private var reminderHour=17
     private var reminderMinute=0
     private var daysField:EditText?=null
@@ -27,8 +38,9 @@ class SettingsActivity: AppCompatActivity(){
         out.putInt("hour",reminderHour);out.putInt("minute",reminderMinute)
         super.onSaveInstanceState(out)
     }
-    private val permission=registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()){}
+    private val permission=registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()){refreshNotificationButton()}
     override fun onCreate(state:Bundle?){super.onCreate(state)
+        initiallyLoggedIn=com.familyrecipes.android.data.local.PreferenceManager.isLoggedIn()
         val root=Ui.box(this);setContentView(Ui.scroll(this,root))
         root.addView(Ui.back(this){finish()})
         root.addView(Ui.text(this,UiStrings.s(com.familyrecipes.android.R.string.ui_e366ccf155),24f,true))
@@ -51,9 +63,18 @@ class SettingsActivity: AppCompatActivity(){
         root.addView(Ui.button(this,UiStrings.s(com.familyrecipes.android.R.string.ui_3d1fffd959)){startActivity(Intent(Settings.ACTION_DISPLAY_SETTINGS))})
         root.addView(Ui.text(this,UiStrings.s(com.familyrecipes.android.R.string.ui_0054ea0793),14f))
         root.addView(Ui.text(this,UiStrings.s(com.familyrecipes.android.R.string.ui_c9fb762fc5),20f,true))
-        root.addView(Ui.button(this,UiStrings.s(com.familyrecipes.android.R.string.ui_0439b015f3)){
-            startActivity(if(android.os.Build.VERSION.SDK_INT>=26)Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE,packageName) else Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,android.net.Uri.parse("package:$packageName")))
-        })
+        notificationButton=Ui.button(this,getString(com.familyrecipes.android.R.string.friend_notification_enable)){
+            val prefs=getSharedPreferences("message-permission",0)
+            if(android.os.Build.VERSION.SDK_INT>=33 &&
+                !androidx.core.app.NotificationManagerCompat.from(this).areNotificationsEnabled() &&
+                !prefs.getBoolean("asked",false)) {
+                prefs.edit().putBoolean("asked",true).apply()
+                permission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            } else startActivity(if(android.os.Build.VERSION.SDK_INT>=26)
+                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE,packageName)
+                else Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,android.net.Uri.parse("package:$packageName")))
+        }
+        root.addView(notificationButton)
         root.addView(Ui.text(this,"${getString(com.familyrecipes.android.R.string.app_version)} ${com.familyrecipes.android.BuildConfig.VERSION_NAME} (${com.familyrecipes.android.BuildConfig.VERSION_CODE})",16f))
         root.addView(Ui.button(this,getString(com.familyrecipes.android.R.string.about_title)) {
             startActivity(Intent(this, AboutActivity::class.java))
@@ -84,6 +105,9 @@ class SettingsActivity: AppCompatActivity(){
                 }catch(e:CancellationException){throw e}catch(e:Exception){Ui.toast(this@SettingsActivity,e)}finally{save.isEnabled=true}}
             };form.addView(save)
         }catch(e:CancellationException){throw e}catch(e:Exception){form.removeAllViews();form.addView(Ui.button(this@SettingsActivity,UiStrings.s(com.familyrecipes.android.R.string.ui_729a79fdf0)){load()})}}}
-        load()
+        if(com.familyrecipes.android.data.local.PreferenceManager.isLoggedIn())load()
+        else form.addView(Ui.button(this,getString(com.familyrecipes.android.R.string.login_for_reminders)) {
+            com.familyrecipes.android.util.AuthUtil.navigateToProfile(this)
+        })
     }
 }

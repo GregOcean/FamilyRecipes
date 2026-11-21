@@ -18,7 +18,7 @@
 <string name="network_error_value">网络错误：%s</string>
 <string name="retry_error_value">%s · 重试</string>
 <string name="current_location">当前位置</string>
-<string name="recipe_results_count">%s · 共 %s 道</string>
+<string name="recipe_results_count">%1$s · 共 %2$s 道</string>
 <string name="search_results_title">搜索结果</string>
 <string name="discover_title">今天想吃什么</string>
 <string name="empty_prep">还没有备菜计划，可以独自创建，也可以之后分享。</string>

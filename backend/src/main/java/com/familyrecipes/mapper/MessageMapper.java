@@ -11,6 +11,13 @@ import java.util.List;
  */
 @Mapper
 public interface MessageMapper {
+    @Select("SELECT m.*, u.id AS 'sender.id', u.username AS 'sender.username', u.avatar AS 'sender.avatar' " +
+        "FROM message m JOIN group_member gm ON gm.group_id=m.group_id AND gm.user_id=#{userId} " +
+        "LEFT JOIN user u ON u.id=m.sender_id WHERE m.message_type='text' " +
+        "AND LOCATE(LOWER(#{query}),LOWER(m.content))>0 AND m.id < #{beforeId} ORDER BY m.id DESC LIMIT 51")
+    @ResultMap("messageWithSender")
+    List<Message> search(@Param("userId") Long userId,@Param("query") String query,@Param("beforeId") Long beforeId);
+
     @Select("SELECT m.*, u.id AS 'sender.id', u.username AS 'sender.username', u.avatar AS 'sender.avatar' FROM message m LEFT JOIN user u ON u.id=m.sender_id WHERE m.id=#{id}")
     @ResultMap("messageWithSender")
     Message findById(Long id);
@@ -19,6 +26,10 @@ public interface MessageMapper {
     @Select("SELECT m.*, u.id AS 'sender.id', u.username AS 'sender.username', u.avatar AS 'sender.avatar' FROM message m LEFT JOIN user u ON u.id=m.sender_id WHERE m.group_id=#{groupId} AND m.id>#{afterId} ORDER BY m.id LIMIT #{limit}")
     @ResultMap("messageWithSender")
     List<Message> after(@Param("groupId") Long groupId,@Param("afterId") Long afterId,@Param("limit") int limit);
+    @Select("SELECT m.*, u.id AS 'sender.id', u.username AS 'sender.username', u.avatar AS 'sender.avatar' FROM message m LEFT JOIN user u ON u.id=m.sender_id WHERE m.group_id=#{groupId} AND m.id<#{beforeId} ORDER BY m.id DESC LIMIT #{limit}")
+    @ResultMap("messageWithSender")
+    List<Message> history(@Param("groupId") Long groupId,@Param("beforeId") Long beforeId,@Param("limit") int limit);
+
     @Select("SELECT id FROM message WHERE sender_id=#{senderId} AND client_message_id=#{clientId}")
     Long findClient(@Param("senderId") Long senderId,@Param("clientId") String clientId);
 

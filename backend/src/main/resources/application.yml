@@ -92,6 +92,8 @@ app:
     poll-ms: ${TRANSLATION_POLL_MS:2000}
   catalog:
     admin-user-id: ${CATALOG_ADMIN_USER_ID:0}
+    jobs-dir: ${CATALOG_JOBS_DIR:./catalog-jobs}
+    python: ${CATALOG_PYTHON:python3}
   ai:
     routes:
       translation:

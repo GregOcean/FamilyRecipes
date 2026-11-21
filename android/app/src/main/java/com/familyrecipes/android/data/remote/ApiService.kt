@@ -9,9 +9,29 @@ import retrofit2.http.*
  * API接口定义
  */
 interface ApiService {
+    @DELETE("/api/friends/invitations/{recipient}")
+    suspend fun cancelFriendInvitation(@Path("recipient") recipient:Long):Response<ApiResponse<Unit>>
+
+    @POST("/api/fridge/ingredients/resolve")
+    suspend fun resolveIngredientEntries(@Body request:IngredientEntriesRequest):Response<ApiResponse<List<IngredientResolution>>>
+    @POST("/api/fridge/ingredients/estimate")
+    suspend fun estimateIngredient(@Body request:IngredientEstimateRequest):Response<ApiResponse<IngredientEstimate>>
+    @POST("/api/groups/{groupId}/transfer")
+    suspend fun transferGroup(@Path("groupId") groupId:Long,@Body request:Map<String,Long>):Response<ApiResponse<Unit>>
+    @GET("/api/messages/history")
+    suspend fun messageHistory(@Query("groupId") groupId:Long,@Query("beforeId") beforeId:Long=Long.MAX_VALUE,@Query("limit") limit:Int=50):Response<ApiResponse<List<Message>>>
+
+    @POST("/api/auth/password-reset-code") suspend fun sendPasswordResetCode(@Body body:Map<String,String>):Response<ApiResponse<Map<String,Int>>>
+    @POST("/api/auth/password-reset") suspend fun resetPassword(@Body body:Map<String,String>):Response<ApiResponse<Unit>>
+
+    @GET("/api/config/catalog-summary") suspend fun catalogSummary():Response<ApiResponse<Map<String,Long>>>
+
+    @GET("/api/notifications/favorites") suspend fun favoriteNotifications(@Query("beforeId") beforeId:Long=Long.MAX_VALUE):Response<ApiResponse<FavoriteNotificationPage>>
+    @POST("/api/notifications/favorites/read") suspend fun readFavoriteNotifications(@Body body:Map<String,Long>):Response<ApiResponse<Unit>>
+
     @Multipart
     @POST("/api/receipts/recognize")
-    suspend fun recognizeReceipt(@Query("kitchenId") kitchenId: Long, @Part image: okhttp3.MultipartBody.Part): Response<ApiResponse<List<ReceiptItem>>>
+    suspend fun recognizeReceipt(@Query("kitchenId") kitchenId: Long, @Part image: okhttp3.MultipartBody.Part, @Query("mode") mode:String="receipt"): Response<ApiResponse<List<ReceiptItem>>>
     @POST("/api/receipts/import")
     suspend fun importReceipt(@Body request: ReceiptImportRequest): Response<ApiResponse<Int>>
 
@@ -21,7 +41,7 @@ interface ApiService {
     @POST("/api/messages/translations")
     suspend fun chatTranslations(@Body request: ChatTranslationRequest): Response<ApiResponse<Map<String, ChatTranslation>>>
 
-    @GET("/api/recipes/browse") suspend fun browseRecipes(@Query("kitchenId") kitchenId:Long?,@Query("scope") scope:String="discovery",@Query("origin") origin:String="all",@Query("keyword") keyword:String="",@Query("taste") taste:String="",@Query("minutes") minutes:Int?=null,@Query("missing") missing:Int?=null,@Query("known") known:Boolean=false,@Query("seed") seed:String="0",@Query("page") page:Int=1,@Query("cuisine") cuisine:String=""):Response<ApiResponse<PageResult<Recipe>>>
+    @GET("/api/recipes/browse") suspend fun browseRecipes(@Query("kitchenId") kitchenId:Long?,@Query("scope") scope:String="discovery",@Query("origin") origin:String="all",@Query("keyword") keyword:String="",@Query("taste") taste:String="",@Query("minutes") minutes:Int?=null,@Query("missing") missing:Int?=null,@Query("known") known:Boolean=false,@Query("seed") seed:String="0",@Query("page") page:Int=1,@Query("cuisine") cuisine:String="",@Query("sources") sources:String="",@Query("tastes") tastes:String="",@Query("cuisines") cuisines:String="",@Query("times") times:String="",@Query("stocks") stocks:String=""):Response<ApiResponse<PageResult<Recipe>>>
     @POST("/api/recipes/{id}/adapt") suspend fun adaptRecipe(@Path("id") id:Long,@Body body:Map<String,Long>):Response<ApiResponse<Recipe>>
     @PUT("/api/recipes/{id}/known") suspend fun setKnown(@Path("id") id:Long,@Body body:Map<String,Boolean>):Response<ApiResponse<Unit>>
     @GET("/api/recipes/{id}/records") suspend fun cookingRecords(@Path("id") id:Long):Response<ApiResponse<List<CookingRecord>>>
@@ -295,6 +315,9 @@ interface ApiService {
     @GET("/api/kitchens") suspend fun getKitchens(): Response<ApiResponse<List<Kitchen>>>
     @POST("/api/kitchens") suspend fun createKitchen(@Body kitchen: Kitchen): Response<ApiResponse<Kitchen>>
     @PUT("/api/kitchens/{id}") suspend fun renameKitchen(@Path("id") id: Long, @Body kitchen: Kitchen): Response<ApiResponse<Kitchen>>
+    @GET("/api/messages/search") suspend fun searchMessages(@Query("query") query: String,
+        @Query("beforeId") beforeId: Long = Long.MAX_VALUE): Response<ApiResponse<List<Message>>>
+
     @GET("/api/messages/sync") suspend fun syncMessages(@Query("groupId") groupId: Long,
         @Query("afterId") afterId: Long, @Query("limit") limit: Int = 200): Response<ApiResponse<List<Message>>>
     @GET("/api/upload/trash") suspend fun getMediaTrash(): Response<ApiResponse<List<Map<String,Any?>>>>

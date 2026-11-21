@@ -1,0 +1,13 @@
+<resources>
+<string name="session_expired">Your session expired. Sign in again. Drafts and unsent messages are saved.</string>
+<string name="login_required_short">Sign in to continue</string>
+<string name="login_for_reminders">Sign in to set food reminders</string>
+<string name="kitchen_retry_message">Cannot load your kitchen yet. Retry to continue your saved action.</string>
+<string name="scan_choose_title">What would you like to scan?</string>
+<string name="scan_friend">Friend QR code</string>
+<string name="scan_receipt">Shopping receipt</string>
+<string name="scan_food">Food and packaging</string>
+<string name="channel_messages">Messages</string>
+<string name="channel_expiry">Food expiry reminders</string>
+<string name="channel_expiry_description">Reminders for food nearing its expiry date</string>
+</resources>

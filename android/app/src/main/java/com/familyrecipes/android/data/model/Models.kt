@@ -121,7 +121,8 @@ data class Ingredient(
     val category: String?,
     val unit: String? = null,
     @SerializedName("category_id") val categoryId: Long? = null, // 库存分类ID
-    val aliases: String? = null
+    val aliases: String? = null,
+    val catalog: Boolean? = null
 )
 
 /**
@@ -174,7 +175,7 @@ data class FridgeItem(
     @SerializedName("ingredient_id") val ingredientId: Long?,
     val amount: String?,
     @SerializedName("purchase_date") val purchaseDate: String?,
-    @SerializedName("expiry_date") val expiryDate: String,
+    @SerializedName("expiry_date") val expiryDate: String?,
     @SerializedName("storage_location") val storageLocation: String?,
     val status: String?,
     val notes: String?,
@@ -183,7 +184,10 @@ data class FridgeItem(
     @SerializedName("owner_user_id") val ownerUserId: Long? = null,
     @SerializedName("image_url") val imageUrl: String? = null,
     @SerializedName("category_override_id") val categoryOverrideId: Long? = null,
-    @SerializedName("category_override_name") val categoryOverrideName: String? = null
+    @SerializedName("category_override_name") val categoryOverrideName: String? = null,
+    @SerializedName("display_name") val displayName: String? = null,
+    @SerializedName("client_mutation_id") val clientMutationId: String? = null,
+    @SerializedName("original_content") val originalContent: Map<String,String>? = null
 ) {
     companion object {
         const val STATUS_NORMAL = "normal"
@@ -240,6 +244,7 @@ data class Friendship(
  * 群组
  */
 data class GroupChat(
+    @SerializedName("last_read_message_id") val lastReadMessageId:Long?=null,
     @SerializedName("manager_id") val managerId: Long? = null,
     val id: Long?,
     val name: String,
@@ -327,9 +332,9 @@ data class TagOption(val value: String, val name: String)
 data class CuisineOption(val value: String, val name: String, val children: List<CuisineOption> = emptyList(), val aliases: List<String> = emptyList())
 
 
-data class FriendSearchUser(val id:Long,val username:String,val avatar:String?)
+data class FriendSearchUser(val id:Long,val username:String,val avatar:String?,val relationship:String="none")
 data class FriendInvitation(val id:Long,@SerializedName("sender_id") val senderId:Long,@SerializedName("recipient_id") val recipientId:Long,val username:String,val avatar:String?)
 
 // Receipt drafts stay editable until one atomic, idempotent inventory import.
-data class ReceiptItem(val name: String?, val quantity: String?, val storage: String?, @SerializedName("estimated_days") val estimatedDays: Int?)
+data class ReceiptItem(val name: String?, val quantity: String?, val storage: String?, @SerializedName("estimated_days") val estimatedDays: Int?, @SerializedName("ingredient_id") val ingredientId: Long? = null, @SerializedName("expiry_date") val expiryDate: String? = null)
 data class ReceiptImportRequest(@SerializedName("request_id") val requestId: String, @SerializedName("kitchen_id") val kitchenId: Long, val items: List<ReceiptItem>)

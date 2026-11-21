@@ -24,7 +24,7 @@ public class AuthController {
      * 用户注册
      */
     @PostMapping("/register")
-    public Result<User> register(@jakarta.validation.Valid @RequestBody RegisterRequest request) {
+    public Result<OwnUser> register(@jakarta.validation.Valid @RequestBody RegisterRequest request) {
         try {
             User user = userService.register(
                 request.getEmail(),
@@ -32,7 +32,7 @@ public class AuthController {
                 request.getUsername(), request.getCode()
             );
             user.setPassword(null);
-            return Result.success(user);
+            return Result.success(OwnUser.from(user));
         } catch (com.familyrecipes.common.ApiException e) {
             throw e;
         } catch (Exception e) {
@@ -52,7 +52,7 @@ public class AuthController {
             
             LoginResponse response = new LoginResponse();
             response.setToken(token);
-            response.setUser(user);
+            response.setUser(OwnUser.from(user));
             return Result.success(response);
         } catch (com.familyrecipes.common.ApiException e) {
             throw e;
@@ -65,18 +65,35 @@ public class AuthController {
      * 获取当前用户信息
      */
     @GetMapping("/me")
-    public Result<User> getCurrentUser(HttpServletRequest request) {
+    public Result<OwnUser> getCurrentUser(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         User user = userService.getUserById(userId);
-        return Result.success(user);
+        return Result.success(OwnUser.from(user));
     }
 
     @Autowired private com.familyrecipes.service.EmailVerificationService emailCodes;
     @PostMapping("/registration-code")
     public Result<java.util.Map<String,Integer>> sendRegistrationCode(@jakarta.validation.Valid @RequestBody CodeRequest request,
             HttpServletRequest httpRequest) {
-        emailCodes.sendRegistrationCode(request.getEmail(), httpRequest.getRemoteAddr());
+        emailCodes.sendRegistrationCode(request.getEmail(), com.familyrecipes.util.ClientAddress.of(httpRequest));
         return Result.success(java.util.Map.of("expires_in",600,"retry_after",60));
+    }
+    @Autowired private com.familyrecipes.service.PasswordResetService passwordReset;
+    @PostMapping("/password-reset-code")
+    public Result<?> resetCode(@jakarta.validation.Valid @RequestBody CodeRequest body, HttpServletRequest request) {
+        passwordReset.sendCode(body.getEmail(), com.familyrecipes.util.ClientAddress.of(request));
+        return Result.success(java.util.Map.of("retry_after",60,"expires_in",600));
+    }
+    @PostMapping("/password-reset")
+    public Result<?> resetPassword(@jakarta.validation.Valid @RequestBody ResetRequest body) {
+        passwordReset.reset(body.getEmail(),body.getCode(),body.getPassword());
+        return Result.success();
+    }
+    @Data
+    static class ResetRequest {
+        @NotBlank @Email @jakarta.validation.constraints.Size(max=100) private String email;
+        @NotBlank @jakarta.validation.constraints.Pattern(regexp="[0-9]{6}") private String code;
+        @NotBlank @jakarta.validation.constraints.Size(min=8,max=72) private String password;
     }
     @Data
     static class CodeRequest {
@@ -117,7 +134,11 @@ public class AuthController {
     @Data
     static class LoginResponse {
         private String token;
-        private User user;
+        private OwnUser user;
+    }
+    /** Email belongs only in responses for the authenticated account itself. */
+    public record OwnUser(Long id,String email,String username,String avatar) {
+        static OwnUser from(User user) {return new OwnUser(user.getId(),user.getEmail(),user.getUsername(),user.getAvatar());}
     }
 }
 

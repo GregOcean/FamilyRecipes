@@ -20,6 +20,7 @@ object ConfigManager {
     
     // 内存缓存
     private var appConfig: AppConfig? = null
+    private var loadedKey:String?=null
     private var ingredientsList: List<String> = emptyList()
     private var storageLocationsList: List<String> = emptyList()
     private var textsMap: Map<String, String> = emptyMap()
@@ -28,68 +29,44 @@ object ConfigManager {
      * 初始化配置（应用启动时调用）
      */
     suspend fun initialize(context: Context, forceRefresh: Boolean = false) = withContext(Dispatchers.IO) {
-        try {
-            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val lastUpdate = prefs.getLong(KEY_LAST_UPDATE, 0)
-            val now = System.currentTimeMillis()
-            
-            // 判断是否需要更新
-            if (forceRefresh || appConfig == null || (now - lastUpdate) > UPDATE_INTERVAL) {
-                Log.d(TAG, "Loading config from server...")
-                loadConfigFromServer()
-                
-                // 更新最后更新时间
-                prefs.edit().putLong(KEY_LAST_UPDATE, now).apply()
-                Log.d(TAG, "Config loaded successfully")
-            } else {
-                Log.d(TAG, "Using cached config")
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to initialize config", e)
-            // 使用默认配置
-            useDefaultConfig()
+        val prefs=context.getSharedPreferences(PREFS_NAME,Context.MODE_PRIVATE)
+        val key=PreferenceManager.baseUrl.trimEnd('/')+":"+ApiClient.contentLanguage()
+        if(loadedKey!=key){
+            appConfig=null;ingredientsList=emptyList();storageLocationsList=emptyList();textsMap=emptyMap();loadedKey=key
+            runCatching { prefs.getString("config:$key",null)?.let{com.google.gson.Gson().fromJson(it,AppConfig::class.java)} }.getOrNull()?.let{applyConfig(it)}
         }
+        val lastUpdate=prefs.getLong("$KEY_LAST_UPDATE:$key",0)
+        if(forceRefresh || appConfig==null || System.currentTimeMillis()-lastUpdate>UPDATE_INTERVAL){
+            try {
+                val fresh=loadConfigFromServer()
+                if(loadedKey==key && key==PreferenceManager.baseUrl.trimEnd('/')+":"+ApiClient.contentLanguage()){
+                    applyConfig(fresh)
+                    prefs.edit().putString("config:$key",com.google.gson.Gson().toJson(fresh)).putLong("$KEY_LAST_UPDATE:$key",System.currentTimeMillis()).apply()
+                }
+            }catch(e:kotlinx.coroutines.CancellationException){throw e}
+             catch(e:Exception){Log.w(TAG,"Config refresh failed; cached configuration retained");if(loadedKey==key&&appConfig==null)useDefaultConfig()}
+        }
+    }
+    private fun applyConfig(value:AppConfig){
+        appConfig=value;ingredientsList=value.ingredients.filter{it.isEnabled}.map{it.name}
+        storageLocationsList=value.storageLocations.filter{it.isEnabled}.map{it.name};textsMap=value.texts
     }
     
     /**
      * 从服务器加载配置
      */
-    private suspend fun loadConfigFromServer() {
-        val response = ApiClient.getService().getAllConfigs()
-        if (response.isSuccessful && response.body()?.code == 200) {
-            val serverConfig = response.body()?.data
-            if (serverConfig != null) {
-                // texts已经是Map<String, String>了，直接使用
-                val textsMap = serverConfig.texts
-                
-                // 找到默认存储位置
-                val defaultLocation = serverConfig.storageLocations
-                    .firstOrNull { it.isDefault }
-                    ?: serverConfig.defaultStorageLocation
-                
-                // 创建AppConfig对象
-                appConfig = AppConfig(
-                    ingredients = serverConfig.ingredients.filter { it.isEnabled },
-                    storageLocations = serverConfig.storageLocations.filter { it.isEnabled },
-                    categories = serverConfig.categories.filter { it.isEnabled },
-                    texts = textsMap,
-                    defaultStorageLocation = defaultLocation
-                )
-                
-                // 提取为简单列表和Map
-                ingredientsList = appConfig!!.ingredients.map { it.name }
-                storageLocationsList = appConfig!!.storageLocations.map { it.name }
-                this.textsMap = textsMap
-                
-                Log.d(TAG, "Loaded ${ingredientsList.size} ingredients, " +
-                          "${storageLocationsList.size} storage locations, " +
-                          "${textsMap.size} text configs")
-            }
-        } else {
-            throw Exception("Failed to load config from server: ${response.code()}")
-        }
+    private suspend fun loadConfigFromServer():AppConfig {
+        val response=ApiClient.getService().getAllConfigs()
+        val config=response.body()?.data
+        if(!response.isSuccessful || response.body()?.code!=200 || config==null)throw Exception("Configuration unavailable")
+        return AppConfig(
+            ingredients=config.ingredients.filter{it.isEnabled},
+            storageLocations=config.storageLocations.filter{it.isEnabled},
+            categories=config.categories.filter{it.isEnabled},texts=config.texts,
+            defaultStorageLocation=config.storageLocations.firstOrNull{it.isDefault}?:config.defaultStorageLocation
+        )
     }
-    
+
     /**
      * 使用默认配置（当服务器不可用时）
      */
@@ -118,7 +95,7 @@ object ConfigManager {
      * 获取默认存储位置
      */
     fun getDefaultStorageLocation(): String {
-        return appConfig?.defaultStorageLocation?.name ?: "冰箱冷藏"
+        return appConfig?.defaultStorageLocation?.name ?: if(ApiClient.contentLanguage()=="en")"Refrigerated" else "冷藏"
     }
     
     /**
@@ -140,6 +117,7 @@ object ConfigManager {
      */
     fun clearCache(context: Context) {
         appConfig = null
+        loadedKey = null
         ingredientsList = emptyList()
         storageLocationsList = emptyList()
         textsMap = emptyMap()
@@ -151,6 +129,7 @@ object ConfigManager {
     // ========== 默认配置（作为fallback） ==========
     
     private fun getDefaultIngredients(): List<String> {
+        if(ApiClient.contentLanguage()=="en")return listOf("Chicken","Pork","Beef","Fish","Shrimp","Eggs","Milk","Yogurt","Tofu","Rice","Flour","Tomato","Carrot","Potato","Onion","Lettuce","Apple","Banana","Soy sauce","Salt","Sugar")
         return listOf(
             // 肉类
             "猪肉", "猪里脊", "猪五花", "猪蹄", "猪尾巴",
@@ -189,6 +168,7 @@ object ConfigManager {
     }
     
     private fun getDefaultStorageLocations(): List<String> {
+        if(ApiClient.contentLanguage()=="en")return listOf("Refrigerated","Frozen","Room temperature")
         return listOf(
             "冰箱冷藏",
             "冰箱冷冻",
@@ -204,6 +184,7 @@ object ConfigManager {
     }
     
     private fun getDefaultTexts(): Map<String, String> {
+        if(ApiClient.contentLanguage()=="en")return mapOf("status.normal" to "Fresh","status.expiring" to "Expiring soon","status.expired" to "Expired","status.consumed" to "Consumed","button.consume" to "Consumed","button.delete" to "Delete","button.save" to "Save","button.cancel" to "Cancel","button.back_to_edit" to "Edit","button.confirm_save" to "Confirm")
         return mapOf(
             "status.normal" to "正常",
             "status.expiring" to "即将过期",

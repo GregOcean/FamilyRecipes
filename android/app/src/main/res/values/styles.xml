@@ -1,5 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <style name="CompactButton" parent="Widget.Material3.Button">
+        <item name="android:minHeight">48dp</item>
+        <item name="android:minWidth">0dp</item>
+        <item name="android:insetTop">6dp</item>
+        <item name="android:insetBottom">6dp</item>
+        <item name="android:paddingTop">2dp</item>
+        <item name="android:paddingBottom">2dp</item>
+        <item name="android:paddingLeft">12dp</item>
+        <item name="android:paddingRight">12dp</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="cornerRadius">10dp</item>
+        <item name="iconSize">18dp</item>
+        <item name="iconPadding">6dp</item>
+    </style>
     <!-- 底部导航栏样式 -->
     <style name="BottomNavigationStyle" parent="Widget.MaterialComponents.BottomNavigationView">
         <item name="itemIconSize">32dp</item>

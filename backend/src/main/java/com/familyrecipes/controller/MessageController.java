@@ -124,6 +124,18 @@ public class MessageController {
         return Result.success(messageService.catchUp(groupId,(Long)r.getAttribute("userId"),afterId,limit));
     }
 
+    @GetMapping("/history")
+    public Result<List<Message>> history(@RequestParam Long groupId,@RequestParam(defaultValue="9223372036854775807") Long beforeId,
+        @RequestParam(defaultValue="50") int limit,HttpServletRequest request) {
+        return Result.success(messageService.history(groupId,(Long)request.getAttribute("userId"),beforeId,limit));
+    }
+
+    @GetMapping("/search")
+    public Result<List<Message>> search(@RequestParam String query,
+        @RequestParam(defaultValue="9223372036854775807") Long beforeId,HttpServletRequest request) {
+        return Result.success(messageService.search((Long)request.getAttribute("userId"),query,beforeId));
+    }
+
     @Data
     static class SendMessageRequest {
         private String clientMessageId;

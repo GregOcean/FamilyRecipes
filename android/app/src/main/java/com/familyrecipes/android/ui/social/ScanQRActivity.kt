@@ -1,134 +1,85 @@
 package com.familyrecipes.android.ui.social
 
-import com.familyrecipes.android.ui.design.UiStrings
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
 import android.os.Bundle
+import android.widget.LinearLayout
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import com.familyrecipes.android.R
+import com.familyrecipes.android.data.local.PreferenceManager
 import com.familyrecipes.android.data.remote.ApiClient
+import com.familyrecipes.android.ui.design.Ui
 import com.familyrecipes.android.util.QRCodeUtil
+import com.familyrecipes.android.util.InventoryImages
+import com.google.zxing.*
+import com.google.zxing.common.HybridBinarizer
 import com.google.zxing.integration.android.IntentIntegrator
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
-/**
- * 扫码添加好友Activity
- */
-class ScanQRActivity : AppCompatActivity() {
-
-    companion object {
-        private const val REQUEST_CAMERA_PERMISSION = 100
+/** QR scanning identifies a person; sending an invitation is a separate confirmed action. */
+class ScanQRActivity:AppCompatActivity() {
+    private val scopeAccount=com.familyrecipes.android.data.local.LocalStore.account
+    private val account=PreferenceManager.userId
+    private val server=PreferenceManager.baseUrl
+    private fun active()=PreferenceManager.isLoggedIn()&&account==PreferenceManager.userId&&server==PreferenceManager.baseUrl
+    private var busy=false
+    private var pendingId:Long?=null
+    private lateinit var status:android.widget.TextView
+    private val cameraPermission=registerForActivityResult(ActivityResultContracts.RequestPermission()){if(it)startCamera()else Toast.makeText(this,R.string.inventory_camera_denied,Toast.LENGTH_LONG).show()}
+    private val gallery=registerForActivityResult(ActivityResultContracts.GetContent()){uri->
+        if(uri!=null&&!busy){busy=true;lifecycleScope.launch{try{
+            val file=InventoryImages.copy(this@ScanQRActivity,uri)
+            val content=withContext(Dispatchers.Default){try{val bitmap=BitmapFactory.decodeFile(file.absolutePath)?:error("Invalid image");try{val pixels=IntArray(bitmap.width*bitmap.height);bitmap.getPixels(pixels,0,bitmap.width,0,0,bitmap.width,bitmap.height);MultiFormatReader().decode(BinaryBitmap(HybridBinarizer(RGBLuminanceSource(bitmap.width,bitmap.height,pixels))),mapOf(DecodeHintType.POSSIBLE_FORMATS to listOf(BarcodeFormat.QR_CODE),DecodeHintType.TRY_HARDER to true)).text}finally{bitmap.recycle()}}finally{file.delete()}}
+            handle(content)
+        }catch(e:CancellationException){throw e}catch(e:Exception){status.setText(R.string.scan_retry)}finally{busy=false}}}
     }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        
-        // Restored instances already have a scanner/permission request in progress.
-        if (savedInstanceState != null) return
-        if (checkCameraPermission()) {
-            startScan()
-        } else {
-            requestCameraPermission()
-        }
+    override fun onCreate(state:Bundle?){super.onCreate(state)
+        if(!com.familyrecipes.android.util.AuthUtil.requireLogin(this)){finish();return}
+        pendingId=state?.getLong("pending_id")?.takeIf{it>0}
+        val root=Ui.box(this)
+        root.addView(Ui.row(this).apply{addView(Ui.back(this@ScanQRActivity){finish()});addView(Ui.text(this@ScanQRActivity,getString(R.string.scan_friend_title),22f,true))})
+        status=Ui.text(this,"");root.addView(status)
+        root.addView(Ui.button(this,getString(R.string.scan_camera),true){startCamera()})
+        root.addView(Ui.button(this,getString(R.string.scan_gallery)){gallery.launch("image/*")})
+        root.addView(Ui.button(this,getString(R.string.social_retry)){pendingId?.let{showCard(it)}?:startCamera()})
+        setContentView(root)
+        if(pendingId!=null)showCard(pendingId!!) else if(state==null)startCamera()
     }
-
-    private fun checkCameraPermission(): Boolean {
-        return ContextCompat.checkSelfPermission(
-            this,
-            Manifest.permission.CAMERA
-        ) == PackageManager.PERMISSION_GRANTED
+    override fun onSaveInstanceState(state:Bundle){pendingId?.let{state.putLong("pending_id",it)};super.onSaveInstanceState(state)}
+    private fun startCamera(){if(busy)return
+        if(ContextCompat.checkSelfPermission(this,Manifest.permission.CAMERA)!=PackageManager.PERMISSION_GRANTED){cameraPermission.launch(Manifest.permission.CAMERA);return}
+        try{IntentIntegrator(this).apply{setDesiredBarcodeFormats(IntentIntegrator.QR_CODE);setPrompt(getString(R.string.scan_friend_title));setCameraId(0);setBeepEnabled(false);setBarcodeImageEnabled(false);captureActivity=QRScannerActivity::class.java}.initiateScan()}
+        catch(e:Exception){status.setText(R.string.inventory_camera_missing)}
     }
-
-    private fun requestCameraPermission() {
-        ActivityCompat.requestPermissions(
-            this,
-            arrayOf(Manifest.permission.CAMERA),
-            REQUEST_CAMERA_PERMISSION
-        )
+    @Deprecated("Used by ZXing integration") override fun onActivityResult(requestCode:Int,resultCode:Int,data:Intent?){
+        val result=IntentIntegrator.parseActivityResult(requestCode,resultCode,data)
+        if(result!=null)result.contents?.let{handle(it)} else super.onActivityResult(requestCode,resultCode,data)
     }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_CAMERA_PERMISSION) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                startScan()
-            } else {
-                Toast.makeText(this, UiStrings.s(com.familyrecipes.android.R.string.ui_77c507528d), Toast.LENGTH_SHORT).show()
-                finish()
-            }
-        }
+    private fun handle(content:String){if(!active())return;val id=QRCodeUtil.parseUserCardContent(content)
+        if(id==null){status.setText(R.string.scan_invalid);return}
+        if(id==PreferenceManager.userId){status.setText(R.string.scan_self);return}
+        pendingId=id;showCard(id)
     }
-
-    private fun startScan() {
-        val integrator = IntentIntegrator(this)
-        integrator.setDesiredBarcodeFormats(IntentIntegrator.QR_CODE)
-        integrator.setPrompt(UiStrings.s(com.familyrecipes.android.R.string.ui_4b88cfb089))
-        integrator.setCameraId(0)
-        integrator.setBeepEnabled(true)
-        integrator.setBarcodeImageEnabled(false)
-        integrator.captureActivity = QRScannerActivity::class.java
-        integrator.initiateScan()
+    private fun showCard(id:Long){
+        if(!active())return
+        lifecycleScope.launch{try{
+            val user=Ui.data(ApiClient.getAccountService(scopeAccount).searchFriends(id.toString())).firstOrNull{it.id==id}
+            if(!active()||pendingId!=id)return@launch
+            if(user==null){status.setText(R.string.friend_not_found);return@launch}
+            AlertDialog.Builder(this@ScanQRActivity).setMessage(getString(R.string.scan_confirm_friend,user.username,id))
+                .setNegativeButton(android.R.string.cancel,null).setPositiveButton(R.string.friend_invite){_,_->send(id)}.show()
+        }catch(e:CancellationException){throw e}catch(e:Exception){status.text=getString(R.string.scan_retry);Ui.toast(this@ScanQRActivity,e)}}
     }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        val result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data)
-        if (result != null) {
-            if (result.contents == null) {
-                Toast.makeText(this, UiStrings.s(com.familyrecipes.android.R.string.ui_5087367b47), Toast.LENGTH_SHORT).show()
-                finish()
-            } else {
-                handleQRCodeResult(result.contents)
-            }
-        } else {
-            super.onActivityResult(requestCode, resultCode, data)
-        }
-    }
-
-    private fun handleQRCodeResult(content: String) {
-        val friendId = QRCodeUtil.parseUserCardContent(content)
-        if (friendId == null) {
-            Toast.makeText(this, UiStrings.s(com.familyrecipes.android.R.string.ui_224b61b7a1), Toast.LENGTH_SHORT).show()
-            finish()
-            return
-        }
-
-        // 添加好友
-        addFriend(friendId)
-    }
-
-    private fun addFriend(friendId: Long) {
-        lifecycleScope.launch {
-            try {
-                val request = mapOf("friendId" to friendId)
-                val response = ApiClient.getService().addFriend(request)
-
-                if (response.isSuccessful && response.body()?.code == 200) {
-                    Toast.makeText(this@ScanQRActivity, UiStrings.s(com.familyrecipes.android.R.string.friend_pending), Toast.LENGTH_SHORT).show()
-                    setResult(Activity.RESULT_OK)
-                    finish()
-                } else {
-                    Toast.makeText(
-                        this@ScanQRActivity,
-                        response.body()?.message ?: UiStrings.s(com.familyrecipes.android.R.string.ui_f45a3d8a26),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    finish()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(this@ScanQRActivity, UiStrings.f(com.familyrecipes.android.R.string.network_error_value, e.message), Toast.LENGTH_SHORT).show()
-                e.printStackTrace()
-                finish()
-            }
-        }
+    private fun send(id:Long){if(busy||!active())return;busy=true
+        lifecycleScope.launch{try{Ui.ok(ApiClient.getAccountService(scopeAccount).addFriend(mapOf("friendId" to id)));status.setText(R.string.friend_pending);pendingId=null;setResult(Activity.RESULT_OK)}
+        catch(e:CancellationException){throw e}catch(e:Exception){Ui.toast(this@ScanQRActivity,e)}finally{busy=false}}
     }
 }
-

@@ -8,6 +8,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.familyrecipes.android.data.remote.ApiClient
+import com.familyrecipes.android.R
+import com.familyrecipes.android.util.AuthUtil
 import com.familyrecipes.android.databinding.ActivitySearchResultBinding
 import com.familyrecipes.android.ui.fridge.AddIngredientActivity
 import com.familyrecipes.android.ui.recipe.RecipeDetailActivity
@@ -21,6 +23,7 @@ class SearchResultActivity : AppCompatActivity() {
     private val model by lazy { androidx.lifecycle.ViewModelProvider(this)[SearchViewModel::class.java] }
     private lateinit var binding: ActivitySearchResultBinding
     private lateinit var searchResultAdapter: SearchResultAdapter
+    private var pendingIngredient:com.familyrecipes.android.data.model.SearchItem?=null
     private val searchItems = mutableListOf<com.familyrecipes.android.data.model.SearchItem>()
 
     companion object {
@@ -41,11 +44,20 @@ class SearchResultActivity : AppCompatActivity() {
         performSearch(keyword, priorityType)
     }
 
+    override fun onResume() {
+        super.onResume()
+        model.search(intent.getStringExtra(EXTRA_KEYWORD).orEmpty(),intent.getStringExtra(EXTRA_PRIORITY_TYPE) ?: "relevance")
+        if(AuthUtil.isLoggedIn()){val item=pendingIngredient;pendingIngredient=null;item?.let(::openIngredient)}
+    }
+    private fun openIngredient(item:com.familyrecipes.android.data.model.SearchItem) {
+        startActivity(Intent(this,AddIngredientActivity::class.java).putExtra("ingredient_id",item.id).putExtra("ingredient_name",item.name))
+    }
+
     private fun setupToolbar(keyword: String) {
         setSupportActionBar(binding.toolbar)
         supportActionBar?.apply {
             setDisplayHomeAsUpEnabled(true)
-            title = "搜索: $keyword"
+            title = getString(R.string.review_search_title,keyword)
         }
         binding.toolbar.setNavigationOnClickListener {
             finish()
@@ -63,13 +75,7 @@ class SearchResultActivity : AppCompatActivity() {
                 startActivity(intent)
             },
             onIngredientClick = { item ->
-                // 点击食材，可以跳转到相关菜谱或添加到冰箱
-                Toast.makeText(
-                    this,
-                    "点击食材: ${item.name}（可查看相关菜谱或添加到冰箱）",
-                    Toast.LENGTH_SHORT
-                ).show()
-                // TODO: 实现食材详情或相关菜谱页面
+                if(AuthUtil.requireLogin(this))openIngredient(item) else pendingIngredient=item
             }
         )
 
@@ -88,7 +94,8 @@ class SearchResultActivity : AppCompatActivity() {
                     binding.swipeRefresh.isRefreshing=state.loading
                     searchItems.clear();searchItems.addAll(state.result?.items.orEmpty())
                     searchResultAdapter.notifyDataSetChanged()
-                    binding.tvResultStats.text=state.error ?: "找到 ${state.result?.recipeCount ?: 0} 个菜谱，${state.result?.ingredientCount ?: 0} 个食材"
+                    binding.tvResultStats.text=state.error ?: getString(R.string.review_search_count,state.result?.recipeCount ?: 0,state.result?.ingredientCount ?: 0)
+                    binding.tvResultStats.setOnClickListener {if(state.error!=null)model.search(keyword,priorityType,true)}
                 }
             }
         }

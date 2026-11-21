@@ -14,7 +14,7 @@ import java.util.*;
 @Service
 public class RecipeTagBackfill {
     static final Map<String,List<String>> ALLOWED=Map.of(
-        "taste",List.of("清淡","鲜香","酸","甜","辣","麻","苦"),
+        "taste",List.of("酸","甜","苦","辣","鲜香","清淡","麻","咸","臭"),
         "cuisine",CuisineCatalog.labels());
     private final JdbcTemplate db;
     private final ObjectMapper json;
@@ -26,7 +26,7 @@ public class RecipeTagBackfill {
                              org.springframework.transaction.PlatformTransactionManager manager) {
         this.db=db;this.json=json;this.client=client;this.routes=routes;this.tx=new TransactionTemplate(manager);
     }
-    @Scheduled(fixedDelayString="${app.classification.poll-ms:10000}",initialDelay=30000)
+    // Scheduling is owned by RecipeEnrichmentService (all content, v3).
     public void poll() {
         if(!enabled || !routes.route(AiRoutes.TRANSLATION).configured())return;
         processOne();

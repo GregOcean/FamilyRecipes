@@ -63,7 +63,7 @@ for fr_column in notes sort_order; do
     fi
 done
 echo "迁移菜谱可见性：旧私有菜谱将改为公开，群组可见保持不变。数据库备份：$fr_backup/family_recipes.sql.gz"
-for fr_migration in 2026-11-08-translations.sql 2026-11-08-recommendation-signals.sql 2026-11-08-receipt-import.sql 2026-11-08-public-recipes.sql 2026-11-09-recipe-classification.sql 2026-11-10-cuisine-refinement.sql; do
+for fr_migration in 2026-11-08-translations.sql 2026-11-08-recommendation-signals.sql 2026-11-08-receipt-import.sql 2026-11-08-public-recipes.sql 2026-11-09-recipe-classification.sql 2026-11-10-cuisine-refinement.sql 2026-11-11-discovery.sql 2026-11-15-admin-and-reset.sql 2026-11-19-inventory-resolution.sql; do
     mysql family_recipes < "$fr_migration"
 done
 if [[ -f /var/www/familyrecipes-apk/release.json ]]; then
@@ -96,6 +96,10 @@ cat nginx-next.txt > "$fr_nginx"
 nginx -t
 systemctl reload nginx
 echo "更新后端并等待健康检查…"
+# Default single-host catalog job storage must be writable by the service account.
+fr_service_user=$(systemctl show familyrecipes -p User --value)
+fr_service_user=${fr_service_user:-root}
+install -d -m 0700 -o "$fr_service_user" /opt/familyrecipes/catalog-jobs
 # Preserve the existing owner/mode used by the service.
 cp -p /opt/familyrecipes/backend-1.0.0.jar /opt/familyrecipes/backend-1.0.0.jar.next
 cat backend-1.0.0.jar > /opt/familyrecipes/backend-1.0.0.jar.next
@@ -103,8 +107,8 @@ mv /opt/familyrecipes/backend-1.0.0.jar.next /opt/familyrecipes/backend-1.0.0.ja
 systemctl restart familyrecipes
 fr_ready=false
 for attempt in {1..45}; do
-    if curl -fsS --max-time 3 http://127.0.0.1:8080/api/recipes/search -o health.json &&
-       python3 -c 'import json; assert json.load(open("health.json"))["code"] == 200' 2>/dev/null; then
+    if curl -fsS --connect-timeout 2 --max-time 5 http://127.0.0.1:8080/api/config/catalog-summary -o health.json &&
+       python3 -c 'import json; r=json.load(open("health.json")); assert r["code"] == 200 and isinstance(r["data"]["publicRecipes"], int) and r["data"]["publicRecipes"] >= 0' 2>/dev/null; then
         fr_ready=true; break
     fi
     sleep 2

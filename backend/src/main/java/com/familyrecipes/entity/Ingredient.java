@@ -14,6 +14,7 @@ public class Ingredient {
     private String aliases;
     private String processingMethod;
     private Long baseIngredientId;
+    private Boolean catalog;
     private String unit;  // 单位（如：个、瓶、克、袋等）
 }
 

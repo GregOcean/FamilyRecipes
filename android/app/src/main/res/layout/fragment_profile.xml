@@ -105,11 +105,13 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_login"
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
                 android:text="@string/ui_402d19e50f"
                 android:textSize="16sp"
                 app:cornerRadius="8dp" />
 
+            <TextView android:id="@+id/tv_forgot_password" android:layout_width="wrap_content" android:layout_height="48dp" android:gravity="center" android:text="@string/reset_title" android:textColor="@color/primary" android:textSize="16sp" />
             <TextView
                 android:id="@+id/tv_switch_mode"
                 android:layout_width="wrap_content"

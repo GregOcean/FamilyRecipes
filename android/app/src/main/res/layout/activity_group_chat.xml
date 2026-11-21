@@ -1,43 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="@color/background">
-    <androidx.appcompat.widget.Toolbar android:id="@+id/toolbar" android:layout_width="match_parent" android:layout_height="?attr/actionBarSize"
+    <androidx.appcompat.widget.Toolbar android:id="@+id/toolbar" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp"
         android:background="@color/surface" app:navigationIcon="@drawable/ic_arrow_back">
-        <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center_vertical">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical">
             <TextView android:id="@+id/tv_group_name" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
                 android:textColor="@color/text_primary" android:textSize="18sp" android:textStyle="bold" android:maxLines="2" android:ellipsize="end" />
             <com.google.android.material.button.MaterialButton android:id="@+id/btn_members" style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="wrap_content" android:layout_height="48dp" android:text="@string/chat_members" android:minWidth="0dp"
-                android:insetTop="0dp" android:insetBottom="0dp" app:icon="@drawable/ic_ui_users" app:iconSize="22dp" />
+                android:layout_width="wrap_content" android:layout_height="wrap_content" android:minHeight="48dp" android:text="@string/chat_members" android:minWidth="0dp"
+                android:paddingHorizontal="8dp" android:paddingVertical="2dp" android:textSize="14sp"
+                android:insetTop="6dp" android:insetBottom="6dp" />
         </LinearLayout>
     </androidx.appcompat.widget.Toolbar>
-    <TextView android:id="@+id/tv_sync" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="32dp"
-        android:paddingHorizontal="16dp" android:paddingVertical="6dp" android:textSize="13sp" android:textColor="@color/primary" android:visibility="gone" />
-    <androidx.recyclerview.widget.RecyclerView android:id="@+id/rv_messages" android:layout_width="match_parent" android:layout_height="0dp"
-        android:layout_weight="1" android:clipToPadding="false" android:paddingVertical="12dp" />
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:background="@color/surface" android:padding="8dp">
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical">
-            <EditText android:id="@+id/et_message" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
-        android:fontFamily="sans-serif-medium"        android:textColorHint="@color/text_hint"        android:textColor="@color/text_primary"                android:background="@drawable/bg_rounded_corner" android:hint="@string/ui_17e8e26968" android:inputType="textMultiLine|textCapSentences"
-                android:maxLines="4" android:minHeight="48dp" android:padding="12dp" android:textSize="18sp" />
-            <com.google.android.material.button.MaterialButton android:id="@+id/btn_send" android:layout_width="wrap_content" android:layout_height="52dp"
-                android:layout_marginStart="8dp" android:text="@string/chat_send" android:textSize="17sp" app:cornerRadius="18dp" />
-        </LinearLayout>
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical">
-            <com.google.android.material.button.MaterialButton android:id="@+id/btn_sticker" style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:text="@string/chat_emoji"
-                app:icon="@drawable/ic_chat_emoji" app:iconGravity="textStart" android:textSize="16sp" />
-            <com.google.android.material.button.MaterialButton android:id="@+id/btn_mention" style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:text="@string/chat_mention" android:textSize="16sp" />
-            <com.google.android.material.button.MaterialButton android:id="@+id/btn_share" style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:text="@string/chat_share"
-                app:icon="@drawable/ic_add_white" app:iconGravity="textStart" android:textSize="16sp" />
-        </LinearLayout>
+    <TextView android:id="@+id/tv_sync" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="40dp"
+        android:paddingHorizontal="16dp" android:paddingVertical="6dp" android:textSize="14sp" android:textColor="@color/primary" android:visibility="gone" />
+    <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <androidx.recyclerview.widget.RecyclerView android:id="@+id/rv_messages" android:layout_width="match_parent" android:layout_height="match_parent"
+            android:clipToPadding="false" android:paddingVertical="8dp" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/btn_new_messages" style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="wrap_content" android:layout_height="48dp" android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="8dp"
+            android:text="@string/social_new_messages" android:visibility="gone" />
+    </FrameLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@color/surface" android:padding="6dp" android:gravity="bottom">
+        <androidx.appcompat.widget.AppCompatImageButton android:id="@+id/btn_sticker" android:layout_width="44dp" android:layout_height="48dp"
+            android:src="@drawable/ic_chat_emoji" app:tint="@color/primary" android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="10dp" android:contentDescription="@string/chat_emoji" />
+        <EditText android:id="@+id/et_message" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+            android:fontFamily="sans-serif" android:textColorHint="@color/text_hint" android:textColor="@color/text_primary"
+            android:background="@drawable/bg_chat_input" android:hint="@string/ui_17e8e26968" android:inputType="textMultiLine|textCapSentences"
+            android:maxLines="4" android:minHeight="48dp" android:padding="10dp" android:textSize="17sp" />
+        <androidx.appcompat.widget.AppCompatImageButton android:id="@+id/btn_share" android:layout_width="44dp" android:layout_height="48dp"
+            android:src="@drawable/ic_add_white" app:tint="@color/primary" android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="12dp" android:contentDescription="@string/social_message_tools" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/btn_send" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minHeight="48dp"
+            android:minWidth="48dp" android:paddingHorizontal="10dp" android:text="@string/chat_send" android:textSize="15sp" app:cornerRadius="10dp"
+            android:insetTop="6dp" android:insetBottom="6dp" />
     </LinearLayout>
     <ScrollView android:id="@+id/emoji_panel" android:layout_width="match_parent"
-        android:layout_height="240dp" android:visibility="gone" android:fillViewport="true"
-        android:background="@color/surface">
+        android:layout_height="288dp" android:visibility="gone" android:fillViewport="true" android:background="@color/surface">
         <LinearLayout android:id="@+id/emoji_content" android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:orientation="vertical" android:padding="8dp" />
+            android:layout_height="wrap_content" android:orientation="vertical" android:padding="4dp" />
     </ScrollView>
 </LinearLayout>

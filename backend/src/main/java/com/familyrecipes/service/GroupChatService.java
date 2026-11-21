@@ -28,6 +28,36 @@ public class GroupChatService {
     @Autowired
     private FriendshipService friendshipService;
     @Autowired private KitchenService kitchens;
+    @Autowired private org.springframework.jdbc.core.JdbcTemplate db;
+    @Autowired private org.springframework.context.ApplicationEventPublisher events;
+
+    private void validateInfo(String name, String description) {
+        if(name==null || name.isBlank() || name.trim().length()>100)
+            throw new com.familyrecipes.common.ApiException(400,"群名称须为1至100字符");
+        if(description!=null && description.length()>500)
+            throw new com.familyrecipes.common.ApiException(400,"群介绍最多500字符");
+    }
+    private void systemMessage(Long group,Long sender,String text) {
+        Message message=new Message(); message.setGroupId(group); message.setSenderId(sender);
+        message.setContent(text); message.setMessageType(Message.MessageType.system);
+        messageMapper.insertMessage(message); events.publishEvent(messageMapper.findById(message.getId()));
+    }
+    private String memberName(Long user) {
+        return db.queryForObject("SELECT username FROM user WHERE id=?",String.class,user);
+    }
+    @Transactional
+    public void transferManager(Long groupId,Long operatorId,Long targetId) {
+        lockGroup(groupId);
+        GroupMember operator=groupChatMapper.getGroupMember(groupId,operatorId);
+        if(operator==null || operator.getRole()!=GroupMember.MemberRole.manager)
+            throw new com.familyrecipes.common.ApiException(403,"只有群管理员可以转让管理权");
+        if(targetId==null || targetId.equals(operatorId) || !groupChatMapper.isGroupMember(groupId,targetId))
+            throw new com.familyrecipes.common.ApiException(400,"请选择群内其他成员");
+        groupChatMapper.updateMemberRole(groupId,operatorId,"member");
+        groupChatMapper.updateMemberRole(groupId,targetId,"manager");
+        db.update("UPDATE group_chat SET manager_id=? WHERE id=?",targetId,groupId);
+        systemMessage(groupId,operatorId,"已将群管理员转让给 "+memberName(targetId));
+    }
 
     private void lockGroup(Long groupId) {
         if (groupChatMapper.lockById(groupId) == null)
@@ -40,8 +70,8 @@ public class GroupChatService {
     @Transactional
     public GroupChat createGroup(Long creatorId, String groupName, String description, 
                                   Integer maxMembers, List<Long> memberIds) {
-        if (groupName == null || groupName.isBlank() || groupName.length() > 100)
-            throw new com.familyrecipes.common.ApiException(400, "群名称须为1至100字符");
+        validateInfo(groupName,description);
+        groupName=groupName.trim();
         maxMembers = 10; // Single-instance personal edition: capacity is a server rule.
         memberIds = memberIds == null ? List.of() : memberIds.stream().filter(java.util.Objects::nonNull)
             .filter(id -> !id.equals(creatorId)).distinct().toList();
@@ -72,12 +102,6 @@ public class GroupChatService {
         
         // 添加其他成员
         for (Long memberId : memberIds) {
-            // 检查是否为好友
-            if (!friendshipService.isFriend(creatorId, memberId)) {
-                log.warn("用户{}不是创建者{}的好友，跳过", memberId, creatorId);
-                continue;
-            }
-            
             GroupMember member = new GroupMember();
             member.setGroupId(group.getId());
             member.setUserId(memberId);
@@ -85,7 +109,7 @@ public class GroupChatService {
             groupChatMapper.insertGroupMember(member);
         }
         
-        kitchens.create(group.getId(), "家里的厨房", creatorId);
+        kitchens.create(group.getId(), KitchenService.defaultName("家里的厨房","Home kitchen"), creatorId);
 
         // 发送系统消息
         Message systemMessage = new Message();
@@ -112,8 +136,11 @@ public class GroupChatService {
             
             int unreadCount = messageMapper.getUnreadCount(userId, group.getId());
             group.setUnreadCount(unreadCount);
+            var position=messageMapper.getReadPosition(userId,group.getId());
+            group.setLastReadMessageId(position==null?0L:position.getLastReadMessageId());
         }
         
+        groups.sort(java.util.Comparator.comparing((GroupChat g) -> g.getLastMessage()==null ? 0L : g.getLastMessage().getId()).reversed());
         return groups;
     }
     
@@ -179,8 +206,13 @@ public class GroupChatService {
             member.setUserId(userId);
             member.setRole(GroupMember.MemberRole.member);
             groupChatMapper.insertGroupMember(member);
+            // Joining grants history access, but old history must not become new unread messages.
+            db.update("INSERT INTO user_read_position(user_id,group_id,last_read_message_id) " +
+                "SELECT ?,?,COALESCE(MAX(id),0) FROM message WHERE group_id=? " +
+                "ON DUPLICATE KEY UPDATE last_read_message_id=VALUES(last_read_message_id)",userId,groupId,groupId);
         }
-        
+        if(!userIds.isEmpty()) systemMessage(groupId,operatorId,"加入群聊："+
+            userIds.stream().map(this::memberName).collect(java.util.stream.Collectors.joining("、")));
         // 更新群成员数量
         int newCount = groupChatMapper.getMemberCount(groupId);
         groupChatMapper.updateMemberCount(groupId, newCount);
@@ -209,6 +241,7 @@ public class GroupChatService {
             throw new com.familyrecipes.common.ApiException(400, "不能移除群管理员");
         }
         
+        if(target==null) throw new com.familyrecipes.common.ApiException(404,"该成员已不在群中");
         // 移除成员
         groupChatMapper.deleteGroupMember(groupId, userId);
         
@@ -222,10 +255,10 @@ public class GroupChatService {
         Message systemMessage = new Message();
         systemMessage.setGroupId(groupId);
         systemMessage.setSenderId(operatorId);
-        systemMessage.setContent("移除了一位成员");
+        systemMessage.setContent("已移除成员："+memberName(userId));
         systemMessage.setMessageType(Message.MessageType.system);
         messageMapper.insertMessage(systemMessage);
-        
+        events.publishEvent(messageMapper.findById(systemMessage.getId()));
         log.info("用户{}从群组{}移除了用户{}", operatorId, groupId, userId);
     }
     
@@ -245,6 +278,7 @@ public class GroupChatService {
             throw new com.familyrecipes.common.ApiException(400, "群管理员不能退出群组，请先转让管理员权限或解散群组");
         }
         
+        systemMessage(groupId,userId,memberName(userId)+" 已退出群聊");
         // 退出群组
         groupChatMapper.deleteGroupMember(groupId, userId);
         
@@ -270,9 +304,9 @@ public class GroupChatService {
             throw new com.familyrecipes.common.ApiException(400, "只有群管理员可以修改群组信息");
         }
         
-        GroupChat group = new GroupChat();
-        group.setId(groupId);
-        group.setName(name);
+        validateInfo(name,description);
+        GroupChat group = groupChatMapper.getGroupById(groupId);
+        group.setName(name.trim());
         group.setDescription(description);
         groupChatMapper.updateGroup(group);
         

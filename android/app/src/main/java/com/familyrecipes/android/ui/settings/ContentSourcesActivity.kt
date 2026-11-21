@@ -44,7 +44,7 @@ class ContentSourcesActivity : AppCompatActivity() {
                         metadata.getAsJsonArray("images")?.forEach { image ->
                             val i=image.asJsonObject
                             append("\n\n")
-                            listOf("title","author","source_url","attribution_url","license","license_url").forEach { key ->
+                            listOf("title","author","source_url","attribution_url","license","license_url","modifications").forEach { key ->
                                 i.get(key)?.takeUnless { it.isJsonNull }?.asString?.let { append(android.text.Html.fromHtml(it,android.text.Html.FROM_HTML_MODE_LEGACY)).append('\n') }
                             }
                         }

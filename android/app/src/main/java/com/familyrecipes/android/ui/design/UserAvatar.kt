@@ -51,8 +51,10 @@ object UserAvatar {
                 scaleType = ImageView.ScaleType.FIT_CENTER
             }, FrameLayout.LayoutParams(-1, -1))
         } else {
-            frame.addView(TextView(c).apply {
+            frame.addView(androidx.appcompat.widget.AppCompatTextView(c).apply {
                 text=name.take(1).uppercase();textSize=20f;setTextColor(Ui.ink);gravity=Gravity.CENTER;setTypeface(null,Typeface.BOLD)
+                // Avatar initials are decoration; keep them inside the fixed avatar at large font sizes.
+                setAutoSizeTextTypeUniformWithConfiguration(10,20,1,android.util.TypedValue.COMPLEX_UNIT_SP)
             },FrameLayout.LayoutParams(-1,-1))
         }
         if(!url.isNullOrBlank()) {

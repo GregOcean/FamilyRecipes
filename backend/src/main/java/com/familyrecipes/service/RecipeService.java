@@ -207,6 +207,7 @@ public class RecipeService {
         validateMedia(recipe, steps, externalRecipes);
         recipeMapper.update(recipe);
         db.update("DELETE FROM recipe_classification WHERE recipe_id=?", recipe.getId());
+        db.update("DELETE FROM recipe_enrichment WHERE recipe_id=?", recipe.getId());
         Long recipeId = recipe.getId();
 
         // 删除并重新插入标签
@@ -369,6 +370,10 @@ public class RecipeService {
             // 添加收藏
             userFavoriteMapper.insert(userId, recipeId);
             recipeMapper.incrementFavoriteCount(recipeId);
+            db.update("""
+                INSERT IGNORE INTO recipe_favorite_notification(recipient_id,actor_id,recipe_id)
+                SELECT creator_id,?,id FROM recipe WHERE id=? AND creator_id<>?
+                """,userId,recipeId,userId);
             return true;
         }
     }

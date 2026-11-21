@@ -16,6 +16,16 @@ interface RecordDao {
     @Query("SELECT json FROM records WHERE account=:account AND kind=:kind AND `key`=:key")
     suspend fun get(account: String, kind: String, key: String): String?
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun put(record: LocalRecord)
+    @Query("UPDATE records SET json=:json WHERE account=:account AND kind=:kind AND `key`=:key")
+    suspend fun updateJson(account:String,kind:String,key:String,json:String)
+    @Query("DELETE FROM records WHERE account=:account AND kind=:kind")
+    suspend fun deleteKind(account:String,kind:String)
+    @Query("SELECT * FROM records WHERE account=:account AND kind=:kind ORDER BY CAST(`key` AS INTEGER) DESC LIMIT :limit")
+    fun observeRecent(account:String,kind:String,limit:Int):Flow<List<LocalRecord>>
+    @Query("SELECT * FROM records WHERE account=:account AND kind=:kind AND CAST(`key` AS INTEGER)<:beforeId ORDER BY CAST(`key` AS INTEGER) DESC LIMIT :limit")
+    fun observeBefore(account:String,kind:String,beforeId:Long,limit:Int):Flow<List<LocalRecord>>
+    @Query("SELECT * FROM records WHERE account=:account AND kind=:kind ORDER BY CAST(`key` AS INTEGER) DESC LIMIT :limit")
+    suspend fun recent(account:String,kind:String,limit:Int):List<LocalRecord>
     @Query("DELETE FROM records WHERE account=:account AND kind=:kind AND `key`=:key")
     suspend fun delete(account: String, kind: String, key: String)
 }

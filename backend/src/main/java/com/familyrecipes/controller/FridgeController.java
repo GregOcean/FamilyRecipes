@@ -20,6 +20,12 @@ public class FridgeController {
 
     @Autowired
     private FridgeService fridgeService;
+    @Autowired private com.familyrecipes.service.IngredientResolutionService resolution;
+    @PostMapping("/ingredients/resolve") public Result<java.util.List<com.familyrecipes.service.IngredientResolutionService.Resolution>> resolve(@RequestBody com.familyrecipes.service.IngredientResolutionService.Request body,HttpServletRequest request) {
+        return Result.success(resolution.resolve((Long)request.getAttribute("userId"),body));
+    }
+    @PostMapping("/ingredients/estimate") public Result<com.familyrecipes.service.IngredientResolutionService.Estimate> estimate(@RequestBody com.familyrecipes.service.IngredientResolutionService.EstimateRequest body) {return Result.success(resolution.estimate(body));}
+
 
     @PostMapping("/items/{id}/status")
     public Result<Void> status(@PathVariable Long id,@RequestBody java.util.Map<String,String> body,HttpServletRequest r) {

@@ -15,6 +15,7 @@
         <item name="android:textColorSecondary">@color/text_secondary</item>
         <item name="android:textColorHint">@color/text_hint</item>
         <item name="editTextStyle">@style/ReadableEditText</item>
+        <item name="materialButtonStyle">@style/CompactButton</item>
         <item name="android:editTextStyle">@style/ReadableEditText</item>
         <item name="android:windowLightStatusBar">@bool/light_system_bars</item>
         <item name="android:windowLightNavigationBar">@bool/light_system_bars</item>
@@ -28,9 +29,11 @@
     <!-- Splash Screen Theme -->
     <style name="Theme.FamilyRecipes.Splash" parent="Theme.FamilyRecipes">
         <item name="android:windowBackground">@drawable/splash_gradient_background</item>
-        <item name="android:statusBarColor">@color/toolbar_background</item>
-        <item name="android:navigationBarColor">@color/primary</item>
+        <item name="android:statusBarColor">@color/ic_launcher_background</item>
+        <item name="android:navigationBarColor">@color/ic_launcher_background</item>
         <item name="android:windowFullscreen">true</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
     </style>
     <style name="ThemeOverlay.FamilyRecipes.Toolbar" parent="ThemeOverlay.AppCompat.ActionBar">
         <item name="android:textColorPrimary">@color/on_toolbar</item>

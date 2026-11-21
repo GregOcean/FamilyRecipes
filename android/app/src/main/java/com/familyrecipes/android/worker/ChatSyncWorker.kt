@@ -1,47 +1,28 @@
 package com.familyrecipes.android.worker
+
 import android.content.Context
-import android.content.Intent
-import android.app.PendingIntent
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import com.familyrecipes.android.data.local.*
-import com.familyrecipes.android.data.remote.ApiClient
-import com.familyrecipes.android.ui.social.GroupChatActivity
 import kotlinx.coroutines.CancellationException
-class ChatSyncWorker(context:Context,params:WorkerParameters):CoroutineWorker(context,params) {
+
+/** Network-constrained fallback. Foreground uses the same coordinator; this is not device push. */
+class ChatSyncWorker(context:Context,params:WorkerParameters):CoroutineWorker(context,params){
     override suspend fun doWork():Result {
         if(!PreferenceManager.isLoggedIn())return Result.success()
         val account=LocalStore.account
-        val userId=PreferenceManager.userId
-        try {
-            var invitationsFailed=false
-            try { FriendInvitations.sync() }
-            catch(e:CancellationException){throw e}
-            catch(_:Exception){invitationsFailed=true}
-            val response=ApiClient.getService().getGroupsList()
-            if(response.code()==401)return Result.success()
-            if(!response.isSuccessful || response.body()?.code!=200)return Result.retry()
+        return try{
+            var notificationFailed=false
+            try{FavoriteNotifications.sync()}catch(e:CancellationException){throw e}catch(_:Exception){notificationFailed=true}
+            try{FriendInvitations.sync()}catch(e:CancellationException){throw e}catch(_:Exception){notificationFailed=true}
+            ConversationSync.refresh(account)
             if(account!=LocalStore.account)return Result.success()
-            GroupCache.save(account,response.body()?.data.orEmpty())
-            for(group in response.body()?.data.orEmpty()) {
-                if(account!=LocalStore.account)return Result.success()
-                val id=group.id ?: continue
-                val initial=LocalStore.instance.records().get(account,"cursor",id.toString())==null
-                val messages=ChatRepository.sync(account,id).filter { it.senderId!=userId && it.messageType!="system" }
-                if(initial || messages.isEmpty() || GroupChatActivity.visibleGroup==id)continue
-                val manager=NotificationManagerCompat.from(applicationContext)
-                if(!manager.areNotificationsEnabled())continue
-                val intent=Intent(applicationContext,GroupChatActivity::class.java).putExtra(GroupChatActivity.EXTRA_GROUP_ID,id)
-                    .putExtra(GroupChatActivity.EXTRA_GROUP_NAME,group.name)
-                val pending=PendingIntent.getActivity(applicationContext,id.toInt(),intent,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-                manager.notify(id.toInt()+2000,NotificationCompat.Builder(applicationContext,"family_messages")
-                    .setSmallIcon(com.familyrecipes.android.R.drawable.ic_notification).setContentTitle(group.name)
-                    .setContentText(if(messages.any { com.familyrecipes.android.data.model.ChatContent.mentions(it.content,userId) }) com.familyrecipes.android.ui.design.UiStrings.s(com.familyrecipes.android.R.string.chat_mentioned) else com.familyrecipes.android.ui.design.UiStrings.f(com.familyrecipes.android.R.string.chat_notification,messages.size)).setAutoCancel(true).setContentIntent(pending).build())
+            val retryable=LocalStore.instance.records().list(account,"outbox").any{
+                val item=com.google.gson.Gson().fromJson(it.json,PendingMessage::class.java)
+                item.state !in setOf("failed","auth","unavailable")
             }
-            return if(invitationsFailed) Result.retry() else Result.success()
-        } catch(e:CancellationException) { throw e }
-          catch(_:Exception) { return Result.retry() }
+            if(retryable || notificationFailed)Result.retry() else Result.success()
+        }catch(e:CancellationException){throw e}catch(e:ChatSyncException){if(e.status==401)Result.success() else Result.retry()}
+        catch(_:Exception){Result.retry()}
     }
 }

@@ -46,6 +46,32 @@ public class RecipeWorkflowService {
       boolean known,
       String seed,
       int page, String cuisine) {
+    return browse(user,kitchen,scope,origin,keyword,taste,minutes,missing,known,seed,page,cuisine,"");
+  }
+
+  public PageResult<Recipe> browse(
+      Long user, Long kitchen, String scope, String origin, String keyword, String taste,
+      Integer minutes, Integer missing, boolean known, String seed, int page, String cuisine, String sources) {
+    return browse(user,kitchen,scope,origin,keyword,taste,minutes,missing,known,seed,page,cuisine,sources,"","","","");
+  }
+
+  public PageResult<Recipe> browse(
+      Long user, Long kitchen, String scope, String origin, String keyword, String taste,
+      Integer minutes, Integer missing, boolean known, String seed, int page, String cuisine,
+      String sources, String tastes, String cuisines, String times, String stocks) {
+    var tasteValues=selections(tastes,12,20);
+    var cuisineValues=selections(cuisines,100,50);
+    var timeValues=selections(times,4,3);
+    var stockValues=selections(stocks,2,2);
+    if(!Set.of("15","30","60","-60").containsAll(timeValues) || !Set.of("0","-1").containsAll(stockValues))
+      throw new ApiException(400,"筛选参数不合法");
+    var selectedSources = new LinkedHashSet<String>();
+    if(sources == null || sources.length()>80) throw new ApiException(400,"来源筛选不合法");
+    if(!sources.isBlank()) {
+      selectedSources.addAll(Arrays.asList(sources.split(",",-1)));
+      if(!Set.of("created","known","favorites","shared").containsAll(selectedSources))throw new ApiException(400,"来源筛选不合法");
+      if(user==null)throw new ApiException(401,"请先登录");
+    }
     if (cuisine == null || cuisine.length()>50) throw new ApiException(400,"菜系不合法");
     if (page < 1
         || page > 10000
@@ -54,10 +80,10 @@ public class RecipeWorkflowService {
         || keyword.length() > 100
         || taste.length() > 20
         || seed.length() > 64
-        || minutes != null && minutes < 1
-        || missing != null && missing < 0) throw new ApiException(400, "筛选参数不合法");
+        || minutes != null && minutes < 1 && minutes != -60
+        || missing != null && missing < -1) throw new ApiException(400, "筛选参数不合法");
     if (kitchen != null) kitchens.requireMember(kitchen, user);
-    if (missing != null && kitchen == null) throw new ApiException(400, "请先选择厨房");
+    if ((missing != null || !stockValues.isEmpty()) && kitchen == null) throw new ApiException(400, "请先选择厨房");
     List<Object> args = new ArrayList<>();
     String where = " WHERE " + RecipeMapper.VISIBLE.replace("#{viewerId}", "?");
     for (int i=0; i<RecipeMapper.VISIBLE.split("#\\{viewerId\\}", -1).length-1; i++) args.add(user);
@@ -67,17 +93,34 @@ public class RecipeWorkflowService {
             + " c.user_id=?) OR ((r.visibility='group' OR "
             + ("(" + RecipeMapper.MEAL_SHARED + " OR " + RecipeMapper.CHAT_SHARED + ")").replace("#{viewerId}", "?")
             + ") AND r.creator_id<>?))";
-    if (scope.equals("mine")) {
+    if(!selectedSources.isEmpty()) {
+      var predicates=new ArrayList<String>();
+      for(String source:selectedSources) {
+        switch(source) {
+          case "created" -> {predicates.add("r.creator_id=?");args.add(user);}
+          case "known" -> {predicates.add("EXISTS(SELECT 1 FROM recipe_cook c WHERE c.recipe_id=r.id AND c.user_id=?)");args.add(user);}
+          case "favorites" -> {predicates.add("EXISTS(SELECT 1 FROM user_favorite f WHERE f.recipe_id=r.id AND f.user_id=?)");args.add(user);}
+          case "shared" -> {
+            predicates.add("((r.visibility='group' OR "+("("+RecipeMapper.MEAL_SHARED+" OR "+RecipeMapper.CHAT_SHARED+")").replace("#{viewerId}","?")+") AND r.creator_id<>?)");
+            Collections.addAll(args,user,user,user);
+          }
+          default -> throw new ApiException(400,"来源筛选不合法");
+        }
+      }
+      where+=" AND ("+String.join(" OR ",predicates)+")";
+    }
+    // Keep the legacy single-source contract for previously installed clients.
+    if (selectedSources.isEmpty() && scope.equals("mine")) {
       where += " AND " + mine;
       Collections.addAll(args, user, user, user, user, user, user);
     }
-    if (origin.equals("created")) {
+    if (selectedSources.isEmpty() && origin.equals("created")) {
       where += " AND r.creator_id=?";
       args.add(user);
-    } else if (origin.equals("favorites")) {
+    } else if (selectedSources.isEmpty() && origin.equals("favorites")) {
       where += " AND EXISTS(SELECT 1 FROM user_favorite f WHERE f.recipe_id=r.id AND f.user_id=?)";
       args.add(user);
-    } else if (origin.equals("shared")) {
+    } else if (selectedSources.isEmpty() && origin.equals("shared")) {
       where +=
           " AND (r.visibility='group' OR "
               + ("(" + RecipeMapper.MEAL_SHARED + " OR " + RecipeMapper.CHAT_SHARED + ")").replace("#{viewerId}", "?")
@@ -86,7 +129,7 @@ public class RecipeWorkflowService {
       args.add(user);
       args.add(user);
     }
-    if (known) {
+    if (selectedSources.isEmpty() && known) {
       where += " AND EXISTS(SELECT 1 FROM recipe_cook c WHERE c.recipe_id=r.id AND c.user_id=?)";
       args.add(user);
     }
@@ -100,30 +143,48 @@ public class RecipeWorkflowService {
               + "WHERE ct.source_hash=SHA2(r.description,256) AND ct.kind='content' AND ct.status='ready' AND ct.translated_text LIKE ?))";
       for (int i = 0; i < 6; i++) args.add("%" + keyword + "%");
     }
-    if (!taste.isBlank()) {
+    if(!tasteValues.isEmpty()) {
+      where += " AND EXISTS(SELECT 1 FROM recipe_tag t WHERE t.recipe_id=r.id AND t.tag_type='taste' AND ("+
+          String.join(" OR ",Collections.nCopies(tasteValues.size(),"t.tag_value LIKE ?"))+"))";
+      for(String value:tasteValues)args.add("%"+value+"%");
+    } else if (!taste.isBlank()) {
       for(String part : taste.equals("酸辣") ? List.of("酸","辣") : List.of(taste)) {
         where += " AND EXISTS(SELECT 1 FROM recipe_tag t WHERE t.recipe_id=r.id AND t.tag_type='taste' AND t.tag_value LIKE ?)";
         args.add("%"+part+"%");
       }
     }
-    if (minutes != null) {
-      where += " AND r.cooking_time<=?";
-      args.add(minutes);
+    if(!timeValues.isEmpty()) {
+      var durations=new ArrayList<String>();
+      for(String value:timeValues) {
+        int limit=Integer.parseInt(value);
+        durations.add(limit<0?"r.cooking_time>?":"r.cooking_time<=?");
+        args.add(Math.abs(limit));
+      }
+      where += " AND r.cooking_time>0 AND ("+String.join(" OR ",durations)+")";
+    } else if (minutes != null) {
+      where += minutes == -60 ? " AND r.cooking_time>?" : " AND r.cooking_time>0 AND r.cooking_time<=?";
+      args.add(minutes == -60 ? 60 : minutes);
     }
-    if (!cuisine.isBlank()) {
-      var values=CuisineCatalog.expand(cuisine);
+    if (!cuisineValues.isEmpty() || !cuisine.isBlank()) {
+      Set<String> values=new LinkedHashSet<>();
+      for(String selected:cuisineValues.isEmpty()?List.of(cuisine):cuisineValues)values.addAll(CuisineCatalog.expand(selected));
       where += " AND EXISTS(SELECT 1 FROM recipe_tag t WHERE t.recipe_id=r.id AND t.tag_type='cuisine' AND t.tag_value IN ("+String.join(",",Collections.nCopies(values.size(),"?"))+"))";
       args.addAll(values);
     }
-    if (missing != null) {
+    Integer stockConstraint=missing;
+    if(!stockValues.isEmpty())stockConstraint=stockValues.contains("-1")?-1:0;
+    if (stockConstraint != null && stockConstraint == -1) {
+      where += " AND EXISTS(SELECT 1 FROM recipe_ingredient ri JOIN fridge_item f ON f.ingredient_id=ri.ingredient_id WHERE ri.recipe_id=r.id AND f.kitchen_id=? AND f.status IN ('normal','expiring') AND (f.expiry_date IS NULL OR f.expiry_date>=CURRENT_DATE))";
+      args.add(kitchen);
+    } else if (stockConstraint != null) {
       where +=
           " AND EXISTS(SELECT 1 FROM recipe_ingredient ri WHERE ri.recipe_id=r.id) AND (SELECT"
               + " COUNT(DISTINCT ri.ingredient_id) FROM recipe_ingredient ri WHERE"
               + " ri.recipe_id=r.id AND NOT EXISTS(SELECT 1 FROM fridge_item f WHERE"
               + " f.ingredient_id=ri.ingredient_id AND f.kitchen_id=? AND f.status IN"
-              + " ('normal','expiring') AND f.expiry_date>=CURRENT_DATE))<=?";
+              + " ('normal','expiring') AND (f.expiry_date IS NULL OR f.expiry_date>=CURRENT_DATE)))<=?";
       args.add(kitchen);
-      args.add(missing);
+      args.add(stockConstraint);
     }
     Long total =
         db.queryForObject("SELECT COUNT(*) FROM recipe r" + where, Long.class, args.toArray());
@@ -150,6 +211,14 @@ public class RecipeWorkflowService {
             args.toArray());
     return new PageResult<>(
         browseCards(ids, user), total, page, 20);
+  }
+
+  private static Set<String> selections(String csv,int maxItems,int maxLength) {
+    if(csv==null || csv.length()>maxItems*(maxLength+1))throw new ApiException(400,"筛选参数不合法");
+    if(csv.isBlank())return Set.of();
+    var values=new LinkedHashSet<>(Arrays.asList(csv.split(",",-1)));
+    if(values.size()>maxItems || values.stream().anyMatch(v->v.isBlank() || v.length()>maxLength))throw new ApiException(400,"筛选参数不合法");
+    return values;
   }
 
   /** List cards do not need steps, media albums or per-recipe detail/translation queries. */

@@ -27,12 +27,15 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.gson.Gson
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.asRequestBody
 
 /** Durable REST delivery; WebSocket only wakes the cursor-based receiver. */
 class GroupChatActivity : AppCompatActivity() {
     private lateinit var binding: ActivityGroupChatBinding
+    private var searchTargetLocated = false
     private val messages = mutableListOf<Message>()
     private lateinit var adapter: MessageAdapter
     private var members = emptyList<GroupMember>()
@@ -44,6 +47,13 @@ class GroupChatActivity : AppCompatActivity() {
     private var draftRevision = 0
     private var choosingMembers = false
     private var syncJob: Job? = null
+    private var translationJob:Job?=null
+    private var readJob:Job?=null
+    private val window=MutableStateFlow(100)
+    private val beforeWindow=MutableStateFlow(Long.MAX_VALUE)
+    private var loadingOlder=false
+    private var historyEnd=false
+    private var blockedStatus:Int?=null
     private val ws by lazy { WebSocketManager.getInstance() }
     companion object {
         const val EXTRA_GROUP_ID = "group_id"
@@ -71,7 +81,7 @@ class GroupChatActivity : AppCompatActivity() {
                         contentResolver.openInputStream(uri)!!.use { input -> file.outputStream().use { input.copyTo(it) } }
                     }
                     val body = okhttp3.MultipartBody.Part.createFormData("file", file.name, file.asRequestBody("image/*".toMediaType()))
-                    val url = Ui.data(ApiClient.getService().uploadImage(body, "sticker"))
+                    val url = Ui.data(ApiClient.getAccountService(account).uploadImage(body, "sticker"))
                     ChatRepository.enqueue(account, groupId, url, "sticker")
                     requestSync()
                 } finally { file.delete() }
@@ -81,14 +91,21 @@ class GroupChatActivity : AppCompatActivity() {
     }
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
+        if(!PreferenceManager.isLoggedIn() || intent.getStringExtra("notification_account")?.let{it!=account}==true){
+            toast(s(R.string.social_account_changed));finish();return
+        }
         binding = ActivityGroupChatBinding.inflate(layoutInflater); setContentView(binding.root)
         groupId = intent.getLongExtra(EXTRA_GROUP_ID, 0)
+        val searchTarget=intent.getLongExtra("message_id",0)
+        if(searchTarget>0){beforeWindow.value=if(searchTarget==Long.MAX_VALUE)searchTarget else searchTarget+1
+            lifecycleScope.launch{try{ChatRepository.loadOlder(account,groupId,beforeWindow.value)}catch(e:CancellationException){throw e}catch(_:Exception){}}
+        }
         if(groupId <= 0) { finish(); return }
         binding.toolbar.setNavigationOnClickListener { finish() }
         binding.tvGroupName.text = intent.getStringExtra(EXTRA_GROUP_NAME)
-        binding.btnMembers.setOnClickListener { showMembers(false) }
-        binding.tvGroupName.setOnClickListener { showMembers(false) }
-        binding.btnMention.setOnClickListener { showMembers(true) }
+        fun manage(){startActivity(Intent(this,com.familyrecipes.android.ui.settings.GroupSettingsActivity::class.java).putExtra("group_id",groupId))}
+        binding.btnMembers.setOnClickListener { manage() }
+        binding.tvGroupName.setOnClickListener { manage() }
         binding.btnSticker.setOnClickListener { showEmoji() }
         binding.etMessage.setOnTouchListener { _, event ->
             if(event.action == android.view.MotionEvent.ACTION_DOWN) hideEmoji()
@@ -100,10 +117,24 @@ class GroupChatActivity : AppCompatActivity() {
             }
         })
         binding.btnShare.setOnClickListener { showShare() }
-        binding.tvSync.setOnClickListener { requestSync() }
+        binding.tvSync.setOnClickListener {
+            when(blockedStatus){401->{startActivity(Intent(this,com.familyrecipes.android.ui.MainActivity::class.java).putExtra("navigate_to","profile").addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));finish()};403,404->finish();else->requestSync()}
+        }
+        binding.btnNewMessages.setOnClickListener{
+            if(beforeWindow.value!=Long.MAX_VALUE){beforeWindow.value=Long.MAX_VALUE;window.value=100;searchTargetLocated=true}
+            if(messages.isNotEmpty())binding.rvMessages.smoothScrollToPosition(messages.lastIndex)
+        }
         adapter = MessageAdapter(messages, userId, ::pendingAction)
         binding.rvMessages.layoutManager = LinearLayoutManager(this).apply { stackFromEnd = true }
         binding.rvMessages.adapter = adapter
+        binding.rvMessages.addOnScrollListener(object:androidx.recyclerview.widget.RecyclerView.OnScrollListener(){
+            override fun onScrolled(view:androidx.recyclerview.widget.RecyclerView,dx:Int,dy:Int){
+                markVisibleRead()
+                val layout=view.layoutManager as LinearLayoutManager
+                if(dy<0 && layout.findFirstVisibleItemPosition()<3)loadOlder()
+                if(!view.canScrollVertically(1))binding.btnNewMessages.visibility=if(beforeWindow.value==Long.MAX_VALUE)View.GONE else View.VISIBLE
+            }
+        })
         lifecycleScope.launch { loadMembers() }
         val dao = LocalStore.instance.records()
         lifecycleScope.launch {
@@ -143,10 +174,14 @@ class GroupChatActivity : AppCompatActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
-                    combine(dao.observe(account, "chat:$groupId"), dao.observe(account, "outbox")) { rows, pending ->
+                    combine(combine(window,beforeWindow){limit,before->limit to before}.flatMapLatest{(limit,before)->dao.observeBefore(account,"chat:$groupId",before,limit)}, dao.observe(account, "outbox")) { rows, pending ->
                         rows.map { json.fromJson(it.json, Message::class.java) }.sortedBy { it.id } to
-                            pending.map { json.fromJson(it.json, PendingMessage::class.java) }.filter { it.groupId == groupId }
+                            pending.map { json.fromJson(it.json, PendingMessage::class.java) }.filter { it.groupId == groupId }.sortedBy{it.sequence}
                     }.collect { (history, pending) ->
+                        val layout=binding.rvMessages.layoutManager as LinearLayoutManager
+                        val first=layout.findFirstVisibleItemPosition()
+                        val anchorId=messages.getOrNull(first)?.id
+                        val anchorTop=layout.findViewByPosition(first)?.top ?: 0
                         val atBottom = !binding.rvMessages.canScrollVertically(1)
                         val previousTail=messages.lastOrNull()?.let { it.clientMessageId ?: it.id?.toString() }
                         val knownIds = history.mapNotNull { it.clientMessageId }.toSet()
@@ -154,16 +189,23 @@ class GroupChatActivity : AppCompatActivity() {
                         pending.filter { it.clientId !in knownIds }.forEach { item ->
                             messages.add(Message(id=null, groupId=groupId, senderId=userId,
                                 content=item.content, messageType=if(item.type == "sticker") "sticker" else "text",
-                                createdAt=null, sender=null, clientMessageId=item.clientId, localError=item.error))
+                                createdAt=null, sender=null, clientMessageId=item.clientId, localError=when(item.state){"auth"->s(R.string.social_login_expired);"unavailable"->s(R.string.social_group_unavailable);"retrying"->s(R.string.social_retry_later);else->item.error}))
                         }
                         adapter.notifyDataSetChanged()
                         val tail=messages.lastOrNull()
                         val sentNew=tail?.senderId==userId && (tail.clientMessageId ?: tail.id?.toString())!=previousTail
-                        if((atBottom || sentNew) && messages.isNotEmpty()) binding.rvMessages.scrollToPosition(messages.lastIndex)
-                        history.lastOrNull()?.id?.let { id ->
-                            try { ApiClient.getService().markAsRead(mapOf("groupId" to groupId, "messageId" to id)) }
-                            catch(e: CancellationException) { throw e } catch(_: Exception) { }
-                        }
+                        val target=intent.getLongExtra("message_id",0L)
+                        val targetIndex=messages.indexOfFirst { it.id==target }
+                        if(!searchTargetLocated && target>0 && targetIndex>=0) {
+                            binding.rvMessages.scrollToPosition(targetIndex)
+                            searchTargetLocated=true
+                        } else if(!atBottom && anchorId!=null && !sentNew) {
+                            val anchorIndex=messages.indexOfFirst { it.id==anchorId }
+                            if(anchorIndex>=0) layout.scrollToPositionWithOffset(anchorIndex,anchorTop)
+                        } else if((atBottom || sentNew) && messages.isNotEmpty()) binding.rvMessages.scrollToPosition(messages.lastIndex)
+                        if(!atBottom && !sentNew && tail?.senderId!=userId && (tail?.clientMessageId?:tail?.id?.toString())!=previousTail)
+                            binding.btnNewMessages.visibility=View.VISIBLE
+                        binding.rvMessages.post{markVisibleRead()}
                     }
                 }
                 launch { while(true) { requestSync(); delay(10000) } }
@@ -171,21 +213,55 @@ class GroupChatActivity : AppCompatActivity() {
             }
         }
     }
-    override fun onStart() { super.onStart(); visibleGroup=groupId; ws.connect(groupId,userId) }
-    override fun onStop() { visibleGroup=null; ws.disconnect(); super.onStop() }
+    override fun onStart() { super.onStart();if(!::binding.isInitialized)return
+        if(account!=LocalStore.account || !PreferenceManager.isLoggedIn()){finish();return}
+        visibleGroup=groupId;ChatNotifications.clearGroup(account,groupId);ws.connect(groupId,userId)
+    }
+    override fun onStop() {
+        readJob?.cancel()
+        if(visibleGroup==groupId){visibleGroup=null;ws.disconnect()}
+        super.onStop()
+    }
     private fun requestSync() {
-        if(syncJob?.isActive == true) return
+        if(blockedStatus!=null || syncJob?.isActive == true) return
         syncJob = lifecycleScope.launch {
             try {
                 ChatRepository.sync(account, groupId)
                 binding.tvSync.visibility = View.GONE
+                if(lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))ws.connect(groupId,userId)
+                if(translationJob?.isActive!=true)translationJob=lifecycleScope.launch{ChatRepository.translateRecent(account,groupId)}
             } catch(e: CancellationException) { throw e }
               catch(e: Exception) {
-                binding.tvSync.text = s(R.string.chat_offline)
+                blockedStatus=(e as? ChatSyncException)?.status?.takeIf{it in listOf(401,403,404)}
+                binding.tvSync.text = s(when(blockedStatus){401->R.string.social_login_expired;403,404->R.string.social_group_unavailable;else->R.string.chat_offline})
                 binding.tvSync.visibility = View.VISIBLE
+                if(blockedStatus!=null)binding.btnSend.isEnabled=false
                 android.util.Log.w("GroupChat", "Sync failed: ${e.javaClass.simpleName}")
             }
         }
+    }
+    private fun markVisibleRead(){
+        if(!::binding.isInitialized || !lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) || account!=LocalStore.account)return
+        val layout=binding.rvMessages.layoutManager as LinearLayoutManager
+        val last=layout.findLastVisibleItemPosition()
+        if(last<0)return
+        val id=messages.take(last+1).mapNotNull{it.id}.maxOrNull()?:return
+        readJob?.cancel();readJob=lifecycleScope.launch{
+            delay(300)
+            if(!lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))return@launch
+            try{ChatRepository.markRead(account,groupId,id)}catch(e:CancellationException){throw e}catch(_:Exception){}
+        }
+    }
+    private fun loadOlder(){
+        if(loadingOlder || historyEnd || messages.isEmpty())return
+        val oldest=messages.mapNotNull{it.id}.minOrNull()?:return
+        loadingOlder=true
+        // Reveal already cached pages even if the following network fetch is offline.
+        window.value+=50
+        lifecycleScope.launch{try{
+            val count=ChatRepository.loadOlder(account,groupId,oldest)
+            historyEnd=count<50
+        }catch(e:CancellationException){throw e}catch(e:Exception){Ui.toast(this@GroupChatActivity,e)}finally{loadingOlder=false}}
     }
     private suspend fun loadMembers(): Boolean {
         GroupCache.detail(account,groupId)?.let { cached ->
@@ -194,11 +270,11 @@ class GroupChatActivity : AppCompatActivity() {
             adapter.notifyDataSetChanged()
         }
         return try {
-            val group = Ui.data(ApiClient.getService().getGroupDetail(groupId))
+            val group = Ui.data(ApiClient.getAccountService(account).getGroupDetail(groupId))
             if(account!=LocalStore.account) return false
             GroupCache.saveDetail(account,group)
             members = group.members.orEmpty()
-            binding.tvGroupName.text = getString(R.string.chat_group_count, group.name, members.size)
+            binding.tvGroupName.text = resources.getQuantityString(R.plurals.social_chat_group_count,members.size,group.name,members.size)
             adapter.members = members
             adapter.notifyDataSetChanged()
             true
@@ -280,7 +356,9 @@ class GroupChatActivity : AppCompatActivity() {
                 val end=input.selectionEnd.coerceAtLeast(0)
                 input.text.replace(minOf(start,end),maxOf(start,end),face)
                 input.setSelection(minOf(start,end)+face.length)
-            }.apply { textSize=28f; contentDescription=face }, LinearLayout.LayoutParams(0,dp(56),1f)) }
+            }.apply { textSize=28f; contentDescription=face; minHeight=dp(48);insetTop=0;insetBottom=0
+                backgroundTintList=android.content.res.ColorStateList.valueOf(android.graphics.Color.TRANSPARENT)
+            }, LinearLayout.LayoutParams(0,dp(48),1f)) }
             root.addView(row)
         }
         root.addView(Ui.button(this,s(R.string.chat_upload_sticker)) { hideEmoji(); stickerPicker.launch("image/*") })
@@ -289,12 +367,15 @@ class GroupChatActivity : AppCompatActivity() {
     }
     private fun showShare() {
         val (dialog, root)=sheet(s(R.string.chat_share))
-        root.addView(Ui.text(this,s(R.string.chat_share_hint),14f))
-        root.addView(Ui.entry(this,s(R.string.chat_share_order),s(R.string.chat_choose_meal),R.drawable.ic_ui_order) { dialog.dismiss(); chooseMeal("order") })
-        root.addView(Ui.entry(this,s(R.string.chat_share_prep),s(R.string.chat_choose_meal),R.drawable.ic_ui_prep) { dialog.dismiss(); chooseMeal("prep") })
-        root.addView(Ui.entry(this,s(R.string.chat_share_recipe),s(R.string.chat_share_hint),R.drawable.ic_recipe_simple) {
-            dialog.dismiss(); recipePicker.launch(Intent(this,RecipePickerActivity::class.java))
-        })
+        val actions=listOf(
+            Triple(s(R.string.chat_share_order),R.drawable.ic_ui_order,{dialog.dismiss();chooseMeal("order")}),
+            Triple(s(R.string.chat_share_prep),R.drawable.ic_ui_prep,{dialog.dismiss();chooseMeal("prep")}),
+            Triple(s(R.string.chat_share_recipe),R.drawable.ic_recipe_simple,{dialog.dismiss();recipePicker.launch(Intent(this,RecipePickerActivity::class.java))}),
+            Triple(s(R.string.chat_mention),R.drawable.ic_ui_users,{dialog.dismiss();showMembers(true)})
+        )
+        actions.chunked(2).forEach{pair->val row=Ui.row(this);pair.forEach{(title,icon,action)->
+            val tint=when(icon){R.drawable.ic_ui_order->Ui.warm;R.drawable.ic_ui_prep->Ui.green;R.drawable.ic_ui_users->Ui.purple;else->Ui.pale}
+            row.addView(Ui.tile(this,title,icon,tint,action),LinearLayout.LayoutParams(0,-2,1f).apply{setMargins(dp(4),dp(4),dp(4),dp(4))})};root.addView(row)}
     }
     private fun chooseMeal(kind: String) {
         val (dialog,root)=sheet(s(if(kind=="order") R.string.chat_share_order else R.string.chat_share_prep))
@@ -302,8 +383,8 @@ class GroupChatActivity : AppCompatActivity() {
         fun load() { lifecycleScope.launch {
             body.removeAllViews();body.addView(Ui.text(this@GroupChatActivity,s(R.string.chat_loading)))
             try {
-                val kitchens=Ui.data(ApiClient.getService().getKitchens())
-                val meals=kitchens.flatMap { kitchen -> Ui.data(ApiClient.getService().meals(kitchen.id!!)) }
+                val kitchens=Ui.data(ApiClient.getAccountService(account).getKitchens())
+                val meals=kitchens.flatMap { kitchen -> Ui.data(ApiClient.getAccountService(account).meals(kitchen.id!!)) }
                     .filter { it.ownerId==userId && it.kind==kind }.distinctBy { it.id }
                 if(!dialog.isShowing) return@launch
                 body.removeAllViews()
@@ -340,15 +421,33 @@ class GroupChatActivity : AppCompatActivity() {
             } }.show()
     }
     private fun pendingAction(message: Message) {
-        val clientId=message.clientMessageId ?: return
-        val actions=arrayOf(s(R.string.chat_retry_action),s(R.string.chat_remove_pending))
-        AlertDialog.Builder(this).setTitle(if(message.localError == "network") s(R.string.chat_offline) else message.localError ?: s(R.string.chat_pending))
-            .setItems(actions) { _,which -> lifecycleScope.launch {
-                when(which) {
-                    0 -> requestSync()
-                    1 -> ChatRepository.removePending(account,clientId)
-                }
-            } }.show()
+        val clientId=message.clientMessageId?:return
+        lifecycleScope.launch {
+            val pending=LocalStore.instance.records().get(account,"outbox",clientId)?.let{json.fromJson(it,PendingMessage::class.java)}?:return@launch
+            val queue=DeliveryPolicy.ordered(LocalStore.instance.records().list(account,"outbox").map{json.fromJson(it.json,PendingMessage::class.java)}.filter{it.groupId==groupId})
+            val blockedByEarlier=queue.takeWhile{it.clientId!=clientId}.any{it.state in setOf("failed","auth","unavailable")}
+            val actions=mutableListOf<Pair<String,()->Unit>>()
+            if(pending.state !in listOf("auth","unavailable"))actions.add(s(R.string.social_retry_one) to {
+                lifecycleScope.launch{try{ChatRepository.retryPending(account,groupId,clientId);requestSync()}
+                    catch(e:CancellationException){throw e}catch(e:Exception){Ui.toast(this@GroupChatActivity,e)}}
+            })
+            if(pending.type=="text" && pending.errorKind=="invalid")actions.add(s(R.string.social_edit_failed) to {
+                val input=Ui.field(this@GroupChatActivity,s(R.string.ui_17e8e26968),ChatMentions.decode(pending.content).toString(),true)
+                val edit=AlertDialog.Builder(this@GroupChatActivity).setTitle(R.string.social_edit_failed).setView(input)
+                    .setNegativeButton(R.string.social_cancel,null).setPositiveButton(R.string.social_send,null).create()
+                edit.setOnShowListener{edit.getButton(-1).setOnClickListener{
+                    val content=input.text.toString().trim()
+                    if(content.isBlank() || content.length>4000){input.error=s(R.string.chat_length);return@setOnClickListener}
+                    edit.getButton(-1).isEnabled=false
+                    lifecycleScope.launch{try{ChatRepository.editFailed(account,groupId,clientId,content);edit.dismiss();requestSync()}
+                        catch(e:CancellationException){throw e}catch(e:Exception){Ui.toast(this@GroupChatActivity,e);edit.getButton(-1).isEnabled=true}}
+                }};edit.show()
+            })
+            actions.add(s(R.string.chat_remove_pending) to {lifecycleScope.launch{try{ChatRepository.removePending(account,clientId);requestSync()}
+                catch(e:CancellationException){throw e}catch(e:Exception){Ui.toast(this@GroupChatActivity,e)}}})
+            AlertDialog.Builder(this@GroupChatActivity).setTitle(if(blockedByEarlier)s(R.string.social_retry_queued) else if(message.localError=="network")s(R.string.chat_offline) else message.localError?:s(R.string.chat_pending))
+                .setItems(actions.map{it.first}.toTypedArray()){_,which->actions[which].second()}.show()
+        }
     }
     private fun dp(n:Int)=(resources.displayMetrics.density*n).toInt()
     private fun toast(text:String) { Toast.makeText(this,text,Toast.LENGTH_SHORT).show() }

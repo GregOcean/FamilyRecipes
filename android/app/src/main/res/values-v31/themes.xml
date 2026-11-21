@@ -3,16 +3,18 @@
     <!-- Splash Screen Theme for Android 12+ -->
     <style name="Theme.FamilyRecipes.Splash" parent="Theme.FamilyRecipes">
         <item name="android:windowBackground">@drawable/splash_gradient_background</item>
-        <item name="android:statusBarColor">@color/primary</item>
-        <item name="android:navigationBarColor">@color/primary</item>
+        <item name="android:statusBarColor">@color/ic_launcher_background</item>
+        <item name="android:navigationBarColor">@color/ic_launcher_background</item>
         
         <!-- Android 12+ Splash Screen API 配置 - 让系统splash立即消失 -->
-        <item name="android:windowSplashScreenBackground">@color/primary</item>
+        <item name="android:windowSplashScreenBackground">@color/ic_launcher_background</item>
         <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
         <item name="android:windowSplashScreenAnimationDuration">0</item>
         <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
         <item name="windowSplashScreenAnimationDuration">0</item>
-        <item name="windowSplashScreenBackground">@color/primary</item>
+        <item name="windowSplashScreenBackground">@color/ic_launcher_background</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
     </style>
 </resources>
 

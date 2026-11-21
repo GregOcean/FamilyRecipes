@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="social_member_count"><item quantity="one">%1$d member</item><item quantity="other">%1$d members</item></plurals>
+    <plurals name="social_chat_group_count"><item quantity="one">%1$s · %2$d member</item><item quantity="other">%1$s · %2$d members</item></plurals>
+    <plurals name="social_group_members_preview"><item quantity="one">%1$d member · Talk about food</item><item quantity="other">%1$d members · Talk about food</item></plurals>
+    <string name="social_event_created">Group created</string>
+    <string name="social_event_joined">Joined the group: %1$s</string>
+    <string name="social_event_removed">Removed from the group: %1$s</string>
+    <string name="social_event_transferred">Group management transferred to %1$s</string>
+    <string name="social_event_left">%1$s left the group</string>
+    <string name="social_group_settings">Group settings</string>
+    <string name="social_members">Members</string>
+    <string name="social_add_members">Add members</string>
+    <string name="social_group_name">Group name</string>
+    <string name="social_group_about">Description (optional)</string>
+    <string name="social_leave">Leave group</string>
+    <string name="social_dismiss">Delete group</string>
+    <string name="social_remove_member">Remove member</string>
+    <string name="social_transfer">Transfer ownership</string>
+    <string name="social_transfer_confirm">You will become a regular member. Management of linked kitchens will also transfer.</string>
+    <string name="social_remove_confirm">They will lose access to this group’s kitchens, stock and group-only content.</string>
+    <string name="social_leave_confirm">You will lose access to this group’s kitchens and shared content. Your own recipes will remain.</string>
+    <string name="social_dismiss_confirm">This deletes the group’s messages, linked kitchens, stock and meal arrangements. Personal recipes remain. This cannot be undone.</string>
+    <string name="social_linked_kitchens">Linked kitchens</string>
+    <string name="social_save">Save</string>
+    <string name="social_cancel">Cancel</string>
+    <string name="social_confirm">Confirm</string>
+    <string name="social_manager">Owner</string>
+    <string name="social_no_friends">No friends available to add</string>
+    <string name="social_manage_friends">Find / manage friends</string>
+    <string name="social_member_limit">Choose up to %1$d people</string>
+    <string name="social_create_group">New group</string>
+    <string name="social_choose_friends">Choose friends (optional)</string>
+    <string name="social_creating">Creating…</string>
+    <string name="social_name_invalid">Enter a group name of 1–100 characters</string>
+    <string name="social_incoming">Received invitations</string>
+    <string name="social_outgoing">Sent invitations</string>
+    <string name="social_my_friends">Friends</string>
+    <string name="social_already_friend">Already friends</string>
+    <string name="social_accept_invite">Accept invitation</string>
+    <string name="social_delete_friend">Remove friend</string>
+    <string name="social_edit_note">Edit nickname</string>
+    <string name="social_friend_note">Nickname (optional)</string>
+    <string name="social_delete_friend_confirm">Removing a friend does not remove them from existing groups.</string>
+    <string name="social_cancel_invitation">Cancel invitation</string>
+    <string name="social_cancel_invitation_confirm">Cancel this pending invitation?</string>
+    <string name="social_load_more">Earlier messages</string>
+    <string name="social_history_end">Beginning of conversation</string>
+    <string name="social_new_messages">New messages ↓</string>
+    <string name="social_login_expired">Please sign in again. Unsent messages are saved.</string>
+    <string name="social_group_unavailable">You are no longer a member, or this group was deleted</string>
+    <string name="social_retry_one">Retry this message</string>
+    <string name="social_retry_queued">Waiting for the earlier message</string>
+    <string name="social_retry_later">Connection failed; retrying automatically</string>
+    <string name="social_edit_failed">Edit and resend</string>
+    <string name="social_message_tools">More actions</string>
+    <string name="social_open_meal">View menu</string>
+    <string name="social_open_recipe">View recipe</string>
+    <string name="social_dish_total">%1$d dishes</string>
+    <string name="social_copy">Copy</string>
+    <string name="social_retry">Retry</string>
+    <string name="social_account_changed">Sign in with the account that received this notification</string>
+    <string name="social_empty_friends">Add friends by user ID, username or QR code.</string>
+    <string name="social_send">Send</string>
+    <string name="social_new_order">New meal request</string>
+    <string name="social_new_prep">New meal plan</string>
+</resources>

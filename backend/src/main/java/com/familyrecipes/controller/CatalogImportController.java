@@ -21,20 +21,24 @@ public class CatalogImportController {
     public CatalogImportController(JdbcTemplate db,ObjectMapper json,RecipeService recipes,FridgeService fridge,CuisineRefinementService refinement) {this.refinement=refinement;this.db=db;this.json=json;this.recipes=recipes;this.fridge=fridge;}
     private void requireAdmin(HttpServletRequest r) {if(admin<=0 || !Long.valueOf(admin).equals(r.getAttribute("userId")))throw new ApiException(403,"仅数据管理员可执行");}
     @GetMapping("/status") public Result<Map<String,Object>> status(HttpServletRequest r) {
-        requireAdmin(r);return Result.success(Map.of("classification",db.queryForList("SELECT status,COUNT(*) AS count FROM recipe_classification GROUP BY status"),"translations",db.queryForList("SELECT status,COUNT(*) AS count FROM content_translations GROUP BY status"),"imported",db.queryForObject("SELECT COUNT(*) FROM recipe_provenance",Long.class)));
+        requireAdmin(r);return Result.success(Map.of("enrichment_version","v3","enrichment_unqueued",db.queryForObject("SELECT COUNT(*) FROM recipe r LEFT JOIN recipe_enrichment e ON e.recipe_id=r.id WHERE e.recipe_id IS NULL",Long.class),"enrichment",db.queryForList("SELECT status,COUNT(*) AS count FROM recipe_enrichment GROUP BY status"),"classification",db.queryForList("SELECT status,COUNT(*) AS count FROM recipe_classification GROUP BY status"),"translations",db.queryForList("SELECT status,COUNT(*) AS count FROM content_translations GROUP BY status"),"imported",db.queryForObject("SELECT COUNT(*) FROM recipe_provenance",Long.class)));
+    }
+    @GetMapping("/enrichment/review") public Result<List<Map<String,Object>>> enrichmentReview(
+        @RequestParam(defaultValue="0") long afterId,HttpServletRequest r) {
+        requireAdmin(r);return Result.success(db.queryForList("SELECT recipe_id,status,attempts,result_json FROM recipe_enrichment WHERE status IN ('needs_review','failed') AND recipe_id>? ORDER BY recipe_id LIMIT 100",afterId));
     }
     @PostMapping("/translations/retry") public Result<Integer> retry(HttpServletRequest r) {
         requireAdmin(r);return Result.success(db.update("UPDATE content_translations SET status='pending',attempts=0,next_attempt_at=NOW() WHERE status='failed'"));
     }
     @PostMapping("/classification/retry") public Result<Integer> retryClassification(HttpServletRequest r) {
-        requireAdmin(r);return Result.success(db.update("DELETE FROM recipe_classification WHERE status IN ('failed','needs_review')"));
+        requireAdmin(r);return Result.success(db.update("DELETE FROM recipe_enrichment WHERE status IN ('failed','needs_review')"));
     }
     @GetMapping("/cuisine-refinement") public Result<Map<String,Object>> refinementStatus(HttpServletRequest r) {
         requireAdmin(r);return Result.success(refinement.audit());
     }
     @PostMapping("/cuisine-refinement") public Result<Map<String,Object>> enqueueRefinement(
             @RequestParam(defaultValue="5") int limit,HttpServletRequest r) {
-        requireAdmin(r);return Result.success(Map.of("queued",refinement.enqueue(admin,limit),"taxonomy_version",CuisineRefinementService.VERSION));
+        requireAdmin(r);throw new ApiException(409,"旧版菜系细分已停用，请使用自动分类及 /api/catalog/status 查看新版进度");
     }
     @GetMapping("/imported") public Result<List<Map<String,Object>>> imported(HttpServletRequest r) {
         requireAdmin(r);return Result.success(db.queryForList("SELECT source_identity,recipe_id FROM recipe_provenance ORDER BY recipe_id"));

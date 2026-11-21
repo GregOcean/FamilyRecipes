@@ -4,12 +4,14 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:background="@color/background">
 
     <androidx.appcompat.widget.Toolbar
         android:theme="@style/ThemeOverlay.FamilyRecipes.Toolbar"        android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
+        android:layout_height="wrap_content"
+        android:minHeight="48dp"
         android:background="@color/toolbar_background"
         app:navigationIcon="@drawable/ic_back"
         app:title="@string/ui_fbb7e7ea47"
@@ -26,11 +28,23 @@
             android:textColor="@color/on_toolbar"
             android:textSize="16sp"
             android:padding="8dp"
+            android:minHeight="48dp"
+            android:minWidth="48dp"
+            android:gravity="center"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:visibility="gone" />
             
     </androidx.appcompat.widget.Toolbar>
 
+    <LinearLayout android:id="@+id/detail_error" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:orientation="horizontal"
+        android:paddingHorizontal="16dp" android:gravity="center_vertical" android:visibility="gone">
+        <TextView android:id="@+id/tv_detail_error" android:layout_width="0dp" android:layout_weight="1"
+            android:layout_height="wrap_content" android:textColor="@color/text_secondary" android:textSize="15sp" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/btn_retry"
+            style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:minHeight="48dp" android:text="@string/review_retry" />
+    </LinearLayout>
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -71,19 +85,23 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="16dp"
-                app:cardCornerRadius="8dp"
-                app:cardElevation="2dp">
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginVertical="8dp"
+                app:cardCornerRadius="16dp"
+                app:cardBackgroundColor="@color/surface"
+                app:strokeWidth="0dp"
+                app:cardElevation="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="8dp">
 
                     <!-- Recipe Name -->
                     <TextView
                         android:id="@+id/tv_name"
+                        android:visibility="gone"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:textColor="@color/text_primary"
@@ -96,18 +114,10 @@
                         android:id="@+id/tv_creator"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
+                        android:layout_marginTop="0dp"
                         android:textColor="@color/text_secondary"
                         android:textSize="14sp"
                         tools:text="创建者：家肴用户_DEV" />
-
-                    <!-- Tags -->
-                    <com.google.android.material.chip.ChipGroup
-                        android:id="@+id/chip_group"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        app:chipSpacing="4dp" />
 
                     <TextView android:id="@+id/tv_cooking_time"
                         android:layout_width="wrap_content" android:layout_height="wrap_content"
@@ -117,7 +127,7 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
+                        android:layout_marginTop="0dp"
                         android:orientation="horizontal">
 
                         <TextView
@@ -151,9 +161,11 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="16dp"
-                android:layout_marginBottom="16dp"
-                app:cardCornerRadius="8dp"
-                app:cardElevation="2dp">
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="16dp"
+                app:cardBackgroundColor="@color/surface"
+                app:strokeWidth="0dp"
+                app:cardElevation="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -164,7 +176,8 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/ui_3bdd08adab"
+                        android:id="@+id/description_heading"
+                        android:text="@string/review_recipe_about"
                         android:textColor="@color/text_primary"
                         android:textSize="18sp"
                         android:textStyle="bold" />
@@ -174,10 +187,14 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:lineSpacingExtra="4dp"
+                        android:lineSpacingExtra="5dp"
                         android:textColor="@color/text_primary"
-                        android:textSize="14sp"
+                        android:textSize="17sp"
                         tools:text="这是一道经典的川菜，鸡肉鲜嫩，花生酥脆，酸甜微辣，非常下饭。" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_expand_description" style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:minHeight="48dp" android:text="@string/review_expand_description" android:visibility="gone" />
                 <LinearLayout android:id="@+id/gallery" android:layout_width="match_parent"
                     android:layout_height="wrap_content" android:orientation="vertical" />
 
@@ -192,10 +209,12 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="16dp"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="8dp"
                 android:visibility="gone"
-                app:cardCornerRadius="8dp"
-                app:cardElevation="2dp">
+                app:cardCornerRadius="16dp"
+                app:cardBackgroundColor="@color/surface"
+                app:strokeWidth="0dp"
+                app:cardElevation="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -221,6 +240,15 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+                    <!-- Tags -->
+                    <com.google.android.material.chip.ChipGroup
+                        android:id="@+id/chip_group"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingHorizontal="16dp"
+                        android:layout_marginBottom="8dp"
+                        app:chipSpacing="4dp" />
+
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:paddingHorizontal="16dp" android:paddingBottom="12dp" android:orientation="horizontal">
                 <TextView android:id="@+id/tv_view_count" android:layout_width="wrap_content" android:layout_height="wrap_content"
@@ -234,37 +262,25 @@
 
     </androidx.core.widget.NestedScrollView>
 
-    <!-- Bottom Action Buttons -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:orientation="horizontal"
-        android:gravity="center">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_favorite"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginEnd="8dp"
-            android:text="@string/ui_ae336cd047"
-            app:icon="@drawable/ic_favorite_border"
-            app:iconGravity="textStart" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_dislike"
+    <!-- Equal actions, compact spacing, accessible 48dp targets. -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:paddingHorizontal="12dp" android:paddingVertical="0dp" android:orientation="horizontal">
+        <com.google.android.material.button.MaterialButton android:id="@+id/btn_favorite"
+            android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="48dp" android:layout_weight="1"
+            android:minWidth="0dp" android:paddingHorizontal="4dp" android:insetTop="6dp" android:insetBottom="6dp"
+            android:text="@string/ui_ae336cd047" android:textSize="14sp"
+            app:icon="@drawable/ic_favorite_border" app:iconGravity="textStart" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/btn_dislike"
             style="@style/Widget.Material3.Button.OutlinedButton"
-            android:layout_width="wrap_content"
-            android:layout_height="48dp"
-            android:minWidth="48dp"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            app:icon="@drawable/ic_thumb_down_outline"
-            app:iconGravity="textStart"
-            app:iconPadding="0dp"
-            app:strokeColor="#FF6B6B" />
+            android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="48dp" android:layout_weight="1"
+            android:layout_marginHorizontal="6dp" android:minWidth="0dp" android:paddingHorizontal="4dp"
+            android:insetTop="6dp" android:insetBottom="6dp" android:text="@string/dislike_short" android:textSize="14sp"
+            app:icon="@drawable/ic_thumb_down_outline" app:iconGravity="textStart" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/btn_more"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="48dp" android:layout_weight="1"
+            android:minWidth="0dp" android:paddingHorizontal="4dp" android:insetTop="6dp" android:insetBottom="6dp"
+            android:text="@string/recipe_more_short" android:textSize="14sp"
+            android:contentDescription="@string/recipe_more_actions" app:icon="@drawable/ic_more_vert" app:iconGravity="textStart" />
     </LinearLayout>
-
 </LinearLayout>
-

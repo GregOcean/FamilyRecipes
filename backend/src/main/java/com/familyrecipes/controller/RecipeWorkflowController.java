@@ -21,6 +21,11 @@ public class RecipeWorkflowController {
       @RequestParam(defaultValue = "") String keyword,
       @RequestParam(defaultValue = "") String taste,
       @RequestParam(defaultValue = "") String cuisine,
+      @RequestParam(defaultValue = "") String sources,
+      @RequestParam(defaultValue = "") String tastes,
+      @RequestParam(defaultValue = "") String cuisines,
+      @RequestParam(defaultValue = "") String times,
+      @RequestParam(defaultValue = "") String stocks,
       @RequestParam(required = false) Integer minutes,
       @RequestParam(required = false) Integer missing,
       @RequestParam(defaultValue = "false") boolean known,
@@ -39,7 +44,7 @@ public class RecipeWorkflowController {
             missing,
             known,
             seed,
-            page, cuisine));
+            page, cuisine, sources, tastes, cuisines, times, stocks));
   }
 
   @PostMapping("/{id}/adapt")

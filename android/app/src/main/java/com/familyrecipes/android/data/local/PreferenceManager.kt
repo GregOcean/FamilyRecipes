@@ -18,6 +18,8 @@ object PreferenceManager {
     private const val KEY_CURRENT_KITCHEN_ID = "current_kitchen_id"
 
     private lateinit var prefs: SharedPreferences
+    private val sessionChanges = kotlinx.coroutines.flow.MutableStateFlow(0L)
+    val sessionRevision: kotlinx.coroutines.flow.StateFlow<Long> = sessionChanges
 
     fun init(context: Context) {
         prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
@@ -56,9 +58,8 @@ object PreferenceManager {
     }
 
     // 清除登录信息
-    fun clearUserData() {
-        androidx.core.app.NotificationManagerCompat.from(com.familyrecipes.android.FamilyRecipesApp.instance)
-            .cancel("friend-invitations:${LocalStore.account}",1)
+    @Synchronized fun clearUserData() {
+        com.familyrecipes.android.data.local.ChatNotifications.clear(LocalStore.account)
         com.familyrecipes.android.websocket.WebSocketManager.getInstance().disconnect()
         prefs.edit().apply {
             remove("current_group_id")
@@ -70,10 +71,15 @@ object PreferenceManager {
             remove(KEY_USER_NAME)
             apply()
         }
+        sessionChanges.value += 1
     }
 
     // 保存登录信息
-    fun saveLoginInfo(token: String, userId: Long, email: String, userName: String) {
+    @Synchronized fun saveLoginInfo(token: String, userId: Long, email: String, userName: String) {
+        if (this.userId != userId) {
+            com.familyrecipes.android.data.local.ChatNotifications.clear(LocalStore.account)
+            prefs.edit().remove(KEY_CURRENT_KITCHEN).remove(KEY_CURRENT_KITCHEN_ID).remove("current_group_id").apply()
+        }
         prefs.edit().apply {
             putString(KEY_TOKEN, token)
             putLong(KEY_USER_ID, userId)
@@ -81,6 +87,12 @@ object PreferenceManager {
             putString(KEY_USER_NAME, userName)
             apply()
         }
+        sessionChanges.value += 1
+    }
+
+    /** A late 401 from an older session must never log out a newly signed-in account. */
+    @Synchronized fun invalidateToken(expected: String) {
+        if (authToken == expected) clearUserData()
     }
     
     var currentGroupId: Long?

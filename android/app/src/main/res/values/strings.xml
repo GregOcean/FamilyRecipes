@@ -38,5 +38,12 @@
     <string name="logout">退出登录</string>
     <string name="my_recipes">我的菜谱</string>
     <string name="my_favorites">我的收藏</string>
+    <string name="chat_search_hint">搜索聊天记录</string>
+    <string name="chat_search_loading">正在搜索聊天记录…</string>
+    <string name="chat_search_cached">网络不可用，仅搜索本机已缓存的聊天记录</string>
+    <string name="chat_search_results">聊天记录</string>
+    <string name="chat_search_empty">没有找到匹配的聊天记录</string>
+    <string name="chat_search_more">加载更多记录</string>
+    <string name="chat_search_retry">重新搜索在线记录</string>
 </resources>
 

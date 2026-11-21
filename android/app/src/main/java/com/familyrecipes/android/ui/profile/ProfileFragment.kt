@@ -140,7 +140,7 @@ class ProfileFragment : Fragment() {
         }
         root.addView(numbers,LinearLayout.LayoutParams(-1,-2).apply{topMargin=c.dp(20);bottomMargin=c.dp(12)})
         val shortcuts=listOf(Triple(UiStrings.s(com.familyrecipes.android.R.string.ui_a690f4d30e),R.drawable.ic_ui_order,"order"),Triple(UiStrings.s(com.familyrecipes.android.R.string.ui_2869f51718),R.drawable.ic_ui_prep,"prep"),Triple(UiStrings.s(com.familyrecipes.android.R.string.ui_ba330b9fe4),R.drawable.ic_ui_draft,"draft"),Triple(UiStrings.s(com.familyrecipes.android.R.string.ui_11d0c6e5bc),R.drawable.ic_ui_users,"shared"))
-        shortcuts.chunked(2).forEach{pair->val row=Ui.row(c);pair.forEach{(label,icon,key)->row.addView(Ui.tile(c,label,icon,if(key=="order")Ui.warm else if(key=="draft")Ui.purple else Ui.pale){if(key=="shared")androidx.appcompat.app.AlertDialog.Builder(c).setTitle(UiStrings.s(com.familyrecipes.android.R.string.ui_11d0c6e5bc)).setItems(arrayOf(UiStrings.s(com.familyrecipes.android.R.string.ui_7f649e7630),UiStrings.s(com.familyrecipes.android.R.string.ui_3138b7d701))){_,which->if(which==0)openRecipes("shared") else openMeals("prep")}.show() else openMeals(key)},LinearLayout.LayoutParams(0,-2,1f).apply{setMargins(c.dp(4),c.dp(4),c.dp(4),c.dp(4))})};root.addView(row)}
+        shortcuts.chunked(2).forEach{pair->val row=Ui.row(c);pair.forEach{(label,icon,key)->row.addView(Ui.tile(c,label,icon,if(key=="order")Ui.warm else if(key=="draft")Ui.purple else Ui.pale){if(key=="shared")androidx.appcompat.app.AlertDialog.Builder(c).setTitle(UiStrings.s(com.familyrecipes.android.R.string.ui_11d0c6e5bc)).setItems(arrayOf(UiStrings.s(com.familyrecipes.android.R.string.ui_7f649e7630),UiStrings.s(com.familyrecipes.android.R.string.ui_3138b7d701))){_,which->if(which==0)openRecipes("shared") else openMeals("prep")}.show() else if(key=="draft")startActivity(Intent(c,com.familyrecipes.android.ui.recipe.DraftsActivity::class.java)) else openMeals(key)},LinearLayout.LayoutParams(0,-2,1f).apply{setMargins(c.dp(4),c.dp(4),c.dp(4),c.dp(4))})};root.addView(row)}
         root.addView(Ui.text(c,UiStrings.s(com.familyrecipes.android.R.string.ui_eddeaaf2ee),21f,true))
         val kitchens=Ui.box(c,0);root.addView(kitchens)
         viewLifecycleOwner.lifecycleScope.launch {
@@ -163,6 +163,10 @@ class ProfileFragment : Fragment() {
     }
 
     private fun setupLoginListeners() {
+        binding.tvForgotPassword.setOnClickListener {
+            startActivity(Intent(requireContext(),ForgotPasswordActivity::class.java).putExtra("email",binding.etEmail.text.toString().trim()))
+        }
+
         // 登录按钮
         binding.btnLogin.setOnClickListener {
             if (isLoginMode) {
@@ -231,6 +235,7 @@ class ProfileFragment : Fragment() {
                         )
                         showProfilePage()
                         (activity as? com.familyrecipes.android.ui.MainActivity)?.initializeKitchen()
+                        com.familyrecipes.android.util.AuthUtil.completeLogin(requireActivity())
                     }
                 } else {
                     android.widget.Toast.makeText(context, com.familyrecipes.android.data.remote.ApiErrors.message(response, UiStrings.s(com.familyrecipes.android.R.string.ui_b6076a055f)), android.widget.Toast.LENGTH_SHORT).show()
@@ -250,7 +255,7 @@ class ProfileFragment : Fragment() {
         val password = binding.etPassword.text.toString()
         val username = binding.etUsername.text.toString().trim().ifEmpty {
             // 生成随机用户名：家肴用户_<5位随机字符>
-            "家肴用户_${generateRandomString(5)}"
+            getString(R.string.review_default_username,generateRandomString(5))
         }
 
         binding.etEmail.error = null
@@ -297,18 +302,10 @@ class ProfileFragment : Fragment() {
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
-                android.widget.Toast.makeText(context, UiStrings.f(com.familyrecipes.android.R.string.network_error_value, e.message), android.widget.Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(context, Ui.errorMessage(requireContext(),e), android.widget.Toast.LENGTH_SHORT).show()
                 binding.btnLogin.isEnabled = true
             }
         }
-    }
-
-    private fun loadUserProfile() {
-        binding.tvUsername.text = PreferenceManager.userName ?: UiStrings.s(com.familyrecipes.android.R.string.ui_2878420820)
-        binding.tvEmail.text = PreferenceManager.userEmail ?: ""
-        
-        // 加载我喜欢的菜谱数量和我上传的菜谱数量
-        loadRecipeCounts()
     }
 
     private fun loadRecipeCounts() {
@@ -320,87 +317,6 @@ class ProfileFragment : Fragment() {
         }}
     }
 
-    private fun setupProfileListeners() {
-        // 退出登录
-        binding.btnLogout.setOnClickListener {
-            PreferenceManager.clearUserData()
-            showLoginPage()
-        }
-        
-        // 点击收藏的菜谱
-        binding.layoutFavorites.setOnClickListener {
-            val intent = android.content.Intent(requireContext(), FavoriteRecipesActivity::class.java)
-            startActivity(intent)
-        }
-        
-        // 点击我的作品
-        binding.layoutCreated.setOnClickListener {
-            val intent = android.content.Intent(requireContext(), MyCreatedRecipesActivity::class.java)
-            startActivity(intent)
-        }
-        
-        // 顶部工具栏按钮
-        // 扫一扫
-        binding.ivScanQr.setOnClickListener {
-            val intent = android.content.Intent(requireContext(), com.familyrecipes.android.ui.social.ScanQRActivity::class.java)
-            startActivity(intent)
-        }
-        
-        // 编辑资料
-        binding.ivEditProfile.setOnClickListener {
-            android.widget.Toast.makeText(context, "编辑资料功能即将上线", android.widget.Toast.LENGTH_SHORT).show()
-            // TODO: 跳转到编辑资料页面
-        }
-        
-        // 设置
-        binding.ivSettings.setOnClickListener {
-            androidx.appcompat.app.AlertDialog.Builder(requireContext()).setTitle(UiStrings.s(com.familyrecipes.android.R.string.ui_e366ccf155)).setItems(arrayOf(UiStrings.s(com.familyrecipes.android.R.string.ui_c9fb762fc5),UiStrings.s(com.familyrecipes.android.R.string.ui_974d3e30d5))){_,index->when(index){0->showReminderSettings();1->startActivity(android.content.Intent(android.provider.Settings.ACTION_DISPLAY_SETTINGS))}}.show()
-            // TODO: 跳转到设置页面
-        }
-        
-        // 分享
-        binding.ivShare.setOnClickListener {
-            shareApp()
-        }
-        
-        // 我的名片码
-        binding.layoutMyQr.setOnClickListener {
-            val intent = android.content.Intent(requireContext(), com.familyrecipes.android.ui.social.MyQRCodeActivity::class.java)
-            startActivity(intent)
-        }
-        
-        // 我的好友
-        binding.layoutFriends.setOnClickListener {
-            val intent = android.content.Intent(requireContext(), com.familyrecipes.android.ui.social.FriendsListActivity::class.java)
-            startActivity(intent)
-        }
-        
-        // 我加入的群
-        binding.layoutJoinedGroups.setOnClickListener {
-            val intent = android.content.Intent(requireContext(), com.familyrecipes.android.ui.social.JoinedGroupsActivity::class.java)
-            startActivity(intent)
-        }
-        
-        // 我创建的群
-        binding.layoutCreatedGroups.setOnClickListener {
-            val intent = android.content.Intent(requireContext(), com.familyrecipes.android.ui.social.CreatedGroupsActivity::class.java)
-            startActivity(intent)
-        }
-    }
-    
-    /**
-     * 分享App
-     */
-    private fun shareApp() {
-        val shareText = UiStrings.s(com.familyrecipes.android.R.string.ui_a3b3be2af2)
-        val shareIntent = android.content.Intent().apply {
-            action = android.content.Intent.ACTION_SEND
-            putExtra(android.content.Intent.EXTRA_TEXT, shareText)
-            type = "text/plain"
-        }
-        startActivity(android.content.Intent.createChooser(shareIntent, UiStrings.s(com.familyrecipes.android.R.string.ui_74c11dae2c)))
-    }
-
     private fun generateRandomString(length: Int): String {
         val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
         return (1..length)
@@ -410,8 +326,9 @@ class ProfileFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        // 每次回到这个页面都检查登录状态
+        val hadProfile=quickLinksAdded
         checkLoginStatus()
+        if(hadProfile && PreferenceManager.isLoggedIn())loadRecipeCounts()
     }
 
     override fun onHiddenChanged(hidden:Boolean) {
@@ -426,44 +343,6 @@ class ProfileFragment : Fragment() {
         _binding = null
     }
 
-    private val notificationPermission = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { }
-    private fun showReminderSettings() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                val response=ApiClient.getService().getReminderSetting()
-                check(response.isSuccessful && response.body()?.code==200)
-                val setting=response.body()?.data ?: com.familyrecipes.android.data.model.ReminderSetting(null,PreferenceManager.userId,3,"17:00:00",true)
-                val box=android.widget.LinearLayout(requireContext()).apply { orientation=android.widget.LinearLayout.VERTICAL;setPadding(32,16,32,16) }
-                val enabled=android.widget.CheckBox(requireContext()).apply { text=UiStrings.s(com.familyrecipes.android.R.string.ui_2f43109392);isChecked=setting.enabled }
-                val days=android.widget.EditText(requireContext()).apply { hint=UiStrings.s(com.familyrecipes.android.R.string.ui_97c99a86fb);inputType=android.text.InputType.TYPE_CLASS_NUMBER;setText(setting.daysBeforeExpiry.toString()) }
-                val time=android.widget.TimePicker(requireContext()).apply {
-                    setIs24HourView(true);hour=setting.reminderTime?.take(2)?.toIntOrNull() ?: 17
-                    minute=setting.reminderTime?.substring(3,5)?.toIntOrNull() ?: 0
-                }
-                val info=android.widget.TextView(requireContext()).apply { text=UiStrings.s(com.familyrecipes.android.R.string.ui_39783e6ff7) }
-                box.addView(enabled);box.addView(days);box.addView(time);box.addView(info)
-                val dialog=androidx.appcompat.app.AlertDialog.Builder(requireContext()).setTitle(UiStrings.s(com.familyrecipes.android.R.string.ui_19268a99cb))
-                    .setView(box).setPositiveButton(UiStrings.s(com.familyrecipes.android.R.string.ui_be5fbbe34c),null).setNegativeButton(UiStrings.s(com.familyrecipes.android.R.string.ui_625fb26b4b),null).create()
-                dialog.show()
-                dialog.getButton(-1).setOnClickListener {
-                    val count=days.text.toString().toIntOrNull()
-                    if(count==null || count !in 0..365) { days.error=UiStrings.s(com.familyrecipes.android.R.string.ui_8bf65747a2);return@setOnClickListener }
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        try {
-                            val updated=setting.copy(daysBeforeExpiry=count,enabled=enabled.isChecked,
-                                reminderTime=String.format(java.util.Locale.ROOT,"%02d:%02d:00",time.hour,time.minute))
-                            val result=ApiClient.getService().updateReminderSetting(updated)
-                            check(result.isSuccessful && result.body()?.code==200)
-                            if(enabled.isChecked && android.os.Build.VERSION.SDK_INT>=33) notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-                            dialog.dismiss()
-                        } catch(e:kotlinx.coroutines.CancellationException) { throw e }
-                          catch(_:Exception) { days.error=UiStrings.s(com.familyrecipes.android.R.string.ui_d6dfc7028c) }
-                    }
-                }
-            } catch(e:kotlinx.coroutines.CancellationException) { throw e }
-              catch(_:Exception) { android.widget.Toast.makeText(context,UiStrings.s(com.familyrecipes.android.R.string.ui_8e8b4dd2f9),android.widget.Toast.LENGTH_SHORT).show() }
-        }
-    }
     private fun showTrash() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
@@ -471,7 +350,7 @@ class ProfileFragment : Fragment() {
                 check(response.isSuccessful && response.body()?.code==200)
                 val files=response.body()?.data.orEmpty()
                 androidx.appcompat.app.AlertDialog.Builder(requireContext()).setTitle(UiStrings.s(com.familyrecipes.android.R.string.ui_3aa47b363c))
-                    .setItems(files.map { "${it["category"]} · ${it["filename"]}${if(it["purged_at"]!=null) "（已清理）" else ""}" }.toTypedArray()) { _,index ->
+                    .setItems(files.map { "${it["category"]} · ${it["filename"]}${if(it["purged_at"]!=null) getString(R.string.review_purged) else ""}" }.toTypedArray()) { _,index ->
                         val file=files[index]
                         if(file["purged_at"]==null) androidx.appcompat.app.AlertDialog.Builder(requireContext()).setMessage(UiStrings.s(com.familyrecipes.android.R.string.ui_34053f01aa))
                             .setPositiveButton(UiStrings.s(com.familyrecipes.android.R.string.ui_c7db6d4f1a)) { _,_ -> viewLifecycleOwner.lifecycleScope.launch {

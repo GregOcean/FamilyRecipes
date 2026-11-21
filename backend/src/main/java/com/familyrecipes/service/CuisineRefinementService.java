@@ -73,7 +73,7 @@ public class CuisineRefinementService {
         try{return json.writeValueAsString(value);}catch(Exception e){throw new IllegalStateException(e);}
     }
     private String hash(long id) {return TranslationService.digest(content.source(id)+"\n"+encode(cuisines(id)));}
-    @Scheduled(fixedDelayString="${app.classification.poll-ms:10000}",initialDelay=35000)
+    // Legacy v2 queue is no longer scheduled; v3 consolidates these regions.
     public void poll() {if(enabled&&routes.route(AiRoutes.TRANSLATION).configured())processOne();}
     public synchronized void processOne() {
         db.update("UPDATE recipe_cuisine_refinement SET status='failed',last_error='InterruptedAttempt' WHERE taxonomy_version=? AND status='running' AND attempts>=3 AND next_attempt_at<=NOW()",VERSION);

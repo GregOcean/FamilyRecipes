@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * 消息实体
@@ -20,7 +20,9 @@ public class Message {
     private Long senderId;
     private String content;
     private MessageType messageType;
-    private LocalDateTime createdAt;
+    // A message timestamp is an instant. REST and WebSocket serialize it with a UTC offset.
+    // Keep this contract specific to chat; recipe dates and scheduled meals have separate semantics.
+    private Instant createdAt;
     
     // 关联查询字段（非数据库字段）
     private User sender;  // 发送者信息

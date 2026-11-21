@@ -63,6 +63,8 @@ public class EmailVerificationService {
             mail.send(email, code);
             db.update("UPDATE registration_email_code SET active=TRUE WHERE email=? AND code_hash=? AND consumed=FALSE", email, digest);
         } catch (org.springframework.mail.MailException e) {
+            // Failed delivery may retry immediately; hourly abuse limits still count attempts.
+            db.update("UPDATE registration_email_code SET issued_at=0,active=FALSE WHERE email=? AND code_hash=?", email, digest);
             throw new ApiException(503, "验证码邮件发送失败，请稍后重试");
         }
     }

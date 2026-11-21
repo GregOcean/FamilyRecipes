@@ -1,0 +1,18 @@
+<resources>
+<string name="taste_bitter">苦</string>
+<string name="taste_pungent">臭</string>
+<string name="time_under_hour">1小时内</string>
+<string name="time_over_hour">1小时以上</string>
+<string name="stock_any_match">允许缺少</string>
+<string name="stock_any_short">允许缺少</string>
+<string name="draft_delete">删除草稿</string>
+<string name="draft_delete_confirm">删除后无法恢复，确定删除这个草稿？</string>
+<string name="recipe_drafts">菜谱与做菜草稿</string>
+<string name="messages_groups">群聊</string>
+<string name="messages_alerts">通知</string>
+<string name="favorite_alerts">收藏通知</string>
+<string name="favorite_alert_count">%1$d 条未读收藏通知</string>
+<string name="favorite_alert_text">%1$s 收藏了你的菜谱「%2$s」</string>
+<string name="favorite_alert_empty">暂时没有收藏通知</string>
+<string name="read_all">标为已读</string>
+</resources>

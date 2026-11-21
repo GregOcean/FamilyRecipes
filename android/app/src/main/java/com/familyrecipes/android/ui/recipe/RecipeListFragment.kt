@@ -22,11 +22,15 @@ class RecipeListFragment : Fragment(), SearchableFragment {
     private lateinit var list: LinearLayout
     private lateinit var status: TextView
     private lateinit var search: EditText
-    private lateinit var discoveryButton: com.google.android.material.button.MaterialButton
-    private lateinit var mineButton: com.google.android.material.button.MaterialButton
-    private lateinit var mineFilters: View
-    private lateinit var shuffle: View
-    private lateinit var more: View
+    internal var selectionDialog: androidx.appcompat.app.AlertDialog? = null
+        private set
+    private var sources = ""
+    private var times = ""
+    private var stocks = ""
+    private lateinit var refresh: androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+    private lateinit var scroll: ScrollView
+    private lateinit var more: TextView
+    private var loadedParams: BrowserParams? = null
     private lateinit var confirm: Button
     private var scope = "discovery"
     private var origin = "all"
@@ -41,6 +45,22 @@ class RecipeListFragment : Fragment(), SearchableFragment {
     private var total = 0L
     private var job: Job? = null
     private var generation = 0
+    private var scrollPosition = 0
+    private var loadedContext: String? = null
+    private val contextKey get() = "${LocalStore.account}:${PreferenceManager.currentKitchenId}:${ApiClient.contentLanguage()}"
+    private val detail = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { result ->
+        if(result.resultCode == Activity.RESULT_OK) {
+            val updated=runCatching {Gson().fromJson(result.data?.getStringExtra("updated_recipe"),Recipe::class.java)}.getOrNull()
+            if(updated!=null) {
+                val index=rows.indexOfFirst{it.id==updated.id}
+                if(index>=0){
+                    rows[index]=updated
+                    if(sources.isNotEmpty())load()
+                    if(::list.isInitialized)draw()
+                }
+            }
+        }
+    }
 
     private data class BrowserParams(
         val scope: String,
@@ -51,7 +71,10 @@ class RecipeListFragment : Fragment(), SearchableFragment {
         val missing: Int?,
         val known: Boolean,
         val seed: String,
-        val cuisine: String? = null
+        val cuisine: String? = null,
+        val sources: String? = null,
+        val times: String? = null,
+        val stocks: String? = null
     )
 
     private data class BrowserCache(
@@ -62,7 +85,7 @@ class RecipeListFragment : Fragment(), SearchableFragment {
     )
 
     private fun params() =
-        BrowserParams(scope, origin, keyword, taste, minutes, missing, known, seed, cuisine)
+        BrowserParams(scope, origin, keyword, taste, minutes, missing, known, seed, cuisine, sources, times, stocks)
 
     private val cacheKey
         get() = "${PreferenceManager.currentKitchenId}:${if(picking)"picker" else "main"}:${ApiClient.contentLanguage()}"
@@ -81,9 +104,13 @@ class RecipeListFragment : Fragment(), SearchableFragment {
         keyword = state?.getString("query").orEmpty()
         taste = state?.getString("taste").orEmpty()
         cuisine = state?.getString("cuisine").orEmpty()
-        minutes = state?.getInt("minutes")?.takeIf { it > 0 }
-        missing = state?.getInt("missing", -1)?.takeIf { it >= 0 }
+        minutes = state?.getInt("minutes")?.takeIf { it > 0 || it == -60 }
+        missing = state?.getInt("missing", -999)?.takeIf { it >= -1 }
+        times=state?.getString("times") ?: minutes?.toString().orEmpty()
+        stocks=state?.getString("stocks") ?: missing?.toString().orEmpty()
         seed = state?.getString("seed") ?: "0"
+        scrollPosition=state?.getInt("scroll_y") ?: 0
+        sources=state?.getString("sources") ?: RecipeSources.fromLegacy(scope,origin,known)
         if (state == null && arguments == null) {
             val raw =
                 requireContext()
@@ -94,14 +121,17 @@ class RecipeListFragment : Fragment(), SearchableFragment {
                 ?.let { p ->
                     scope = p.scope
                     origin = p.origin
+                    sources=p.sources ?: RecipeSources.fromLegacy(p.scope,p.origin,p.known)
                     keyword = p.keyword
-                    taste = ""
-                    minutes = null
-                    missing = null
+                    taste = p.taste.orEmpty()
+                    cuisine = p.cuisine.orEmpty()
+                    times = p.times ?: p.minutes?.toString().orEmpty()
+                    stocks = p.stocks ?: p.missing?.toString().orEmpty()
                     known = p.known
                     seed = p.seed
                 }
         }
+        scope="discovery";origin="all";known=false;minutes=null;missing=null
         state?.getString("picked")?.let {
             Gson().fromJson(it, Array<MealDish>::class.java).forEach { d ->
                 d.recipeId?.let { id -> picked[id] = d }
@@ -111,162 +141,117 @@ class RecipeListFragment : Fragment(), SearchableFragment {
 
     override fun onSaveInstanceState(out: Bundle) {
         super.onSaveInstanceState(out)
+        out.putString("times",times)
+        out.putString("stocks",stocks)
+        out.putString("sources",sources)
         out.putString("scope", scope)
         out.putString("origin", origin)
         out.putString("cuisine", cuisine)
         out.putString("query", keyword)
         out.putString("taste", taste)
         out.putInt("minutes", minutes ?: 0)
-        out.putInt("missing", missing ?: -1)
+        out.putInt("missing", missing ?: -999)
         out.putBoolean("known", known)
         out.putString("seed", seed)
         out.putString("picked", Gson().toJson(picked.values))
+        out.putInt("scroll_y",if(::scroll.isInitialized)scroll.scrollY else scrollPosition)
     }
 
     override fun onCreateView(i: LayoutInflater, c: ViewGroup?, s: Bundle?): View {
         val ctx = requireContext()
-        val root = Ui.box(ctx)
-        val tabs = Ui.row(ctx)
-        discoveryButton =
-            Ui.button(ctx, UiStrings.s(com.familyrecipes.android.R.string.ui_fc4d75f6cb)) {
-                scope = "discovery"
-                load()
-            }
-        mineButton =
-            Ui.button(ctx, UiStrings.s(com.familyrecipes.android.R.string.ui_2f8ba39ad4)) {
-                scope = "mine"
-                load()
-            }
-        tabs.addView(discoveryButton, LinearLayout.LayoutParams(0, -2, 1f))
-        tabs.addView(mineButton, LinearLayout.LayoutParams(0, -2, 1f))
-        root.addView(tabs)
+        val root = Ui.box(ctx,8)
         search = Ui.field(ctx, UiStrings.s(com.familyrecipes.android.R.string.ui_5981cc43fb), keyword)
-        root.addView(search)
+        search.filters=arrayOf(android.text.InputFilter.LengthFilter(100))
+        if(activity !is com.familyrecipes.android.ui.MainActivity)root.addView(search)
         val filters = Ui.row(ctx).apply { gravity=Gravity.TOP }
-        fun filter(title:Int, value:String, choose:(Button)->Unit):Button {
-            val column=Ui.box(ctx,2)
-            column.addView(Ui.text(ctx,getString(title),14f,true).apply { gravity=Gravity.CENTER })
-            val button=Ui.button(ctx,value){}.apply {
-                textSize=14f;maxLines=2;minWidth=0;minimumWidth=0;minHeight=ctx.dp(56)
-                setPadding(ctx.dp(2),0,ctx.dp(2),0)
-                setOnClickListener { choose(this) }
-                contentDescription=getString(title)+": "+value
+        fun filter(title:Int, value:String, choose:(com.familyrecipes.android.ui.design.FilterButton)->Unit):com.familyrecipes.android.ui.design.FilterButton {
+            val button=com.familyrecipes.android.ui.design.FilterButton(ctx).apply {
+                setLabel(getString(title));setValue(value);setOnClickListener { choose(this) }
             }
-            column.addView(button,LinearLayout.LayoutParams(-1,-2))
-            filters.addView(column,LinearLayout.LayoutParams(0,-2,1f))
+            filters.addView(button,LinearLayout.LayoutParams(ctx.dp(92),-1).apply { marginStart=ctx.dp(2);marginEnd=ctx.dp(2) })
             return button
         }
-        fun options(button:Button,title:Int,labels:List<String>,select:(Int)->Unit) {
-            PopupMenu(ctx,button).apply {
-                labels.forEachIndexed { index,label -> menu.add(0,index,index,label) }
-                setOnMenuItemClickListener {
-                    button.text=labels[it.itemId]
-                    button.contentDescription=getString(title)+": "+labels[it.itemId]
-                    select(it.itemId);true
-                }
-                show()
-            }
+        fun summary(selected:String,choices:List<Pair<String,String>>,empty:String=getString(com.familyrecipes.android.R.string.filter_any)):String {
+            val labels=choices.filter{it.first in selected.split(",")}.map{it.second.trim()}
+            return when(labels.size){0->empty;1->labels.first();else->getString(com.familyrecipes.android.R.string.source_selected_count,labels.size)}
         }
-        val all=getString(com.familyrecipes.android.R.string.filter_any)
+        fun chooseMany(button:com.familyrecipes.android.ui.design.FilterButton,title:Int,choices:List<Pair<String,String>>,current:String,empty:String=getString(com.familyrecipes.android.R.string.filter_any),apply:(String)->Unit) {
+            val selected=current.split(",").filter{it.isNotBlank()}.toMutableSet()
+            fun save(value:String) {
+                apply(value);button.setValue(summary(value,choices,empty))
+                button.contentDescription=getString(title)+": "+choices.filter{it.first in value.split(",")}.joinToString(", "){it.second.trim()}.ifBlank{empty}
+                load()
+            }
+            selectionDialog?.dismiss()
+            selectionDialog=androidx.appcompat.app.AlertDialog.Builder(ctx).setTitle(title)
+                .setMultiChoiceItems(choices.map{it.second}.toTypedArray(),choices.map{it.first in selected}.toBooleanArray()){_,index,checked->if(checked)selected.add(choices[index].first) else selected.remove(choices[index].first)}
+                .setNeutralButton(empty){_,_->save("")}.setNegativeButton(android.R.string.cancel,null)
+                .setPositiveButton(android.R.string.ok){_,_->save(choices.filter{it.first in selected}.joinToString(","){it.first})}.show()
+        }
+        val sourceChoices=RecipeSources.keys.zip(listOf(getString(com.familyrecipes.android.R.string.source_created),getString(com.familyrecipes.android.R.string.source_known),getString(com.familyrecipes.android.R.string.source_favorites),getString(com.familyrecipes.android.R.string.source_shared)))
+        val all=getString(com.familyrecipes.android.R.string.source_all)
+        filter(com.familyrecipes.android.R.string.filter_source,summary(sources,sourceChoices,all)) { button ->
+            if(com.familyrecipes.android.util.AuthUtil.requireLogin(ctx))chooseMany(button,com.familyrecipes.android.R.string.filter_source,sourceChoices,sources,all){sources=it}
+        }
         var cuisineTree:List<com.familyrecipes.android.data.model.CuisineOption>?=null
-        val cuisineButton=filter(com.familyrecipes.android.R.string.filter_cuisine,cuisine.ifBlank { all }) { button ->
+        fun cuisineChoices(nodes:List<com.familyrecipes.android.data.model.CuisineOption>,depth:Int=0):List<Pair<String,String>> =
+            nodes.flatMap{listOf(it.value to ("　".repeat(depth)+it.name))+cuisineChoices(it.children,depth+1)}
+        val cuisineButton=filter(com.familyrecipes.android.R.string.filter_cuisine,if(cuisine.isBlank())getString(com.familyrecipes.android.R.string.filter_any) else if(cuisine.contains(","))getString(com.familyrecipes.android.R.string.source_selected_count,cuisine.split(",").size) else UiStrings.domain(cuisine)) { button ->
             viewLifecycleOwner.lifecycleScope.launch {
                 button.isEnabled=false
                 try {
-                    val tree=cuisineTree ?: Ui.data(ApiClient.getService().getCuisineTree()).also { cuisineTree=it }
-                    val popup=PopupMenu(ctx,button)
-                    fun select(value:String,label:String) {
-                        cuisine=value;button.text=label
-                        button.contentDescription=getString(com.familyrecipes.android.R.string.filter_cuisine)+": "+label
-                        load()
-                    }
-                    popup.menu.add(all).setOnMenuItemClickListener { select("",all);true }
-                    fun addNodes(menu:android.view.Menu,nodes:List<com.familyrecipes.android.data.model.CuisineOption>) {
-                        nodes.forEach { node ->
-                            if(node.children.isEmpty()) {
-                                menu.add(node.name).apply {
-                                    isCheckable=true;isChecked=cuisine==node.value || cuisine in node.aliases
-                                    setOnMenuItemClickListener { select(node.value,node.name);true }
-                                }
-                            } else {
-                                val sub=menu.addSubMenu(node.name)
-                                sub.add(getString(com.familyrecipes.android.R.string.cuisine_all_in,node.name))
-                                    .setOnMenuItemClickListener { select(node.value,node.name);true }
-                                addNodes(sub,node.children)
-                            }
-                        }
-                    }
-                    addNodes(popup.menu,tree);popup.show()
+                    val tree=cuisineTree ?: Ui.data(ApiClient.getService().getCuisineTree()).also{cuisineTree=it}
+                    chooseMany(button,com.familyrecipes.android.R.string.filter_cuisine,cuisineChoices(tree),cuisine){cuisine=it}
                 }catch(e:CancellationException){throw e}catch(e:Exception){Ui.toast(ctx,e)}finally{button.isEnabled=true}
             }
         }
-        if(cuisine.isNotBlank()) root.post {
-            if(view !== root) return@post
+        if(cuisine.isNotBlank())root.post {
+            if(view!==root)return@post
             viewLifecycleOwner.lifecycleScope.launch {
                 try {
                     val tree=Ui.data(ApiClient.getService().getCuisineTree());cuisineTree=tree
-                    fun find(nodes:List<com.familyrecipes.android.data.model.CuisineOption>):String? {
-                        for(node in nodes) {find(node.children)?.let{return it};if(node.value==cuisine || cuisine in node.aliases)return node.name}
-                        return null
-                    }
-                    cuisineButton.text=if(cuisine.isBlank())all else find(tree) ?: UiStrings.domain(cuisine)
-                    cuisineButton.contentDescription=getString(com.familyrecipes.android.R.string.filter_cuisine)+": "+cuisineButton.text
-                }catch(e:CancellationException){throw e}catch(_:Exception){ /* Discovery remains usable without taxonomy. */ }
+                    cuisineButton.setValue(summary(cuisine,cuisineChoices(tree)))
+                }catch(e:CancellationException){throw e}catch(_:Exception){}
             }
         }
-        val tastes=listOf("", "酸", "辣", "酸辣", "清淡", "鲜香", "甜", "麻", "咸")
-        filter(com.familyrecipes.android.R.string.filter_taste,if(taste.isBlank())all else UiStrings.domain(taste)) { button ->
-            options(button,com.familyrecipes.android.R.string.filter_taste,tastes.map { if(it.isBlank())all else UiStrings.domain(it) }) { taste=tastes[it];load() }
+        val tasteChoices=listOf("酸","甜","苦","辣","鲜香","清淡","麻","咸","臭").map{it to UiStrings.domain(it)}
+        filter(com.familyrecipes.android.R.string.filter_taste,summary(taste,tasteChoices)) { button ->
+            chooseMany(button,com.familyrecipes.android.R.string.filter_taste,tasteChoices,taste){taste=it}
         }
-        val times=listOf(all,getString(com.familyrecipes.android.R.string.ui_a996573fd0),getString(com.familyrecipes.android.R.string.ui_1826fa4a7b))
-        filter(com.familyrecipes.android.R.string.filter_time,times[when(minutes){15->1;30->2;else->0}]) { button ->
-            options(button,com.familyrecipes.android.R.string.filter_time,times) { minutes=listOf(null,15,30)[it];load() }
+        val timeChoices=listOf("15" to getString(com.familyrecipes.android.R.string.ui_a996573fd0),"30" to getString(com.familyrecipes.android.R.string.ui_1826fa4a7b),"60" to getString(com.familyrecipes.android.R.string.time_under_hour),"-60" to getString(com.familyrecipes.android.R.string.time_over_hour))
+        filter(com.familyrecipes.android.R.string.filter_time,summary(times,timeChoices)) { button ->
+            chooseMany(button,com.familyrecipes.android.R.string.filter_time,timeChoices,times){times=it}
         }
-        val stocks=listOf(all,getString(com.familyrecipes.android.R.string.ui_f92d315989),getString(com.familyrecipes.android.R.string.ui_0402920ca9))
-        filter(com.familyrecipes.android.R.string.filter_stock,stocks[when(missing){0->1;2->2;else->0}]) { button ->
-            options(button,com.familyrecipes.android.R.string.filter_stock,stocks) { missing=listOf(null,0,2)[it];load() }
+        val stockChoices=listOf("0" to getString(com.familyrecipes.android.R.string.ui_f92d315989),"-1" to getString(com.familyrecipes.android.R.string.stock_any_short))
+        filter(com.familyrecipes.android.R.string.filter_stock,summary(stocks,stockChoices)) { button ->
+            if(com.familyrecipes.android.util.AuthUtil.requireLogin(ctx))chooseMany(button,com.familyrecipes.android.R.string.filter_stock,stockChoices,stocks){stocks=it}
         }
-        root.addView(filters)
-        val mine = Ui.row(ctx)
-        mineFilters = mine
-        mine.tag = "mine"
-        mine.addView(
-            Ui.select(
-                ctx,
-                listOf(UiStrings.s(com.familyrecipes.android.R.string.ui_99b7a390f3), UiStrings.s(com.familyrecipes.android.R.string.ui_1b7ffa2f43), UiStrings.s(com.familyrecipes.android.R.string.ui_47b582adb2), UiStrings.s(com.familyrecipes.android.R.string.ui_752589b25d)),
-                listOf("all", "created", "favorites", "shared").indexOf(origin).coerceAtLeast(0)) {
-                    n ->
-                    val v = listOf("all", "created", "favorites", "shared")[n]
-                    if (v != origin) {
-                        origin = v
-                        load()
-                    }
-                },
-            LinearLayout.LayoutParams(0, -2, 1f))
-        mine.addView(
-            CheckBox(ctx).apply {
-                text = UiStrings.s(com.familyrecipes.android.R.string.ui_d3617a614a)
-                isChecked = known
-                setOnCheckedChangeListener { _, v ->
-                    known = v
-                    load()
-                }
-            })
-        root.addView(mine)
-        status = Ui.text(ctx, UiStrings.s(com.familyrecipes.android.R.string.ui_37dc7bfce2), 16f)
-        shuffle =
-            Ui.button(ctx, UiStrings.s(com.familyrecipes.android.R.string.ui_0e0b0ddfeb)) {
-                seed = java.util.UUID.randomUUID().toString()
-                load()
-            }
-        val heading=Ui.row(ctx)
-        heading.addView(status,LinearLayout.LayoutParams(0,-2,1f))
-        heading.addView(shuffle)
-        root.addView(heading)
+        root.addView(HorizontalScrollView(ctx).apply {
+            isHorizontalScrollBarEnabled=false
+            clipToPadding=false
+            addView(filters)
+        },LinearLayout.LayoutParams(-1,-2))
+        status = Ui.text(ctx, UiStrings.s(com.familyrecipes.android.R.string.ui_37dc7bfce2), 13f).apply { setPadding(0,ctx.dp(2),0,ctx.dp(2)) }
+        status.visibility=View.GONE
+        root.addView(status)
         list = Ui.box(ctx, 0)
-        root.addView(Ui.scroll(ctx, list), LinearLayout.LayoutParams(-1, 0, 1f))
-        more = Ui.button(ctx, UiStrings.s(com.familyrecipes.android.R.string.ui_7728154995)) { load(true) }
-        root.addView(more)
+        scroll=com.familyrecipes.android.ui.design.LoadMoreScrollView(ctx).apply {
+            addView(list)
+            onLoadMore={
+                val ready=job?.isActive!=true && rows.isNotEmpty() && rows.size<total && loadedContext==contextKey && loadedParams==params()
+                if(ready)load(true)
+                ready
+            }
+        }
+        refresh=androidx.swiperefreshlayout.widget.SwipeRefreshLayout(ctx).apply {
+            setColorSchemeColors(Ui.blue)
+            addView(scroll)
+            setOnChildScrollUpCallback { _,_->scroll.canScrollVertically(-1) }
+            setOnRefreshListener {seed=java.util.UUID.randomUUID().toString();scrollPosition=0;scroll.scrollTo(0,0);load()}
+        }
+        root.addView(refresh, LinearLayout.LayoutParams(-1, 0, 1f))
+        more = Ui.text(ctx,getString(com.familyrecipes.android.R.string.feed_swipe_more),13f).apply {gravity=Gravity.CENTER;setTextColor(Ui.muted)}
+
         confirm =
             Ui.button(ctx, UiStrings.f(com.familyrecipes.android.R.string.selected_count, picked.size), true) {
                 requireActivity()
@@ -279,8 +264,11 @@ class RecipeListFragment : Fragment(), SearchableFragment {
         root.addView(confirm)
         search.doAfterTextChanged {
             keyword = it.toString()
+            (activity as? com.familyrecipes.android.ui.MainActivity)?.setRecipeSearchQuery(keyword)
             load()
         }
+        root.post {(activity as? com.familyrecipes.android.ui.MainActivity)?.setRecipeSearchQuery(keyword)}
+        if(rows.isNotEmpty())draw()
         return root
     }
 
@@ -299,37 +287,36 @@ class RecipeListFragment : Fragment(), SearchableFragment {
                     rows.addAll(cache.rows)
                     total = cache.total
                     page = cache.page
+                    loadedContext=contextKey
+                    loadedParams=cache.params
                     draw()
                     status.text = UiStrings.s(com.familyrecipes.android.R.string.ui_2df6c46856)
                 }
             } finally {
                 cacheReady = true
-                load()
+                if(rows.isEmpty())load()
             }
         }
     }
 
     override fun onResume() {
         super.onResume()
-        if (::list.isInitialized && cacheReady) load()
+        if (::list.isInitialized && cacheReady && loadedContext!=contextKey) load()
     }
 
     private fun load(append: Boolean = false) {
         if (!::list.isInitialized) return
+        if(append && (job?.isActive==true || loadedParams!=params() || loadedContext!=contextKey || rows.size>=total))return
         job?.cancel()
         val revision = ++generation
         val kitchen = PreferenceManager.currentKitchenId
-        shuffle.visibility =
-            if (scope == "discovery" && keyword.isBlank()) View.VISIBLE else View.GONE
-        mineFilters.visibility = if (scope == "mine") View.VISIBLE else View.GONE
-        listOf(discoveryButton to (scope == "discovery"), mineButton to (scope == "mine"))
-            .forEach { (b, active) ->
-                b.backgroundTintList =
-                    android.content.res.ColorStateList.valueOf(if (active) Ui.blue else Ui.pale)
-                b.setTextColor(if (active) Ui.onBlue else Ui.blue)
-            }
+        val account = LocalStore.account
+        val requestContext = contextKey
+        val requestParams=params()
         status.setOnClickListener(null)
-        status.text = (if (scope == "mine") UiStrings.s(com.familyrecipes.android.R.string.ui_2f8ba39ad4) else UiStrings.s(com.familyrecipes.android.R.string.ui_fc4d75f6cb)) + UiStrings.s(com.familyrecipes.android.R.string.ui_fa2393258d)
+        status.visibility=View.GONE
+        refresh.isRefreshing=!append
+        if(append)more.text=getString(com.familyrecipes.android.R.string.ui_fb4ca1cf1b)
         job =
             viewLifecycleOwner.lifecycleScope.launch {
                 try {
@@ -343,25 +330,28 @@ class RecipeListFragment : Fragment(), SearchableFragment {
                                     scope,
                                     if (scope == "mine") origin else "all",
                                     keyword,
-                                    taste,
-                                    minutes,
-                                    missing,
+                                    "",
+                                    null,
+                                    null,
                                     scope == "mine" && known,
                                     seed,
-                                    next, cuisine))
-                    if (revision != generation || kitchen != PreferenceManager.currentKitchenId)
+                                    next, "", sources, taste, cuisine, times, stocks))
+                    if (revision != generation || requestContext!=contextKey)
                         return@launch
                     if (!append) rows.clear()
                     rows.addAll(result.list)
                     page = next
-                    total = result.total
+                    total = if(result.list.isEmpty())rows.size.toLong() else result.total
+                    loadedContext=requestContext
+                    loadedParams=requestParams
+                    if(!append) {scrollPosition=0;scroll.scrollTo(0,0)}
                     draw()
-                    val snapshot = BrowserCache(params(), rows.toList(), total, page)
+                    val snapshot = BrowserCache(requestParams, rows.toList(), total, page)
                     LocalStore.instance
                         .records()
                         .put(
                             LocalRecord(
-                                LocalStore.account,
+                                account,
                                 "recipe_browser",
                                 cacheKey,
                                 Gson().toJson(snapshot)))
@@ -372,20 +362,24 @@ class RecipeListFragment : Fragment(), SearchableFragment {
                             .putString(LocalStore.account + cacheKey, Gson().toJson(params()))
                             .apply()
                     if (revision != generation) return@launch
-                    status.text =
-                        UiStrings.f(com.familyrecipes.android.R.string.recipe_results_count, UiStrings.s(if(keyword.isNotBlank()) com.familyrecipes.android.R.string.search_results_title else if(scope=="mine") com.familyrecipes.android.R.string.ui_2f8ba39ad4 else com.familyrecipes.android.R.string.discover_title), total)
+                    status.visibility=View.GONE
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
                     if(revision!=generation)return@launch
-                    status.text = if(e is java.net.SocketTimeoutException) getString(com.familyrecipes.android.R.string.search_timeout) else UiStrings.f(com.familyrecipes.android.R.string.retry_error_value, e.message) + if (rows.isNotEmpty()) UiStrings.s(com.familyrecipes.android.R.string.ui_57bcca8c05) else ""
+                    if(append) {more.text=getString(com.familyrecipes.android.R.string.feed_retry_swipe);return@launch}
+                    status.visibility=View.VISIBLE
+                    status.text = Ui.errorMessage(requireContext(),e) + if (rows.isNotEmpty()) UiStrings.s(com.familyrecipes.android.R.string.ui_57bcca8c05) else ""
                     status.setOnClickListener { load() }
+                } finally {
+                    if(revision==generation)refresh.isRefreshing=false
                 }
             }
     }
 
     private fun draw() {
         val c = requireContext()
+        val previousScroll=if(list.childCount>0)scroll.scrollY else scrollPosition
         list.removeAllViews()
         if (rows.isEmpty()) list.addView(Ui.text(c, UiStrings.s(com.familyrecipes.android.R.string.ui_705ea281fb)))
         rows.chunked(2).forEach { pair ->
@@ -429,7 +423,7 @@ class RecipeListFragment : Fragment(), SearchableFragment {
                         .load(com.familyrecipes.android.util.MediaImages.model(r.coverImage))
                         .into(image)
                 }
-                card.addView(Ui.text(c, r.name, 18f, true).apply { setPadding(c.dp(12),c.dp(10),c.dp(12),c.dp(4)) })
+                card.addView(Ui.text(c, r.name, 17f, true).apply { setPadding(c.dp(10),c.dp(8),c.dp(10),c.dp(2));maxLines=2;ellipsize=android.text.TextUtils.TruncateAt.END })
                 card.addView(
                     Ui.text(
                         c,
@@ -437,13 +431,13 @@ class RecipeListFragment : Fragment(), SearchableFragment {
                                 r.cookingTime?.let { UiStrings.f(com.familyrecipes.android.R.string.minutes_value, it) },
                                 r.tags
                                     ?.filter { it.tagType == "taste" }
-                                    ?.joinToString("、") { it.displayValue ?: it.tagValue }
+                                    ?.distinctBy{it.displayValue ?: it.tagValue}?.take(2)?.joinToString(" · ") { UiStrings.domain(it.displayValue ?: it.tagValue) }
                                     ?.takeIf { it.isNotBlank() },
                                 if (r.isFavorite == true) UiStrings.s(com.familyrecipes.android.R.string.ui_934ebd87e6) else null)
                             .joinToString(" · "),
-                        14f).apply { setPadding(c.dp(12),c.dp(4),c.dp(12),c.dp(12));setTextColor(Ui.muted) })
+                        14f).apply { setPadding(c.dp(10),c.dp(2),c.dp(10),c.dp(8));setTextColor(Ui.muted);maxLines=2;ellipsize=android.text.TextUtils.TruncateAt.END })
                 card.setOnClickListener {
-                    startActivity(
+                    detail.launch(
                         Intent(c, RecipeDetailActivity::class.java).putExtra("recipe_id", r.id))
                 }
                 if (picking)
@@ -464,8 +458,13 @@ class RecipeListFragment : Fragment(), SearchableFragment {
             if (pair.size == 1) line.addView(Space(c), LinearLayout.LayoutParams(0, 1, 1f))
             list.addView(line)
         }
+        if(more.parent==null) list.addView(more)
+        more.text=getString(com.familyrecipes.android.R.string.feed_swipe_more)
         more.visibility = if (rows.size < total) View.VISIBLE else View.GONE
+        scroll.post {if(isAdded){scroll.scrollTo(0,previousScroll);scrollPosition=previousScroll}}
     }
+
+    fun currentQuery():String=keyword
 
     override fun performSearch(keyword: String) {
         search.setText(keyword)
@@ -473,10 +472,12 @@ class RecipeListFragment : Fragment(), SearchableFragment {
 
     override fun onHiddenChanged(hidden: Boolean) {
         super.onHiddenChanged(hidden)
-        if (!hidden && ::list.isInitialized) load()
+        if (!hidden && ::list.isInitialized && cacheReady && loadedContext!=contextKey) load()
     }
 
     override fun onDestroyView() {
+        selectionDialog?.dismiss();selectionDialog=null
+        if(::scroll.isInitialized)scrollPosition=scroll.scrollY
         job?.cancel()
         super.onDestroyView()
     }

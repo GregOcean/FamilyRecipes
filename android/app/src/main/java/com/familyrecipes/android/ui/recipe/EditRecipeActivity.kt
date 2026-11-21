@@ -52,8 +52,8 @@ class EditRecipeActivity : AppCompatActivity() {
         box.addView(com.familyrecipes.android.ui.design.Ui.text(this,UiStrings.s(com.familyrecipes.android.R.string.ui_c45c4747bb),20f,true))
         ingredientField=com.familyrecipes.android.ui.design.Ui.field(this,UiStrings.s(com.familyrecipes.android.R.string.ui_93b21972a4),multi=true);box.addView(ingredientField)
         timeField=com.familyrecipes.android.ui.design.Ui.field(this,UiStrings.s(com.familyrecipes.android.R.string.ui_1c0e1e271a));timeField.inputType=android.text.InputType.TYPE_CLASS_NUMBER;box.addView(timeField)
-        tasteField=com.familyrecipes.android.ui.design.Ui.field(this,UiStrings.s(com.familyrecipes.android.R.string.ui_64eafb8239));box.addView(tasteField)
-        cuisineField=Ui.field(this,getString(R.string.cuisine_edit));box.addView(cuisineField)
+        tasteField=Ui.field(this,getString(R.string.review_taste_hint));box.addView(tasteField)
+        cuisineField=Ui.field(this,getString(R.string.review_cuisine_hint));box.addView(cuisineField)
         box.addView(com.familyrecipes.android.ui.design.Ui.text(this,UiStrings.s(com.familyrecipes.android.R.string.ui_fea10d57e2),20f,true));stepBox=com.familyrecipes.android.ui.design.Ui.box(this,0);box.addView(stepBox)
         box.addView(com.familyrecipes.android.ui.design.Ui.button(this,UiStrings.s(com.familyrecipes.android.R.string.ui_dd24a90cd5)){stepDrafts.add(StepDraft());drawSteps();saveDraft()})
         parent.addView(box,parent.indexOfChild(binding.etRecipeContent.parent.parent as View)+1)
@@ -65,23 +65,24 @@ class EditRecipeActivity : AppCompatActivity() {
             val box=com.familyrecipes.android.ui.design.Ui.card(this)
             box.addView(com.familyrecipes.android.ui.design.Ui.text(this,UiStrings.f(com.familyrecipes.android.R.string.step_number, index+1),18f,true))
             val field=com.familyrecipes.android.ui.design.Ui.field(this,UiStrings.s(com.familyrecipes.android.R.string.ui_6b939b6382),step.text,true);box.addView(field);field.doAfterTextChanged{step.text=it.toString();saveDraft()}
-            step.image?.let{url->val preview=ImageView(this).apply{adjustViewBounds=true};box.addView(preview,android.widget.LinearLayout.LayoutParams(-1,180));com.bumptech.glide.Glide.with(this).load(com.familyrecipes.android.util.MediaImages.model(url)).into(preview)}
+            step.image?.let{url->
+                val preview=ImageView(this).apply{adjustViewBounds=true;contentDescription=getString(R.string.review_image_description)}
+                box.addView(preview,android.widget.LinearLayout.LayoutParams(-1,(160*resources.displayMetrics.density).toInt()))
+                com.bumptech.glide.Glide.with(this).load(com.familyrecipes.android.util.MediaImages.model(url)).into(preview)
+                box.addView(Ui.button(this,getString(R.string.review_step_remove_photo)){step.image=null;removeUnusedStepPhoto(url);drawSteps();saveDraft()})
+            }
             box.addView(com.familyrecipes.android.ui.design.Ui.button(this,if(step.image==null)UiStrings.s(com.familyrecipes.android.R.string.ui_69f5326297) else UiStrings.s(com.familyrecipes.android.R.string.ui_0e8168f0dd)){pendingStep=index;pickImageLauncher.launch("image/*")})
             val actions=com.familyrecipes.android.ui.design.Ui.row(this)
-            actions.addView(com.familyrecipes.android.ui.design.Ui.button(this,UiStrings.s(com.familyrecipes.android.R.string.ui_315eacd193)){if(index>0){java.util.Collections.swap(stepDrafts,index,index-1);drawSteps();saveDraft()}}.apply{isEnabled=index>0})
-            actions.addView(com.familyrecipes.android.ui.design.Ui.button(this,UiStrings.s(com.familyrecipes.android.R.string.ui_407fd4f2fb)){stepDrafts.removeAt(index);drawSteps();saveDraft()})
+            actions.addView(com.familyrecipes.android.ui.design.Ui.button(this,UiStrings.s(com.familyrecipes.android.R.string.ui_315eacd193)){if(index>0){java.util.Collections.swap(stepDrafts,index,index-1);drawSteps();saveDraft()}}.apply{isEnabled=index>0},android.widget.LinearLayout.LayoutParams(0,-2,1f))
+            actions.addView(com.familyrecipes.android.ui.design.Ui.button(this,UiStrings.s(com.familyrecipes.android.R.string.ui_407fd4f2fb)){val removed=stepDrafts.removeAt(index);removed.image?.let(::removeUnusedStepPhoto);drawSteps();saveDraft()},android.widget.LinearLayout.LayoutParams(0,-2,1f))
             box.addView(actions);stepBox.addView(box)
         }
     }
-    private suspend fun prepareIngredients():List<RecipeIngredient> {
-        return ingredientField.text.toString().lines().map{it.trim()}.filter{it.isNotBlank()}.map{line->
-            val parts=line.split("|",limit=2);val ingredient=com.familyrecipes.android.ui.design.Ui.data(ApiClient.getService().createIngredient(Ingredient(null,parts[0].trim(),null)))
-            RecipeIngredient(null,null,ingredient.id,parts.getOrNull(1)?.trim(),true,ingredient)
-        }.distinctBy{it.ingredientId}
-    }
+    private suspend fun prepareIngredients():List<RecipeIngredient> =
+        com.familyrecipes.android.util.IngredientEntryResolver.resolveRecipeLines(ingredientField.text.toString(),existingRecipe?.ingredients.orEmpty())
     private fun preparedSteps()=stepDrafts.mapIndexed{index,s->CookingStep(null,null,index+1,s.text,s.image,null)}
-    private fun cuisineTags()=cuisineField.text.toString().trim().takeIf{it.isNotBlank()}?.let{listOf(RecipeTag(null,null,"cuisine",it))}.orEmpty()
-    private fun tasteTags()=tasteField.text.toString().split(Regex("[、，, ]")).filter{it.isNotBlank()}.distinct().map{RecipeTag(null,null,"taste",it)}
+    private fun cuisineTags()=com.familyrecipes.android.util.RecipeEditorRules.labels(cuisineField.text.toString()).map{RecipeTag(null,null,"cuisine",it)}
+    private fun tasteTags()=com.familyrecipes.android.util.RecipeEditorRules.labels(tasteField.text.toString()).map{RecipeTag(null,null,"taste",it)}
 
     private lateinit var binding: ActivityEditRecipeBinding
     private val selectedImages = mutableListOf<Uri>()
@@ -93,12 +94,13 @@ class EditRecipeActivity : AppCompatActivity() {
     private val kitchenId = PreferenceManager.currentKitchenId
     private var saved = false
     private var draftReady = false
+    private var hasDraft = false
     private val photoMeta = mutableMapOf<String, RecipeImage>()
     private data class EditorDraft(val title: String, val content: String, val tags: String,
         val images: List<String>, val metadata: Map<String, RecipeImage>, val links: List<ParsedExternalLink>,
         val visibility: String, val groups: List<Long>, val original: Recipe?, val ingredientText:String?=null,val timeText:String?=null,val tasteText:String?=null,val stepData:List<StepDraft>?=null,val cuisineText:String?=null,val adaptSourceId:Long?=null)
     private var adaptSourceId:Long?=null
-    private val draftKey get() = intent.getStringExtra("draft_key") ?: "recipe:${recipeId ?: (adaptSourceId?.let { "adapt-$it" } ?: "new")}:${kitchenId ?: "none"}"
+    private lateinit var draftKey:String
     private var recipeId: Long? = null  // 如果是编辑模式，这里保存菜谱ID
     private var existingRecipe: Recipe? = null  // 保存现有菜谱数据
 
@@ -121,18 +123,17 @@ class EditRecipeActivity : AppCompatActivity() {
     private val pickImageLauncher = registerForActivityResult(
         ActivityResultContracts.GetMultipleContents()
     ) { uris ->
+        val targetStep=pendingStep
+        pendingStep=null
         if (uris.isNotEmpty()) lifecycleScope.launch {
             try {
-                for(uri in uris.take(if(pendingStep!=null)1 else 30-selectedImages.size)) {
-                    val local = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                        val dir=File(filesDir,"draft-images").apply { mkdirs() }
-                        val file=File(dir,java.util.UUID.randomUUID().toString())
-                        contentResolver.openInputStream(uri)!!.use { input -> file.outputStream().use { input.copyTo(it) } }
-                        Uri.fromFile(file)
-                    }
+                while(!draftReady)kotlinx.coroutines.delay(25)
+                if(selectedImages.size>=30){android.widget.Toast.makeText(this@EditRecipeActivity,R.string.review_photo_limit,android.widget.Toast.LENGTH_SHORT).show();return@launch}
+                for(uri in uris.take(if(targetStep!=null)1 else (30-selectedImages.size).coerceAtLeast(0))) {
+                    val local=Uri.fromFile(com.familyrecipes.android.util.InventoryImages.copy(this@EditRecipeActivity,uri))
                     selectedImages.add(local)
-                    photoMeta[local.toString()]=RecipeImage(local.toString(),if(pendingStep!=null)"step" else "screenshot")
-                    pendingStep?.let{stepDrafts.getOrNull(it)?.image=local.toString()}
+                    photoMeta[local.toString()]=RecipeImage(local.toString(),if(targetStep!=null)"step" else "screenshot")
+                    targetStep?.let{index->stepDrafts.getOrNull(index)?.let{step->val old=step.image;step.image=local.toString();old?.let(::removeUnusedStepPhoto)}}
                     saveDraft()
                 }
                 pendingStep=null;drawSteps()
@@ -152,6 +153,9 @@ class EditRecipeActivity : AppCompatActivity() {
         recipeId = intent.getLongExtra("recipe_id", -1L).takeIf { it > 0 }
 
         adaptSourceId=intent.getLongExtra("adapt_source_id",-1).takeIf{it>0}
+        draftKey=intent.getStringExtra("draft_key") ?: savedInstanceState?.getString("draft_key")
+            ?: "recipe:${recipeId ?: java.util.UUID.randomUUID()}:${kitchenId ?: "none"}"
+        pendingStep=savedInstanceState?.getInt("pending_step",-1)?.takeIf{it>=0}
         setupStructuredEditor()
         setupToolbar()
         setupImageGrid()
@@ -167,8 +171,10 @@ class EditRecipeActivity : AppCompatActivity() {
         binding.btnPublish.text=if(recipeId==null)UiStrings.s(com.familyrecipes.android.R.string.ui_65a5713f64) else UiStrings.s(com.familyrecipes.android.R.string.ui_be5fbbe34c)
         setEditingEnabled(false)
         lifecycleScope.launch {
+            DraftWrites.flush()
             val stored=LocalStore.instance.records().get(account,"draft",draftKey)
             if(stored!=null) {
+                hasDraft=true
                 try { restoreDraft(com.google.gson.Gson().fromJson(stored,EditorDraft::class.java)) }
                 catch(_: Exception) { android.widget.Toast.makeText(this@EditRecipeActivity,UiStrings.s(com.familyrecipes.android.R.string.ui_674593ff88),android.widget.Toast.LENGTH_SHORT).show() }
                 draftReady=true
@@ -195,7 +201,8 @@ class EditRecipeActivity : AppCompatActivity() {
     }
     private fun saveDraft() {
         if(!draftReady || saved) return
-        if(recipeId==null && binding.etRecipeTitle.text.isNullOrBlank() && binding.etRecipeContent.text.isNullOrBlank() && selectedImages.isEmpty() && externalLinks.isEmpty() && ingredientField.text.isBlank() && stepDrafts.isEmpty())return
+        if(!hasDraft && recipeId==null && binding.etRecipeTitle.text.isNullOrBlank() && binding.etRecipeContent.text.isNullOrBlank() && selectedImages.isEmpty() && externalLinks.isEmpty() && ingredientField.text.isBlank() && stepDrafts.isEmpty() && timeField.text.isBlank() && tasteField.text.isBlank() && cuisineField.text.isBlank())return
+        hasDraft=true
         val draft=EditorDraft(binding.etRecipeTitle.text.toString(),binding.etRecipeContent.text.toString(),
             binding.etTags.text.toString(),selectedImages.map { it.toString() },photoMeta.toMap(),externalLinks.toList(),
             selectedVisibility,selectedGroupIds.toList(),existingRecipe,ingredientField.text.toString(),timeField.text.toString(),tasteField.text.toString(),stepDrafts.toList(),cuisineField.text.toString(),adaptSourceId)
@@ -212,11 +219,27 @@ class EditRecipeActivity : AppCompatActivity() {
         existingRecipe=draft.original;imageAdapter.notifyDataSetChanged();linkAdapter.notifyDataSetChanged();updatePermissionDisplay()
     }
     override fun onStop() { saveDraft();super.onStop() }
+    override fun onSaveInstanceState(out:Bundle) {
+        out.putString("draft_key",draftKey);out.putInt("pending_step",pendingStep ?: -1)
+        saveDraft();super.onSaveInstanceState(out)
+    }
+    private fun removeUnusedStepPhoto(url:String) {
+        if(stepDrafts.none{it.image==url} && photoMeta[url]?.category=="step") {
+            selectedImages.removeAll{it.toString()==url};photoMeta.remove(url)
+            if(::imageAdapter.isInitialized)imageAdapter.notifyDataSetChanged()
+        }
+    }
+    private fun removePhoto(index:Int) {
+        if(index !in selectedImages.indices)return
+        val url=selectedImages.removeAt(index).toString();photoMeta.remove(url)
+        stepDrafts.forEach{if(it.image==url)it.image=null}
+        drawSteps();imageAdapter.notifyDataSetChanged();saveDraft()
+    }
     private fun editImageMetadata(index: Int) {
         val key=selectedImages[index].toString()
         val current=photoMeta[key] ?: RecipeImage(key)
         val categories=arrayOf("cover","step","screenshot","cooking_record","other")
-        val labels=arrayOf(UiStrings.s(com.familyrecipes.android.R.string.ui_412310615b),UiStrings.s(com.familyrecipes.android.R.string.ui_0d5635dea1),UiStrings.s(com.familyrecipes.android.R.string.ui_a334f6e2d9),UiStrings.s(com.familyrecipes.android.R.string.ui_b107c6ae6b),"其他")
+        val labels=arrayOf(UiStrings.s(com.familyrecipes.android.R.string.ui_412310615b),UiStrings.s(com.familyrecipes.android.R.string.ui_0d5635dea1),UiStrings.s(com.familyrecipes.android.R.string.ui_a334f6e2d9),UiStrings.s(com.familyrecipes.android.R.string.ui_b107c6ae6b),getString(R.string.review_other_photo))
         val box=android.widget.LinearLayout(this).apply { orientation=android.widget.LinearLayout.VERTICAL }
         val caption=EditText(this).apply { hint=UiStrings.s(com.familyrecipes.android.R.string.ui_cea52e2a12);setText(current.caption) }
         val spinner=android.widget.Spinner(this).apply {
@@ -234,10 +257,16 @@ class EditRecipeActivity : AppCompatActivity() {
         binding.toolbar.setNavigationOnClickListener {
             finish()
         }
+        binding.toolbar.menu.add(R.string.review_discard_draft).setOnMenuItemClickListener {
+            AlertDialog.Builder(this).setMessage(R.string.review_discard_draft_message)
+                .setNegativeButton(android.R.string.cancel,null).setPositiveButton(R.string.review_discard_draft){_,_->
+                    lifecycleScope.launch {try {DraftWrites.clear(account,draftKey);saved=true;finish()}catch(e:kotlinx.coroutines.CancellationException){throw e}catch(e:Exception){Ui.toast(this@EditRecipeActivity,e)}}
+                }.show();true
+        }
     }
 
     private fun setupImageGrid() {
-        imageAdapter = ImageGridAdapter(selectedImages, { saveDraft() }, { if(draftReady && binding.btnPublish.isEnabled) editImageMetadata(it) }) {
+        imageAdapter = ImageGridAdapter(selectedImages, { if(draftReady && binding.btnPublish.isEnabled) removePhoto(it) }, { if(draftReady && binding.btnPublish.isEnabled) editImageMetadata(it) }) {
             if(draftReady && binding.btnPublish.isEnabled) pickImageLauncher.launch("image/*")
         }
 
@@ -345,7 +374,7 @@ class EditRecipeActivity : AppCompatActivity() {
 
                             android.widget.Toast.makeText(
                                 this@EditRecipeActivity,
-                                "添加成功：${parsed.title}",
+                                getString(R.string.review_link_added,parsed.title),
                                 android.widget.Toast.LENGTH_SHORT
                             ).show()
                             dialog.dismiss()
@@ -359,7 +388,7 @@ class EditRecipeActivity : AppCompatActivity() {
                         }
                     } else {
                         // API返回错误
-                        val errorMsg = response.body()?.message ?: UiStrings.s(com.familyrecipes.android.R.string.ui_5348dcac29)
+                        val errorMsg = getString(R.string.review_request_failed)
                         tvParsingStatus.text = errorMsg
                         android.widget.Toast.makeText(
                             this@EditRecipeActivity,
@@ -379,7 +408,7 @@ class EditRecipeActivity : AppCompatActivity() {
                     tvParsingStatus.text = UiStrings.s(com.familyrecipes.android.R.string.ui_7ec65389b4)
                     android.widget.Toast.makeText(
                         this@EditRecipeActivity,
-                        UiStrings.f(com.familyrecipes.android.R.string.network_error_value, e.message),
+                        Ui.errorMessage(this@EditRecipeActivity,e),
                         android.widget.Toast.LENGTH_SHORT
                     ).show()
 
@@ -446,7 +475,6 @@ class EditRecipeActivity : AppCompatActivity() {
                     }
                     1 -> {
                         // 分享给群组
-                        selectedVisibility = "group"
                         showGroupSelectionDialog()
                     }
                 }
@@ -486,11 +514,7 @@ class EditRecipeActivity : AppCompatActivity() {
             } catch (e: kotlinx.coroutines.CancellationException) { throw e
             } catch (e: Exception) {
                 e.printStackTrace()
-                android.widget.Toast.makeText(
-                    this@EditRecipeActivity,
-                    "获取群组列表失败：${e.message}",
-                    android.widget.Toast.LENGTH_SHORT
-                ).show()
+                Ui.toast(this@EditRecipeActivity,e)
             }
         }
     }
@@ -500,28 +524,24 @@ class EditRecipeActivity : AppCompatActivity() {
      */
     private fun showGroupCheckboxDialog(groups: List<GroupChat>) {
         val groupNames = groups.map { it.name }.toTypedArray()
-        val checkedItems = groups.map { selectedGroupIds.contains(it.id) }.toBooleanArray()
+        val pending=selectedGroupIds.toMutableSet()
+        if(selectedVisibility!="group" && pending.isEmpty())PreferenceManager.currentGroupId?.let{pending.add(it)}
+        val checkedItems = groups.map { it.id in pending }.toBooleanArray()
 
         AlertDialog.Builder(this)
             .setTitle(UiStrings.s(com.familyrecipes.android.R.string.ui_8194d1e012))
             .setMultiChoiceItems(groupNames, checkedItems) { _, which, isChecked ->
                 val groupId = groups[which].id ?: return@setMultiChoiceItems
                 if (isChecked) {
-                    if (!selectedGroupIds.contains(groupId)) {
-                        selectedGroupIds.add(groupId)
-                    }
+                    pending.add(groupId)
                 } else {
-                    selectedGroupIds.remove(groupId)
+                    pending.remove(groupId)
                 }
             }
             .setPositiveButton(UiStrings.s(com.familyrecipes.android.R.string.ui_38cf16f220)) { _, _ ->
-                // 如果没有选择任何群组，默认为当前厨房
-                if (selectedGroupIds.isEmpty()) {
-                    val currentKitchenId = com.familyrecipes.android.data.local.PreferenceManager.currentGroupId
-                    if (currentKitchenId != null) {
-                        selectedGroupIds.add(currentKitchenId)
-                    }
-                }
+                if(pending.isEmpty()){android.widget.Toast.makeText(this,R.string.review_groups_required,android.widget.Toast.LENGTH_LONG).show();return@setPositiveButton}
+                selectedVisibility="group"
+                selectedGroupIds.clear();selectedGroupIds.addAll(pending)
                 updatePermissionDisplay()
             }
             .setNegativeButton(UiStrings.s(com.familyrecipes.android.R.string.ui_625fb26b4b), null)
@@ -650,19 +670,11 @@ class EditRecipeActivity : AppCompatActivity() {
                     setResult(RESULT_OK)
                     finish()
                 } else {
-                    android.widget.Toast.makeText(
-                        this@EditRecipeActivity,
-                        "发布失败：${response.body()?.message ?: "未知错误"}",
-                        android.widget.Toast.LENGTH_SHORT
-                    ).show()
+                    Ui.ok(response)
                 }
             } catch (e: kotlinx.coroutines.CancellationException) { throw e
             } catch (e: Exception) {
-                android.widget.Toast.makeText(
-                    this@EditRecipeActivity,
-                    "发布失败：${e.message}",
-                    android.widget.Toast.LENGTH_SHORT
-                ).show()
+                Ui.toast(this@EditRecipeActivity,e)
                 e.printStackTrace()
             } finally {
                 setEditingEnabled(true)
@@ -774,19 +786,11 @@ class EditRecipeActivity : AppCompatActivity() {
                     setResult(RESULT_OK)
                     finish()
                 } else {
-                    android.widget.Toast.makeText(
-                        this@EditRecipeActivity,
-                        "保存失败：${response.body()?.message ?: "未知错误"}",
-                        android.widget.Toast.LENGTH_SHORT
-                    ).show()
+                    Ui.ok(response)
                 }
             } catch (e: kotlinx.coroutines.CancellationException) { throw e
             } catch (e: Exception) {
-                android.widget.Toast.makeText(
-                    this@EditRecipeActivity,
-                    "保存失败：${e.message}",
-                    android.widget.Toast.LENGTH_SHORT
-                ).show()
+                Ui.toast(this@EditRecipeActivity,e)
                 e.printStackTrace()
             } finally {
                 setEditingEnabled(true)
@@ -841,19 +845,8 @@ class EditRecipeActivity : AppCompatActivity() {
      * 支持#开头的tag，用空格分隔
      * 例如：#午餐 #家常菜 #快手 -> ["午餐", "家常菜", "快手"]
      */
-    private fun parseTags(input: String): List<String> {
-        if (input.isBlank()) return emptyList()
-
-        // 按空格分割
-        return input.trim()
-            .split(Regex("\\s+"))
-            .mapNotNull { tag ->
-                // 移除#前缀，过滤空字符串
-                val cleaned = tag.trim().removePrefix("#")
-                if (cleaned.isNotEmpty()) cleaned else null
-            }
-            .distinct() // 去重
-    }
+    private fun parseTags(input: String): List<String> =
+        com.familyrecipes.android.util.RecipeEditorRules.labels(input.replace(Regex("\\s+#"),","))
 
     /**
      * 加载现有菜谱数据
@@ -884,11 +877,7 @@ class EditRecipeActivity : AppCompatActivity() {
                 }
             } catch (e: kotlinx.coroutines.CancellationException) { throw e
             } catch (e: Exception) {
-                android.widget.Toast.makeText(
-                    this@EditRecipeActivity,
-                    "加载菜谱失败：${e.message}",
-                    android.widget.Toast.LENGTH_SHORT
-                ).show()
+                Ui.toast(this@EditRecipeActivity,e)
                 e.printStackTrace()
                 finish()
             }
@@ -956,7 +945,7 @@ class EditRecipeActivity : AppCompatActivity() {
  */
 class ImageGridAdapter(
     private val images: MutableList<Uri>,
-    private val onChanged: () -> Unit,
+    private val onRemove: (Int) -> Unit,
     private val onEdit: (Int) -> Unit,
     private val onAddClick: () -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -987,12 +976,9 @@ class ImageGridAdapter(
             is ImageViewHolder -> {
                 com.bumptech.glide.Glide.with(holder.itemView).load(com.familyrecipes.android.util.MediaImages.model(images[position].toString()))
                     .signature(com.bumptech.glide.signature.ObjectKey(PreferenceManager.userId)).into(holder.imageView)
-                holder.imageView.setOnClickListener { onEdit(holder.bindingAdapterPosition) }
+                holder.imageView.setOnClickListener { val i=holder.bindingAdapterPosition;if(i!=RecyclerView.NO_POSITION)onEdit(i) }
                 holder.btnDelete.setOnClickListener {
-                    images.removeAt(position)
-                    onChanged()
-                    notifyItemRemoved(position)
-                    notifyItemRangeChanged(position, itemCount)
+                    val i=holder.bindingAdapterPosition;if(i!=RecyclerView.NO_POSITION)onRemove(i)
                 }
             }
             is AddImageViewHolder -> {
@@ -1027,32 +1013,35 @@ class ExternalLinkAdapter(
     override fun onCreateViewHolder(parent:android.view.ViewGroup,type:Int)=LinkViewHolder(Ui.card(parent.context))
     override fun onBindViewHolder(holder:LinkViewHolder,position:Int) {
         val c=holder.box.context;val link=links[position];val box=holder.box;box.removeAllViews()
-        link.thumbnail?.takeIf { it.isNotBlank() }?.let { url ->
-            val thumbnail=android.widget.ImageView(c).apply {
-                scaleType=android.widget.ImageView.ScaleType.CENTER_CROP
-                layoutParams=android.widget.LinearLayout.LayoutParams(-1,(120*c.resources.displayMetrics.density).toInt())
-            }
-            box.addView(thumbnail)
-            com.bumptech.glide.Glide.with(thumbnail)
-                .load(com.familyrecipes.android.util.MediaImages.model(url))
-                .signature(com.bumptech.glide.signature.ObjectKey(PreferenceManager.userId)).into(thumbnail)
-        }
-        box.addView(Ui.text(c,"${position+1}. ${link.title}",18f,true))
-        box.addView(Ui.text(c,link.source,15f))
+        val header=Ui.row(c)
+        val platform=com.familyrecipes.android.util.LinkPlatform.fromUrl(link.url)
+        header.addView(android.widget.ImageView(c).apply {
+            setImageDrawable(com.familyrecipes.android.ui.design.PlatformBadge(platform))
+            contentDescription=platform.label
+        },android.widget.LinearLayout.LayoutParams((40*c.resources.displayMetrics.density).toInt(),(40*c.resources.displayMetrics.density).toInt()))
+        header.addView(Ui.text(c,"${position+1}. ${link.title}",18f,true).apply {
+            setPadding((12*c.resources.displayMetrics.density).toInt(),0,0,0)
+        },android.widget.LinearLayout.LayoutParams(0,-2,1f))
+        box.addView(header)
         box.addView(Ui.text(c,link.url,14f))
         box.addView(Ui.text(c,link.notes?.takeIf{it.isNotBlank()} ?: c.getString(R.string.link_notes_empty),16f))
-        val actions=Ui.row(c)
-        fun action(label:Int,enabled:Boolean=true,run:(Int)->Unit) {
-            actions.addView(Ui.button(c,c.getString(label)) {
-                val current=holder.bindingAdapterPosition
-                if(current!=RecyclerView.NO_POSITION)run(current)
-            }.apply{isEnabled=enabled},android.widget.LinearLayout.LayoutParams(0,-2,1f))
+        val moreButton=Ui.button(c,c.getString(R.string.recipe_more_short)) {
+            val current=holder.bindingAdapterPosition
+            if(current!=RecyclerView.NO_POSITION) {
+                android.widget.PopupMenu(c,header).apply {
+                    menu.add(0,1,0,R.string.link_edit)
+                    menu.add(0,2,1,R.string.link_up).isEnabled=current>0
+                    menu.add(0,3,2,R.string.link_down).isEnabled=current<links.lastIndex
+                    menu.add(0,4,3,R.string.link_delete)
+                    setOnMenuItemClickListener { item ->
+                        when(item.itemId){1->onEdit(current);2->onMove(current,-1);3->onMove(current,1);4->onDeleteClick(current)}
+                        true
+                    }
+                    show()
+                }
+            }
         }
-        action(R.string.link_up,position>0){onMove(it,-1)}
-        action(R.string.link_down,position<links.lastIndex){onMove(it,1)}
-        box.addView(actions)
-        val edit=Ui.button(c,c.getString(R.string.link_edit)){val i=holder.bindingAdapterPosition;if(i!=RecyclerView.NO_POSITION)onEdit(i)}
-        box.addView(edit)
-        box.addView(Ui.button(c,c.getString(R.string.link_delete)){val i=holder.bindingAdapterPosition;if(i!=RecyclerView.NO_POSITION)onDeleteClick(i)})
+        header.addView(moreButton)
+        box.setOnClickListener{val i=holder.bindingAdapterPosition;if(i!=RecyclerView.NO_POSITION)onEdit(i)}
     }
 }

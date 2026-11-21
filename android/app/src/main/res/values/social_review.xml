@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="social_member_count"><item quantity="other">%1$d 位成员</item></plurals>
+    <plurals name="social_chat_group_count"><item quantity="other">%1$s · %2$d人</item></plurals>
+    <plurals name="social_group_members_preview"><item quantity="other">%1$d 位成员 · 一起讨论吃什么</item></plurals>
+    <string name="social_event_created">创建了群聊</string>
+    <string name="social_event_joined">加入群聊：%1$s</string>
+    <string name="social_event_removed">已移出群聊：%1$s</string>
+    <string name="social_event_transferred">管理员已转让给 %1$s</string>
+    <string name="social_event_left">%1$s 已退出群聊</string>
+    <string name="social_group_settings">群组管理</string>
+    <string name="social_members">成员</string>
+    <string name="social_add_members">添加成员</string>
+    <string name="social_group_name">群名称</string>
+    <string name="social_group_about">群介绍（可选）</string>
+    <string name="social_leave">退出群聊</string>
+    <string name="social_dismiss">解散群聊</string>
+    <string name="social_remove_member">移出群聊</string>
+    <string name="social_transfer">转让管理员</string>
+    <string name="social_transfer_confirm">转让后，你将成为普通成员，关联厨房的管理权也会移交。</string>
+    <string name="social_remove_confirm">移出后，对方将无法访问本群的厨房、库存及仅向本群共享的内容。</string>
+    <string name="social_leave_confirm">退出后将无法访问本群的厨房和共享内容。已保存的个人菜谱不会删除。</string>
+    <string name="social_dismiss_confirm">将删除本群的聊天记录、关联厨房及其库存和安排。个人菜谱不会删除。此操作无法撤销。</string>
+    <string name="social_linked_kitchens">关联厨房</string>
+    <string name="social_save">保存</string>
+    <string name="social_cancel">取消</string>
+    <string name="social_confirm">确认</string>
+    <string name="social_manager">管理员</string>
+    <string name="social_no_friends">还没有可以添加的好友</string>
+    <string name="social_manage_friends">添加 / 管理好友</string>
+    <string name="social_member_limit">最多选择 %1$d 人</string>
+    <string name="social_create_group">新建群聊</string>
+    <string name="social_choose_friends">选择好友（可选）</string>
+    <string name="social_creating">创建中…</string>
+    <string name="social_name_invalid">请填写1至100字的群名称</string>
+    <string name="social_incoming">收到的邀请</string>
+    <string name="social_outgoing">发出的邀请</string>
+    <string name="social_my_friends">好友</string>
+    <string name="social_already_friend">已是好友</string>
+    <string name="social_accept_invite">接受邀请</string>
+    <string name="social_delete_friend">删除好友</string>
+    <string name="social_edit_note">修改备注</string>
+    <string name="social_friend_note">备注名（可留空）</string>
+    <string name="social_delete_friend_confirm">删除好友不会把对方移出已有群聊。</string>
+    <string name="social_cancel_invitation">撤回邀请</string>
+    <string name="social_cancel_invitation_confirm">撤回这条尚未接受的邀请？</string>
+    <string name="social_load_more">查看更早消息</string>
+    <string name="social_history_end">已到最早消息</string>
+    <string name="social_new_messages">有新消息 ↓</string>
+    <string name="social_login_expired">登录已失效，请重新登录；未发送内容已保留</string>
+    <string name="social_group_unavailable">已不在此群中或群聊已解散</string>
+    <string name="social_retry_one">重试这条消息</string>
+    <string name="social_retry_queued">等待前一条消息处理</string>
+    <string name="social_retry_later">网络异常，将自动重试</string>
+    <string name="social_edit_failed">编辑后重发</string>
+    <string name="social_message_tools">更多操作</string>
+    <string name="social_open_meal">查看菜单</string>
+    <string name="social_open_recipe">查看菜谱</string>
+    <string name="social_dish_total">共 %1$d 道菜</string>
+    <string name="social_copy">复制</string>
+    <string name="social_retry">重试</string>
+    <string name="social_account_changed">请使用收到此通知的账号登录</string>
+    <string name="social_empty_friends">通过用户ID、用户名或扫一扫添加好友。</string>
+    <string name="social_send">发送</string>
+    <string name="social_new_order">新建点菜</string>
+    <string name="social_new_prep">新建备菜</string>
+</resources>

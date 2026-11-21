@@ -24,9 +24,9 @@ object AuthUtil {
      * @param action 操作名称（用于提示）
      * @return true 表示已登录，false 表示未登录
      */
-    fun requireLogin(context: Context, action: String = "此操作"): Boolean {
+    fun requireLogin(context: Context, action: String = ""): Boolean {
         if (!isLoggedIn()) {
-            Toast.makeText(context, "${action}需要登录，请先登录", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, context.getString(com.familyrecipes.android.R.string.login_required_short), Toast.LENGTH_LONG).show()
             navigateToProfile(context)
             return false
         }
@@ -43,13 +43,18 @@ object AuthUtil {
         }
         val intent = Intent(context, MainActivity::class.java)
         intent.putExtra("navigate_to", "profile")
-        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        intent.putExtra("return_to_caller",true)
+        if(context !is android.app.Activity)intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         context.startActivity(intent)
     }
     
     /**
      * 获取当前用户ID，如果未登录返回 null
      */
+    fun completeLogin(activity: android.app.Activity) {
+        (activity as? MainActivity)?.onAuthenticated()
+    }
+
     fun getCurrentUserId(): Long? {
         return if (isLoggedIn()) PreferenceManager.userId else null
     }

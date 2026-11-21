@@ -15,7 +15,7 @@ import java.util.*;
 public class ContentTranslationAdvice implements ResponseBodyAdvice<Object> {
     private final ObjectMapper json;
     private final TranslationService translations;
-    private static final Set<String> FIELDS=Set.of("name","description","title","notes","caption","amount","category_override_name","source_recipe_name","processing_method","unit","category");
+    private static final Set<String> FIELDS=Set.of("name","display_name","description","title","notes","caption","amount","category_override_name","source_recipe_name","processing_method","unit","category");
     private static final Set<String> SKIP=Set.of("creator","sender","user","cooks","members","groups","kitchens");
     public ContentTranslationAdvice(ObjectMapper json,TranslationService translations) {this.json=json;this.translations=translations;}
     public boolean supports(MethodParameter p,Class<? extends HttpMessageConverter<?>> c) {return true;}
@@ -28,7 +28,15 @@ public class ContentTranslationAdvice implements ResponseBodyAdvice<Object> {
         boolean authenticated=req instanceof ServletServerHttpRequest s && s.getServletRequest().getAttribute("userId")!=null;
         boolean display=req.getHeaders().getFirst("Accept-Language")!=null && req.getMethod()==HttpMethod.GET && !"true".equals(req.getHeaders().getFirst("X-Content-Original"));
         String language=TranslationService.language(req.getHeaders().getFirst("Accept-Language"));
-        localize(tree.path("data"),language,display,authenticated,new int[]{0});
+        if(path.equals("/api/fridge/ingredients/resolve") && req.getHeaders().getFirst("Accept-Language")!=null) {
+            // Only presentation labels change. The outer product name is retained for persistence;
+            // clients select by ingredient ID, and original_content preserves each canonical label.
+            int[] budget={0};
+            for(var entry:tree.path("data")) {
+                localize(entry.path("ingredient"),language,true,authenticated,budget);
+                localize(entry.path("candidates"),language,true,authenticated,budget);
+            }
+        } else localize(tree.path("data"),language,display,authenticated,new int[]{0});
         res.getHeaders().add("Vary","Accept-Language, X-Content-Original");
         return tree;
     }

@@ -37,17 +37,19 @@ public interface FridgeItemMapper {
 
     @Select("SELECT * FROM fridge_item WHERE id = #{id}")
     FridgeItem findById(Long id);
+    @Select("SELECT * FROM fridge_item WHERE user_id=#{userId} AND client_mutation_id=#{mutation}")
+    FridgeItem findByMutation(@Param("userId") Long userId,@Param("mutation") String mutation);
 
     @Insert("INSERT INTO fridge_item(user_id, kitchen_id, ingredient_id, amount, purchase_date, " +
-            "expiry_date, storage_location, status, notes, owner_user_id, image_url, category_override_id) " +
+            "expiry_date, storage_location, status, notes, owner_user_id, image_url, category_override_id,display_name,client_mutation_id) " +
             "VALUES(#{userId}, #{kitchenId}, #{ingredientId}, #{amount}, #{purchaseDate}, #{expiryDate}, " +
-            "#{storageLocation}, #{status}, #{notes}, #{ownerUserId}, #{imageUrl}, #{categoryOverrideId})")
+            "#{storageLocation}, #{status}, #{notes}, #{ownerUserId}, #{imageUrl}, #{categoryOverrideId},#{displayName},#{clientMutationId})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(FridgeItem item);
 
     @Update("UPDATE fridge_item SET amount=#{amount}, purchase_date=#{purchaseDate}, " +
             "expiry_date=#{expiryDate}, storage_location=#{storageLocation}, " +
-            "category_override_id=#{categoryOverrideId}, notes=#{notes}, owner_user_id=#{ownerUserId}, image_url=#{imageUrl} WHERE id=#{id} AND kitchen_id=#{kitchenId}")
+            "category_override_id=#{categoryOverrideId}, display_name=#{displayName}, notes=#{notes}, owner_user_id=#{ownerUserId}, image_url=#{imageUrl} WHERE id=#{id} AND kitchen_id=#{kitchenId}")
     int update(FridgeItem item);
 
     @Update("UPDATE fridge_item SET status='consumed', consumed_at=NOW() WHERE id=#{id} AND kitchen_id=#{kitchenId} AND status IN ('normal','expiring','expired')")

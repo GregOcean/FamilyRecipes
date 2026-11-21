@@ -25,7 +25,7 @@
 <string name="filter_cuisine">Cuisine</string>
 <string name="filter_taste">Taste</string>
 <string name="filter_time">Time</string>
-<string name="filter_stock">Ingredients</string>
+<string name="filter_stock">Stock</string>
 <string name="filter_any">Any</string>
 <string name="search_timeout">Search timed out. Tap to retry</string>
 <string name="group_add_friends">Add friends to group</string>
@@ -40,7 +40,7 @@
 <string name="about_title">About</string>
 <string name="about_description">Jiayao brings the taste of home wherever you are. Collect recipes, manage ingredients, request meals, plan cooking and chat. Kitchens keep separate inventory and meal arrangements; recipes can be public or group-visible.</string>
 <string name="about_learning_sources">Learning content sources</string>
-<string name="about_learning_note">Beginner and advanced guides are adapted from HowToCook under Unlicense. The Chinese content is packaged offline with layout changes. Original chapter links and revisions are listed below.</string>
+<string name="about_learning_note">Learning content is provided under Unlicense, packaged offline with layout changes.</string>
 <string name="meal_dish_list">Dish list</string>
 <string name="meal_manual_add">Add a dish manually</string>
 <string name="meal_dish_name">Enter a dish name</string>

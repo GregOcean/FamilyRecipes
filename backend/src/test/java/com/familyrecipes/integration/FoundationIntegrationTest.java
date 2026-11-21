@@ -38,6 +38,7 @@ class FoundationIntegrationTest {
     @TempDir static Path images;
     @DynamicPropertySource static void properties(DynamicPropertyRegistry registry) {
         registry.add("file.upload-dir", images::toString);
+        registry.add("app.catalog.jobs-dir", () -> images.resolve("jobs").toString());
         registry.add("app.ai.routes.translation.model", () -> "");
         registry.add("file.base-url", () -> "http://localhost/api/upload/files/");
     }
@@ -80,6 +81,230 @@ class FoundationIntegrationTest {
         db.update("INSERT INTO group_member(group_id,user_id,role) VALUES(?,?,'manager')", group, owner);
         kitchen=kitchens.create(group,"城区厨房",owner).getId();
     }
+    @Autowired PasswordResetService resets;
+    @org.springframework.boot.test.mock.mockito.SpyBean CatalogAdminService admin;
+    private String resetCode(String email) {
+        org.mockito.Mockito.doAnswer(call -> { deliveredCodes.put(call.getArgument(0),call.getArgument(1));return null; })
+            .when(mail).sendPasswordReset(org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString());
+        resets.sendCode(email,"reset-test-"+owner);return deliveredCodes.get(email);
+    }
+    @Test void passwordResetConsumesCodeAndRevokesOldTokens() throws Exception {
+        String email=db.queryForObject("SELECT email FROM user WHERE id=?",String.class,owner);
+        String code=resetCode(email);
+        assertNotEquals(code,db.queryForObject("SELECT code_hash FROM password_reset_code WHERE email=?",String.class,email));
+        mvc.perform(post("/api/auth/password-reset").contentType(MediaType.APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of("email",email,"code",code,"password","new-password-123")))).andExpect(status().isOk());
+        assertFalse(jwt.validateToken(ownerAuth.substring(7)));
+        assertTrue(jwt.validateToken(users.login(email,"new-password-123")));
+        assertThrows(ApiException.class,()->resets.reset(email,code,"another-pass-123"));
+    }
+    @Test void resetCodesDoNotRegisterAndWrongAttemptsAreBounded() {
+        String email=db.queryForObject("SELECT email FROM user WHERE id=?",String.class,owner);String code=resetCode(email);
+        assertThrows(ApiException.class,()->emailCodes.completeRegistration(email,code,()->true));
+        String wrong=code.equals("000000")?"000001":"000000";
+        for(int i=0;i<5;i++)assertThrows(ApiException.class,()->resets.reset(email,wrong,"new-password-123"));
+        assertThrows(ApiException.class,()->resets.reset(email,code,"new-password-123"));
+        assertTrue(jwt.validateToken(ownerAuth.substring(7)));
+    }
+    @Test void resetUnknownAccountIsGenericAndSmtpFailureCanRetry() throws Exception {
+        mvc.perform(post("/api/auth/password-reset-code").contentType(MediaType.APPLICATION_JSON).content("{\"email\":\"not-registered@example.test\"}"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.retry_after").value(60));
+        org.mockito.Mockito.verify(mail,org.mockito.Mockito.never()).sendPasswordReset(org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString());
+        String email=db.queryForObject("SELECT email FROM user WHERE id=?",String.class,owner);
+        org.mockito.Mockito.doThrow(new org.springframework.mail.MailSendException("offline")).when(mail).sendPasswordReset(org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString());
+        assertThrows(ApiException.class,()->resets.sendCode(email,"reset-test-"+owner));
+        assertEquals(0L,db.queryForObject("SELECT issued_at FROM password_reset_code WHERE email=?",Long.class,email));
+        org.mockito.Mockito.doNothing().when(mail).sendPasswordReset(org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString());
+        assertDoesNotThrow(()->resets.sendCode(email,"reset-test-"+owner));
+        assertThrows(ApiException.class,()->resets.sendCode(email,"reset-test-"+owner));
+    }
+    @Test void resetRejectsExpiredCodeAndByteLongPassword() {
+        String email=db.queryForObject("SELECT email FROM user WHERE id=?",String.class,owner);String code=resetCode(email);
+        assertThrows(ApiException.class,()->resets.reset(email,code,"密".repeat(30)));
+        db.update("UPDATE password_reset_code SET expires_at=1 WHERE email=?",email);
+        assertThrows(ApiException.class,()->resets.reset(email,code,"new-password-123"));
+    }
+    @Test void adminRequiresConfiguredIdentityAndRejectsPersonalRecipes() throws Exception {
+        Object old=org.springframework.test.util.ReflectionTestUtils.getField(admin,"adminId");
+        org.springframework.test.util.ReflectionTestUtils.setField(admin,"adminId",owner);
+        org.springframework.test.util.ReflectionTestUtils.setField(admin,"searchKey","test-key");
+        try {
+            mvc.perform(get("/api/admin/monitor")).andExpect(status().isUnauthorized());
+            mvc.perform(get("/api/admin/monitor").header("Authorization",otherAuth)).andExpect(status().isForbidden());
+            mvc.perform(get("/api/admin/monitor").header("Authorization",ownerAuth)).andExpect(status().isOk()).andExpect(jsonPath("$.data.database").value("ok"));
+            long id=recipe("public").getId();
+            assertThrows(ApiException.class,()->admin.create(List.of(id),owner));
+            assertThrows(ApiException.class,()->admin.create(Collections.nCopies(31,id),owner));
+        } finally {org.springframework.test.util.ReflectionTestUtils.setField(admin,"adminId",old);org.springframework.test.util.ReflectionTestUtils.setField(admin,"searchKey","");}
+    }
+    @Test void metricsAndTaskControlsAreAdminOnly() throws Exception {
+        Object old=org.springframework.test.util.ReflectionTestUtils.getField(admin,"adminId");
+        org.springframework.test.util.ReflectionTestUtils.setField(admin,"adminId",owner);
+        try {
+            mvc.perform(get("/api/admin/metrics")).andExpect(status().isUnauthorized());
+            mvc.perform(get("/api/admin/metrics").header("Authorization",otherAuth)).andExpect(status().isForbidden());
+            mvc.perform(get("/api/admin/metrics").header("Authorization",ownerAuth))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.hardware.cpuCores").isNumber())
+                .andExpect(jsonPath("$.data.traffic.windowSeconds").value(60))
+                .andExpect(jsonPath("$.data.database.status").value("up"))
+                .andExpect(jsonPath("$.data.tasks.translation.paused").value(false));
+            mvc.perform(post("/api/admin/tasks/translation/pause").header("Authorization",otherAuth)).andExpect(status().isForbidden());
+            mvc.perform(post("/api/admin/tasks/translation/pause").header("Authorization",ownerAuth)).andExpect(status().isOk());
+            mvc.perform(get("/api/admin/metrics").header("Authorization",ownerAuth)).andExpect(jsonPath("$.data.tasks.translation.paused").value(true));
+        } finally {
+            taskControl.change("translation",false);
+            org.springframework.test.util.ReflectionTestUtils.setField(admin,"adminId",old);
+        }
+    }
+    @Autowired TaskControl taskControl;
+
+    @Test void adminSelectedJobsApplyLinksIdempotentlyAndRetainImageCredits() throws Exception {
+        Object old=org.springframework.test.util.ReflectionTestUtils.getField(admin,"adminId");
+        org.springframework.test.util.ReflectionTestUtils.setField(admin,"adminId",owner);
+        org.springframework.test.util.ReflectionTestUtils.setField(admin,"searchKey","test-key");
+        try {
+            long id=recipe("public").getId();
+            db.update("INSERT INTO recipe_provenance(recipe_id,source_identity,metadata) VALUES(?,?,'{}')",id,com.familyrecipes.translation.TranslationService.digest(UUID.randomUUID().toString()));
+            String job=admin.create(List.of(id),owner);
+            assertEquals("queued",admin.result(job).get("status"));
+            admin.action(job,"pause");assertEquals("paused",admin.result(job).get("status"));
+            var report=Map.of("jobs",List.of(Map.of("id",id,"status","done","result",Map.of("link_candidates",List.of(Map.of("url","https://www.youtube.com/watch?v=abcdefghijk","title","Recipe tutorial")),"images",List.of(Map.of("url","https://upload.wikimedia.org/wikipedia/commons/a/ab/Test.jpg","page","https://commons.wikimedia.org/wiki/File:Test.jpg","license","CC BY 4.0","author","Test photographer"))))));
+            java.nio.file.Files.writeString(images.resolve("jobs").resolve(job).resolve("results.json"),json.writeValueAsString(report));
+            assertThrows(ApiException.class,()->admin.apply(job,id,List.of(5),null,owner));
+            assertThrows(ApiException.class,()->admin.apply(job,id,List.of(0),null,outsider));
+            var png=new ByteArrayOutputStream();ImageIO.write(new BufferedImage(2,2,BufferedImage.TYPE_INT_RGB),"png",png);
+            org.mockito.Mockito.doReturn(png.toByteArray()).when(admin).downloadImage(org.mockito.ArgumentMatchers.any(java.net.URI.class));
+            admin.apply(job,id,List.of(0),0,owner);admin.apply(job,id,List.of(0),0,owner);
+            assertEquals(1,db.queryForObject("SELECT COUNT(*) FROM recipe_image WHERE recipe_id=?",Integer.class,id));
+            assertEquals(1,db.queryForObject("SELECT COUNT(*) FROM catalog_media_credit WHERE recipe_id=?",Integer.class,id));
+            var credit=json.readTree(db.queryForObject("SELECT metadata FROM recipe_provenance WHERE recipe_id=?",String.class,id)).path("images").get(0);
+            assertEquals("Test photographer",credit.path("author").asText());
+            assertTrue(credit.path("modifications").asText().contains("PNG"));
+
+            assertEquals(1,db.queryForObject("SELECT COUNT(*) FROM external_recipe WHERE recipe_id=?",Integer.class,id));
+            var progressRow=admin.jobs().stream().filter(row->job.equals(row.get("id"))).findFirst().orElseThrow();
+            assertFalse(progressRow.containsKey("progressError"));
+            assertEquals(1,((Map<?,?>)progressRow.get("progress")).get("completed"));
+            admin.action(job,"retry");assertEquals("queued",admin.result(job).get("status"));
+        } finally {org.springframework.test.util.ReflectionTestUtils.setField(admin,"adminId",old);org.springframework.test.util.ReflectionTestUtils.setField(admin,"searchKey","");}
+    }
+    @Test void adminImageDownloadOnlyAllowsCommonsOrigin() {
+        for(String url:List.of("http://upload.wikimedia.org/wikipedia/commons/a.jpg","https://localhost/a.jpg","https://upload.wikimedia.org.evil.test/wikipedia/commons/a.jpg","https://user@upload.wikimedia.org/wikipedia/commons/a.jpg","https://upload.wikimedia.org:8443/wikipedia/commons/a.jpg"))
+            assertThrows(ApiException.class,()->CatalogAdminService.imageUri(url));
+        assertEquals("upload.wikimedia.org",CatalogAdminService.imageUri("https://upload.wikimedia.org/wikipedia/commons/a/ab/Test.jpg").getHost());
+    }
+    @Test void chatSearchRestrictsMembershipAndPaginatesLiteralText() throws Exception {
+        for(int i=0;i<55;i++) messages.sendMessage(group,owner,"今天吃 Fish 100% "+i,Message.MessageType.text);
+        var page=messages.search(owner,"fish",Long.MAX_VALUE);
+        assertEquals(51,page.size());
+        var next=messages.search(owner,"fish",page.get(49).getId());
+        assertEquals(5,next.size());
+        assertTrue(next.stream().allMatch(m -> m.getId()<page.get(49).getId()));
+        assertEquals(51,messages.search(owner,"100%",Long.MAX_VALUE).size());
+        assertTrue(messages.search(owner,"_",Long.MAX_VALUE).isEmpty());
+        assertTrue(messages.search(outsider,"fish",Long.MAX_VALUE).isEmpty());
+        assertThrows(ApiException.class,()->messages.search(owner," ",Long.MAX_VALUE));
+        mvc.perform(get("/api/messages/search").param("query","fish")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/messages/search").header("Authorization",otherAuth).param("query","fish"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(0));
+        db.update("DELETE FROM group_member WHERE group_id=? AND user_id=?",group,owner);
+        assertTrue(messages.search(owner,"fish",Long.MAX_VALUE).isEmpty());
+    }
+
+    @Test void favoritesNotifyOnlyAuthorOnceAndReadIsAccountScoped() throws Exception {
+        var r=recipe("public");
+        recipes.toggleFavorite(owner,r.getId());
+        assertEquals(0,db.queryForObject("SELECT COUNT(*) FROM recipe_favorite_notification WHERE recipe_id=?",Integer.class,r.getId()));
+        recipes.toggleFavorite(outsider,r.getId());recipes.toggleFavorite(outsider,r.getId());recipes.toggleFavorite(outsider,r.getId());
+        assertEquals(1,db.queryForObject("SELECT COUNT(*) FROM recipe_favorite_notification WHERE recipe_id=?",Integer.class,r.getId()));
+        mvc.perform(get("/api/notifications/favorites")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/notifications/favorites").header("Authorization",otherAuth)).andExpect(jsonPath("$.data.unread").value(0));
+        mvc.perform(get("/api/notifications/favorites").header("Authorization",ownerAuth))
+            .andExpect(jsonPath("$.data.unread").value(1)).andExpect(jsonPath("$.data.items[0].isRead").value(false))
+            .andExpect(jsonPath("$.data.items[0].recipeId").value(r.getId()));
+        String body="{\"throughId\":9223372036854775807}";
+        mvc.perform(post("/api/notifications/favorites/read").header("Authorization",otherAuth).contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isOk());
+        assertEquals(1,db.queryForObject("SELECT COUNT(*) FROM recipe_favorite_notification WHERE recipient_id=? AND read_at IS NULL",Integer.class,owner));
+        mvc.perform(post("/api/notifications/favorites/read").header("Authorization",ownerAuth).contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isOk());
+        mvc.perform(get("/api/notifications/favorites").header("Authorization",ownerAuth)).andExpect(jsonPath("$.data.unread").value(0));
+    }
+
+    @Test void stockAnyMatchAndHourBoundaries() {
+        var r=recipe("public");String name="stock-boundary-"+r.getId();
+        db.update("UPDATE recipe SET name=?,cooking_time=60 WHERE id=?",name,r.getId());
+        var milk=fridge.getOrCreateIngredient("牛奶",null);
+        var tomato=fridge.getOrCreateIngredient("番茄",null);
+        db.update("INSERT INTO recipe_ingredient(recipe_id,ingredient_id,amount) VALUES(?,?,'1'),(?,?,'1')",r.getId(),milk.getId(),r.getId(),tomato.getId());
+        assertEquals(0,workflows.browse(owner,kitchen,"discovery","all",name,"",null,-1,false,"0",1).getTotal());
+        FridgeItem item=new FridgeItem();item.setUserId(owner);item.setKitchenId(kitchen);item.setIngredientId(milk.getId());item.setExpiryDate(LocalDate.now().plusDays(1));
+        item=fridge.addItem(item);
+        assertEquals(1,workflows.browse(owner,kitchen,"discovery","all",name,"",60,-1,false,"0",1).getTotal());
+        assertEquals(0,workflows.browse(owner,kitchen,"discovery","all",name,"",-60,-1,false,"0",1).getTotal());
+        assertEquals(0,workflows.browse(owner,kitchen,"discovery","all",name,"",null,0,false,"0",1).getTotal());
+        db.update("UPDATE recipe SET cooking_time=61 WHERE id=?",r.getId());
+        assertEquals(1,workflows.browse(owner,kitchen,"discovery","all",name,"",-60,-1,false,"0",1).getTotal());
+        db.update("UPDATE fridge_item SET expiry_date=DATE_SUB(CURRENT_DATE,INTERVAL 1 DAY) WHERE id=?",item.getId());
+        assertEquals(0,workflows.browse(owner,kitchen,"discovery","all",name,"",null,-1,false,"0",1).getTotal());
+        db.update("UPDATE fridge_item SET expiry_date=DATE_ADD(CURRENT_DATE,INTERVAL 1 DAY) WHERE id=?",item.getId());
+        assertEquals(1,workflows.browse(owner,kitchen,"discovery","all",name,"",null,-1,false,"0",1).getTotal());
+        db.update("UPDATE fridge_item SET status='consumed' WHERE id=?",item.getId());
+        assertEquals(0,workflows.browse(owner,kitchen,"discovery","all",name,"",null,-1,false,"0",1).getTotal());
+    }
+
+    @Test void enrichmentAugmentsExistingLabelsAndResolvesAliasesWithoutInventingIngredients() throws Exception {
+        db.update("INSERT IGNORE INTO recipe_enrichment(recipe_id,status) SELECT id,'complete' FROM recipe");
+        var r=recipe("public");
+        db.update("UPDATE recipe SET description='西红柿切块，炒熟',cooking_time=NULL WHERE id=?",r.getId());
+        db.update("INSERT INTO recipe_tag(recipe_id,tag_type,tag_value) VALUES(?,'cuisine','东北菜')",r.getId());
+        var client=org.mockito.Mockito.mock(com.familyrecipes.ai.ChatCompletionClient.class);
+        org.mockito.Mockito.when(client.complete(org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyList())).thenReturn("""
+            {"taste":["酸","辣"],"cuisine":["家常菜","东北菜"],"cooking_minutes":20,"ingredients":[
+             {"name":"西红柿","evidence":"西红柿","amount":"1个","confidence":0.99,"is_food":true},
+             {"name":"不存在的食物","evidence":"no evidence","amount":"1","confidence":1,"is_food":true},
+             {"name":"不确定食物","evidence":"切块","amount":"1","confidence":0.5,"is_food":true}]}
+            """);
+        var worker=new RecipeEnrichmentService(db,json,client,new com.familyrecipes.ai.AiRoutes(),classificationContent,fridge,transactionManager);
+        worker.processOne();worker.processOne();
+        assertEquals(20,db.queryForObject("SELECT cooking_time FROM recipe WHERE id=?",Integer.class,r.getId()));
+        assertEquals(Set.of("家常菜","东北菜"),new HashSet<>(db.queryForList("SELECT tag_value FROM recipe_tag WHERE recipe_id=? AND tag_type='cuisine'",String.class,r.getId())));
+        assertEquals(List.of("番茄"),db.queryForList("SELECT i.name FROM recipe_ingredient ri JOIN ingredient i ON i.id=ri.ingredient_id WHERE ri.recipe_id=?",String.class,r.getId()));
+        assertEquals("needs_review",db.queryForObject("SELECT status FROM recipe_enrichment WHERE recipe_id=?",String.class,r.getId()));
+        org.mockito.Mockito.verify(client,org.mockito.Mockito.times(1)).complete(org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyList());
+    }
+    @Test void enrichmentDiscardsResultWhenUserChangesOnlyTags() throws Exception {
+        db.update("INSERT IGNORE INTO recipe_enrichment(recipe_id,status) SELECT id,'complete' FROM recipe");
+        var r=recipe("public");var client=org.mockito.Mockito.mock(com.familyrecipes.ai.ChatCompletionClient.class);
+        org.mockito.Mockito.when(client.complete(org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyList())).thenAnswer(call->{
+            db.update("INSERT INTO recipe_tag(recipe_id,tag_type,tag_value) VALUES(?,'taste','苦')",r.getId());
+            return "{\"taste\":[\"甜\"],\"cuisine\":[\"家常菜\"],\"ingredients\":[],\"cooking_minutes\":10}";
+        });
+        new RecipeEnrichmentService(db,json,client,new com.familyrecipes.ai.AiRoutes(),classificationContent,fridge,transactionManager).processOne();
+        assertEquals(0,db.queryForObject("SELECT COUNT(*) FROM recipe_enrichment WHERE recipe_id=?",Integer.class,r.getId()));
+        assertEquals(0,db.queryForObject("SELECT COUNT(*) FROM recipe_tag WHERE recipe_id=? AND tag_value='甜'",Integer.class,r.getId()));
+    }
+
+    @Test void enrichmentRetriesAreBoundedAndDoesNotOverwriteUserDuration() throws Exception {
+        db.update("INSERT IGNORE INTO recipe_enrichment(recipe_id,status) SELECT id,'complete' FROM recipe");
+        var r=recipe("public");db.update("UPDATE recipe SET cooking_time=90 WHERE id=?",r.getId());
+        var client=org.mockito.Mockito.mock(com.familyrecipes.ai.ChatCompletionClient.class);
+        org.mockito.Mockito.when(client.complete(org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyList())).thenThrow(new IllegalStateException("provider unavailable"));
+        var worker=new RecipeEnrichmentService(db,json,client,new com.familyrecipes.ai.AiRoutes(),classificationContent,fridge,transactionManager);
+        for(int i=0;i<4;i++){db.update("UPDATE recipe_enrichment SET next_attempt_at=NOW() WHERE recipe_id=?",r.getId());worker.processOne();}
+        assertEquals(3,db.queryForObject("SELECT attempts FROM recipe_enrichment WHERE recipe_id=?",Integer.class,r.getId()));
+        org.mockito.Mockito.verify(client,org.mockito.Mockito.times(3)).complete(org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyList());
+        db.update("DELETE FROM recipe_enrichment WHERE recipe_id=?",r.getId());
+        org.mockito.Mockito.doReturn("{\"taste\":[\"甜\"],\"cuisine\":[\"家常菜\"],\"cooking_minutes\":20,\"ingredients\":[]}").when(client).complete(org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyList());
+        worker.processOne();
+        assertEquals(90,db.queryForObject("SELECT cooking_time FROM recipe WHERE id=?",Integer.class,r.getId()));
+    }
+
+    @Test void catalogSummaryIsPublicAndCountsOnlyPublicRecipes() throws Exception {
+        long count=db.queryForObject("SELECT COUNT(*) FROM recipe WHERE visibility='public'",Long.class);
+        recipe("public");recipe("private");recipe("group");
+        mvc.perform(get("/api/config/catalog-summary")).andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.publicRecipes").value(count+1));
+    }
+
     long user(String name) {
         db.update("INSERT INTO user(email,password,username) VALUES(?, 'never-serialize-this',?)", UUID.randomUUID()+"@test.example", name);
         return db.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
@@ -108,16 +333,16 @@ class FoundationIntegrationTest {
         return new CuisineRefinementService(db,json,client,new com.familyrecipes.ai.AiRoutes(),classificationContent,transactionManager);
     }
     @Test void cuisineRefinementIsImportedOnlyAdditiveAndIdempotent() throws Exception {
-        var coarse=importedCuisine("东北菜");var exact=importedCuisine("IN");
+        var coarse=importedCuisine("南亚");var exact=importedCuisine("IN");
         var personal=recipe("public");
-        db.update("UPDATE recipe_tag SET tag_value='东北菜' WHERE recipe_id=? AND tag_type='cuisine'",personal.getId());
+        db.update("UPDATE recipe_tag SET tag_value='南亚' WHERE recipe_id=? AND tag_type='cuisine'",personal.getId());
         var client=org.mockito.Mockito.mock(com.familyrecipes.ai.ChatCompletionClient.class);
-        org.mockito.Mockito.when(client.complete(org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyList())).thenReturn("{\"cuisine\":[\"辽宁菜\"],\"evidence\":\"test\"}");
+        org.mockito.Mockito.when(client.complete(org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyList())).thenReturn("{\"cuisine\":[\"印度菜\"],\"evidence\":\"test\"}");
         var worker=refinement(client);
         assertEquals(1,worker.audit().get("eligible_not_queued"));
         assertEquals(1,worker.enqueue(owner,5));assertEquals(0,worker.enqueue(owner,5));
         worker.processOne();worker.processOne();
-        assertEquals(Set.of("东北菜","辽宁菜"),new HashSet<>(db.queryForList("SELECT tag_value FROM recipe_tag WHERE recipe_id=? AND tag_type='cuisine'",String.class,coarse.getId())));
+        assertEquals(Set.of("南亚","印度菜"),new HashSet<>(db.queryForList("SELECT tag_value FROM recipe_tag WHERE recipe_id=? AND tag_type='cuisine'",String.class,coarse.getId())));
         assertEquals("complete",db.queryForObject("SELECT status FROM recipe_cuisine_refinement WHERE recipe_id=?",String.class,coarse.getId()));
         assertEquals(0,db.queryForObject("SELECT COUNT(*) FROM recipe_cuisine_refinement WHERE recipe_id IN (?,?)",Integer.class,exact.getId(),personal.getId()));
         org.mockito.Mockito.verify(client,org.mockito.Mockito.times(1)).complete(org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyList());
@@ -549,6 +774,9 @@ class FoundationIntegrationTest {
             .send(org.mockito.ArgumentMatchers.eq(email),org.mockito.ArgumentMatchers.anyString());
         assertEquals(503,assertThrows(ApiException.class,()->codeFor(email)).getStatus());
         assertFalse(db.queryForObject("SELECT active FROM registration_email_code WHERE email=?",Boolean.class,email));
+        assertEquals(0L,db.queryForObject("SELECT issued_at FROM registration_email_code WHERE email=?",Long.class,email));
+        org.mockito.Mockito.doNothing().when(mail).send(org.mockito.ArgumentMatchers.eq(email),org.mockito.ArgumentMatchers.anyString());
+        assertDoesNotThrow(()->codeFor(email));
         assertEquals(429,assertThrows(ApiException.class,()->codeFor(email)).getStatus());
     }
     @Test void registrationCodeEndpointIsPublicAndEmailQuotaIsEnforced() throws Exception {
@@ -684,6 +912,59 @@ class FoundationIntegrationTest {
         assertEquals(sent.getId(),meals.share(meal.getId(),group,owner,client).getId());
     }
 
+    private com.familyrecipes.common.PageResult<Recipe> multiBrowse(Long user,Long selectedKitchen,String sources,String tastes,String cuisines,String times,String stocks) {
+        return workflows.browse(user,selectedKitchen,"discovery","all","multi-filter-fixture","",null,null,false,"stable",1,"",sources,tastes,cuisines,times,stocks);
+    }
+
+    @Test void multiSourcesUnionDeduplicatesAndStillEnforcesVisibility() throws Exception {
+        var own=recipe("public");var favorite=recipe("public");var known=recipe("public");var shared=recipe("group");var hidden=recipe("private");
+        for(var r:List.of(own,favorite,known,shared,hidden))db.update("UPDATE recipe SET name='multi-filter-fixture' WHERE id=?",r.getId());
+        for(var r:List.of(favorite,known,shared,hidden))db.update("UPDATE recipe SET creator_id=? WHERE id=?",outsider,r.getId());
+        for(var r:List.of(own,favorite,hidden))db.update("INSERT INTO user_favorite(user_id,recipe_id) VALUES(?,?)",owner,r.getId());
+        db.update("INSERT INTO recipe_cook(user_id,recipe_id) VALUES(?,?)",owner,known.getId());
+        var result=multiBrowse(owner,null,"created,known,favorites,shared","","","","");
+        assertEquals(4,result.getTotal());
+        assertEquals(Set.of(own.getId(),favorite.getId(),known.getId(),shared.getId()),new HashSet<>(result.getList().stream().map(Recipe::getId).toList()));
+        assertEquals(2,multiBrowse(owner,null,"created,favorites,created","","","","").getTotal());
+        assertEquals(1,multiBrowse(owner,null,"shared","","","","").getTotal());
+        assertThrows(ApiException.class,()->multiBrowse(null,null,"favorites","","","",""));
+        assertThrows(ApiException.class,()->multiBrowse(owner,null,"created,garbage","","","",""));
+        mvc.perform(get("/api/recipes/browse").header("Authorization",ownerAuth).param("keyword","multi-filter-fixture").param("sources","created,known"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.total").value(2));
+    }
+
+    @Test void multiFiltersOrWithinCategoriesAndAcrossCategories() {
+        var sour=recipe("public");var sweet=recipe("public");var unknown=recipe("public");
+        for(var r:List.of(sour,sweet,unknown))db.update("UPDATE recipe SET name='multi-filter-fixture' WHERE id=?",r.getId());
+        db.update("UPDATE recipe SET cooking_time=60 WHERE id=?",sour.getId());
+        db.update("UPDATE recipe SET cooking_time=90 WHERE id=?",sweet.getId());
+        db.update("INSERT INTO recipe_tag(recipe_id,tag_type,tag_value) VALUES(?,'taste','酸'),(?,'taste','辣'),(?,'cuisine','川菜'),(?,'cuisine','家常菜'),(?,'taste','甜'),(?,'cuisine','日式')",sour.getId(),sour.getId(),sour.getId(),sour.getId(),sweet.getId(),sweet.getId());
+        assertEquals(2,multiBrowse(owner,null,"created","酸,甜","川菜,日式","60,-60","").getTotal());
+        assertEquals(1,multiBrowse(owner,null,"created","酸,辣","region:china-eight,川菜","30,60","").getTotal());
+        assertEquals(0,multiBrowse(owner,null,"created","甜","川菜","60,-60","").getTotal());
+        assertEquals(1,multiBrowse(owner,null,"created","酸,甜","川菜,日式","-60","").getTotal());
+        // Unknown cooking duration is not silently treated as a short recipe.
+        assertEquals(2,multiBrowse(owner,null,"created","","","60,-60","").getTotal());
+        assertThrows(ApiException.class,()->multiBrowse(owner,null,"","","","0",""));
+        assertThrows(ApiException.class,()->multiBrowse(owner,null,"","","","","5"));
+        // The hierarchy currently has 57 selectable parent/leaf nodes; large selections are valid.
+        String manyCuisines=java.util.stream.IntStream.range(0,57).mapToObj(i->"custom-"+i).collect(java.util.stream.Collectors.joining(","));
+        assertEquals(0,multiBrowse(owner,null,"created","",manyCuisines,"","").getTotal());
+    }
+
+    @Test void multiStockSelectionsUseSelectedKitchenAndExcludeExpiredStock() {
+        var r=recipe("public");db.update("UPDATE recipe SET name='multi-filter-fixture' WHERE id=?",r.getId());
+        var milk=fridge.getOrCreateIngredient("牛奶",null);var tomato=fridge.getOrCreateIngredient("番茄",null);
+        db.update("INSERT INTO recipe_ingredient(recipe_id,ingredient_id,amount) VALUES(?,?,'1'),(?,?,'1')",r.getId(),milk.getId(),r.getId(),tomato.getId());
+        FridgeItem item=new FridgeItem();item.setUserId(owner);item.setKitchenId(kitchen);item.setIngredientId(milk.getId());item.setExpiryDate(LocalDate.now().plusDays(1));item=fridge.addItem(item);
+        assertEquals(0,multiBrowse(owner,kitchen,"created","","","","0").getTotal());
+        assertEquals(1,multiBrowse(owner,kitchen,"created","","","","0,-1").getTotal());
+        db.update("UPDATE fridge_item SET expiry_date=DATE_SUB(CURRENT_DATE,INTERVAL 1 DAY) WHERE id=?",item.getId());
+        assertEquals(0,multiBrowse(owner,kitchen,"created","","","","0,-1").getTotal());
+        assertThrows(ApiException.class,()->multiBrowse(owner,null,"created","","","","-1"));
+        assertThrows(ApiException.class,()->multiBrowse(outsider,kitchen,"","","","","-1"));
+    }
+
     @Test void searchRanksNamesBeforeIngredientsThenDescriptionAndPopularity() {
         String term="番茄";
         var exact=recipe("public");var popular=recipe("public");var favorite=recipe("public");var plain=recipe("public");var ingredient=recipe("public");var description=recipe("public");
@@ -753,7 +1034,7 @@ class FoundationIntegrationTest {
         assertEquals(1,workflows.browse(outsider,null,"discovery","all",name,"",null,null,false,"0",1,"日式").getTotal());
         assertEquals(1,workflows.browse(outsider,null,"discovery","all",name,"",null,null,false,"0",1,"region:china-eight").getTotal());
         mvc.perform(get("/api/recipes/cuisines/tree").header("Accept-Language","en"))
-            .andExpect(status().isOk()).andExpect(jsonPath("$.data[0].name").value("China"));
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data[0].name").value("Home-style"));
     }
 
     @Test void translatedSearchWithLargeCatalogCompletesWithoutDetailFanout() {

@@ -139,11 +139,13 @@
             <!-- 添加图片按钮 -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_add_image"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/ui_d0289db553"
                 android:textSize="15sp"
                 app:icon="@drawable/ic_add_circle"
+                android:insetTop="6dp" android:insetBottom="6dp"
+                android:paddingVertical="2dp"
                 app:iconGravity="textStart"
                 app:iconTint="@color/primary"
                 style="@style/Widget.Material3.Button.OutlinedButton" />
@@ -156,8 +158,10 @@
         android:id="@+id/btn_save"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:padding="16dp"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginVertical="4dp"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="2dp"
         android:text="@string/ui_be5fbbe34c"
         android:textColor="@color/on_primary"
         android:textSize="16sp" />

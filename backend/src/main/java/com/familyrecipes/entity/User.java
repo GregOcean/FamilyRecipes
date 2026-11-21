@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Data
 public class User {
     private Long id;
+    @com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.WRITE_ONLY)
     private String email;
     @com.fasterxml.jackson.annotation.JsonIgnore
     private String password;

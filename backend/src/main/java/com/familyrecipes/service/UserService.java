@@ -26,6 +26,7 @@ public class UserService {
 
     @Autowired
     private JwtUtil jwtUtil;
+    @Autowired private org.springframework.jdbc.core.JdbcTemplate db;
 
     /**
      * 用户注册
@@ -109,12 +110,14 @@ public class UserService {
     /**
      * 修改密码
      */
+    @org.springframework.transaction.annotation.Transactional
     public void changePassword(Long userId, String oldPassword, String newPassword) {
         User user = userMapper.findById(userId);
         if (!passwords.matches(oldPassword, user.getPassword())) {
             throw new com.familyrecipes.common.ApiException(400, "原密码错误");
         }
         userMapper.updatePassword(userId, hashPassword(newPassword));
+        db.update("INSERT INTO user_auth_version(user_id,version) VALUES(?,1) ON DUPLICATE KEY UPDATE version=version+1",userId);
     }
 
     /**

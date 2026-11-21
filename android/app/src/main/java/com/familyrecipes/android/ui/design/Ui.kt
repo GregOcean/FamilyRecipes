@@ -58,16 +58,24 @@ object Ui {
             textSize = size
             setTextColor(ink)
             if (bold) setTypeface(null, Typeface.BOLD)
-            setPadding(0, c.dp(8), 0, c.dp(8))
+            setPadding(0, c.dp(6), 0, c.dp(6))
         }
 
     fun button(c: Context, label: String, primary: Boolean = false, action: () -> Unit) =
         MaterialButton(c).apply {
             text = label
-            textSize = 16f
+            textSize = 15f
             isAllCaps = false
             minHeight = c.dp(48)
-            cornerRadius = c.dp(14)
+            minimumHeight = c.dp(48)
+            minWidth = 0
+            minimumWidth = 0
+            // A 36dp visual button inside a 48dp touch target; large text can grow vertically.
+            insetTop = c.dp(6)
+            insetBottom = c.dp(6)
+            cornerRadius = c.dp(10)
+            setPadding(c.dp(10), c.dp(2), c.dp(10), c.dp(2))
+            if (!primary) layoutParams = LinearLayout.LayoutParams(-2, -2)
             setTextColor(if (primary) onBlue else blue)
             backgroundTintList =
                 android.content.res.ColorStateList.valueOf(if (primary) blue else pale)
@@ -95,7 +103,7 @@ object Ui {
             hint = label
             setText(value)
             textSize = 17f
-            minHeight = c.dp(54)
+            minHeight = c.dp(48)
             setTextColor(ink)
             setHintTextColor(muted)
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
@@ -116,7 +124,7 @@ object Ui {
                     cornerRadius = c.dp(12).toFloat()
                     setStroke(c.dp(1), outline)
                 }
-            layoutParams = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = c.dp(12) }
+            layoutParams = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = c.dp(8) }
         }
 
     fun select(c: Context, items: List<String>, selected: Int = 0, change: (Int) -> Unit) =
@@ -151,13 +159,13 @@ object Ui {
         }
 
     fun card(c: Context) =
-        box(c).apply {
+        box(c,12).apply {
             background =
                 GradientDrawable().apply {
                     setColor(surface)
-                    cornerRadius = c.dp(18).toFloat()
+                    cornerRadius = c.dp(16).toFloat()
                 }
-            layoutParams = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = c.dp(12) }
+            layoutParams = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = c.dp(8) }
         }
 
     fun scroll(c: Context, box: View) =
@@ -168,39 +176,53 @@ object Ui {
 
     fun tile(c: Context, label: String, icon: Int, tint: Int = pale, action: () -> Unit): LinearLayout =
         card(c).apply {
-            setPadding(c.dp(16), c.dp(14), c.dp(16), c.dp(14))
-            background = GradientDrawable().apply { setColor(tint); cornerRadius=c.dp(18).toFloat() }
-            minimumHeight=c.dp(104)
+            orientation=LinearLayout.HORIZONTAL
+            gravity=android.view.Gravity.CENTER_VERTICAL
+            setPadding(c.dp(12), c.dp(10), c.dp(12), c.dp(10))
+            background = GradientDrawable().apply { setColor(tint); cornerRadius=c.dp(12).toFloat() }
+            minimumHeight=c.dp(56)
             val art=ImageView(c).apply { setImageResource(icon); importantForAccessibility=View.IMPORTANT_FOR_ACCESSIBILITY_NO }
-            addView(art, LinearLayout.LayoutParams(c.dp(30),c.dp(30)))
-            addView(text(c,label,18f,true))
+            addView(art, LinearLayout.LayoutParams(c.dp(24),c.dp(24)).apply{marginEnd=c.dp(8)})
+            addView(text(c,label,15f,true).apply{setPadding(0,0,0,0)},LinearLayout.LayoutParams(0,-2,1f))
             isFocusable=true; contentDescription=label
             setOnClickListener { action() }
         }
 
-    fun entry(c: Context, title: String, subtitle: String, icon: Int, action: () -> Unit): LinearLayout =
+    fun entry(c: Context, title: String, subtitle: String, icon: Int, iconTint: Int = blue, iconBackground: Int = pale, action: () -> Unit): LinearLayout =
         row(c).apply {
-            setPadding(c.dp(14),c.dp(12),c.dp(14),c.dp(12)); minimumHeight=c.dp(80)
+            setPadding(c.dp(10),c.dp(6),c.dp(10),c.dp(6)); minimumHeight=c.dp(56)
             background=GradientDrawable().apply{setColor(surface);cornerRadius=c.dp(18).toFloat()}
-            val art=ImageView(c).apply {setImageResource(icon);imageTintList=android.content.res.ColorStateList.valueOf(blue);setPadding(c.dp(10),c.dp(10),c.dp(10),c.dp(10));background=GradientDrawable().apply{setColor(pale);cornerRadius=c.dp(14).toFloat()}}
-            addView(art,LinearLayout.LayoutParams(c.dp(48),c.dp(48)))
+            val art=ImageView(c).apply {setImageResource(icon);imageTintList=android.content.res.ColorStateList.valueOf(iconTint);setPadding(c.dp(10),c.dp(10),c.dp(10),c.dp(10));background=GradientDrawable().apply{setColor(iconBackground);cornerRadius=c.dp(14).toFloat()}}
+            addView(art,LinearLayout.LayoutParams(c.dp(36),c.dp(36)))
             val words=box(c,0).apply {setBackgroundColor(Color.TRANSPARENT);setPadding(c.dp(12),0,c.dp(8),0)}
-            words.addView(text(c,title,18f,true).apply{setPadding(0,0,0,c.dp(4))})
-            words.addView(text(c,subtitle,14f).apply{setTextColor(muted);setPadding(0,0,0,0);maxLines=2;ellipsize=android.text.TextUtils.TruncateAt.END})
+            words.addView(text(c,title,16f,true).apply{setPadding(0,0,0,if(subtitle.isBlank())0 else c.dp(3))})
+            if(subtitle.isNotBlank()) words.addView(text(c,subtitle,14f).apply{setTextColor(muted);setPadding(0,0,0,0);maxLines=2;ellipsize=android.text.TextUtils.TruncateAt.END})
             addView(words,LinearLayout.LayoutParams(0,-2,1f));addView(text(c,"›",24f))
-            layoutParams=LinearLayout.LayoutParams(-1,-2).apply{bottomMargin=c.dp(10)}
+            layoutParams=LinearLayout.LayoutParams(-1,-2).apply{bottomMargin=c.dp(6)}
             isFocusable=true;setOnClickListener{action()}
         }
 
-    fun toast(c: Context, error: Throwable) =
-        Toast.makeText(c, error.message ?: UiStrings.s(com.familyrecipes.android.R.string.ui_915593a1d4), Toast.LENGTH_LONG).show()
+    fun errorMessage(c: Context, error: Throwable): String = when {
+        error is retrofit2.HttpException && error.code()==401 -> c.getString(com.familyrecipes.android.R.string.review_login_required)
+        error is retrofit2.HttpException && error.code()==403 -> c.getString(com.familyrecipes.android.R.string.review_access_denied)
+        error is retrofit2.HttpException && error.code()==404 -> c.getString(com.familyrecipes.android.R.string.review_not_found)
+        error is retrofit2.HttpException && error.code()==429 -> c.getString(com.familyrecipes.android.R.string.review_rate_limited)
+        error is java.net.SocketTimeoutException -> c.getString(com.familyrecipes.android.R.string.review_timeout)
+        error is java.io.IOException -> c.getString(com.familyrecipes.android.R.string.review_offline)
+        c.resources.configuration.locales[0].language=="en" -> c.getString(com.familyrecipes.android.R.string.review_request_failed)
+        else -> error.message ?: c.getString(com.familyrecipes.android.R.string.review_request_failed)
+    }
+
+    fun toast(c: Context, error: Throwable) = Toast.makeText(c,errorMessage(c,error),Toast.LENGTH_LONG).show()
 
     fun <T> data(r: Response<ApiResponse<T>>): T {
-        check(r.isSuccessful && r.body()?.code == 200) { ApiErrors.message(r, UiStrings.s(com.familyrecipes.android.R.string.ui_915593a1d4)) }
+        if(!r.isSuccessful) throw retrofit2.HttpException(r)
+        check(r.body()?.code == 200) { ApiErrors.message(r, UiStrings.s(com.familyrecipes.android.R.string.ui_915593a1d4)) }
         return requireNotNull(r.body()?.data) { UiStrings.s(com.familyrecipes.android.R.string.ui_eb719e385c) }
     }
 
     fun ok(r: Response<out ApiResponse<*>>) {
-        check(r.isSuccessful && r.body()?.code == 200) { ApiErrors.message(r, UiStrings.s(com.familyrecipes.android.R.string.ui_915593a1d4)) }
+        if(!r.isSuccessful) throw retrofit2.HttpException(r)
+        check(r.body()?.code == 200) { ApiErrors.message(r, UiStrings.s(com.familyrecipes.android.R.string.ui_915593a1d4)) }
     }
 }

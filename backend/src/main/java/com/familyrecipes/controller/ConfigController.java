@@ -18,6 +18,12 @@ import java.util.Map;
 @RequestMapping("/api/config")
 public class ConfigController {
     
+    @Autowired private org.springframework.jdbc.core.JdbcTemplate db;
+    @GetMapping("/catalog-summary")
+    public Result<Map<String,Long>> catalogSummary() {
+        return Result.success(Map.of("publicRecipes",db.queryForObject("SELECT COUNT(*) FROM recipe WHERE visibility='public'",Long.class)));
+    }
+
     @Autowired
     private ConfigService configService;
     

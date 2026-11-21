@@ -13,6 +13,8 @@ import com.familyrecipes.android.data.local.*
 import com.familyrecipes.android.data.model.*
 import com.familyrecipes.android.data.remote.ApiClient
 import com.familyrecipes.android.ui.design.Ui
+import com.familyrecipes.android.ui.design.Ui.dp
+import com.familyrecipes.android.R
 import com.familyrecipes.android.ui.recipe.RecipePickerActivity
 import com.google.gson.Gson
 import kotlinx.coroutines.*
@@ -29,6 +31,7 @@ class MealEditorActivity : AppCompatActivity() {
     private var ready = false
     private var busy = false
     private var saved = false
+    private var hasDraft=false
     private lateinit var model: MealArrangement
     private val picker =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
@@ -38,9 +41,13 @@ class MealEditorActivity : AppCompatActivity() {
                         .fromJson(r.data?.getStringExtra("dishes"), Array<MealDish>::class.java)
                         .orEmpty()
                         .toList()
-                model=model.copy(dishes=MealDefaults.mergeDishes(model.dishes,added))
-                renderDishes()
-                draft()
+                lifecycleScope.launch {
+                    while(!ready)delay(25)
+                    saved=false
+                    model=model.copy(dishes=MealDefaults.mergeDishes(model.dishes,added))
+                    renderDishes()
+                    draft()
+                }
             }
         }
 
@@ -65,6 +72,7 @@ class MealEditorActivity : AppCompatActivity() {
             try {
                 DraftWrites.flush()
                 val stored = LocalStore.instance.records().get(account, "draft", key)
+                hasDraft=stored!=null
                 model =
                     if (stored != null) Gson().fromJson(stored, MealArrangement::class.java)
                     else if (id != null) Ui.data(ApiClient.getService().meal(id)) else model
@@ -90,7 +98,7 @@ class MealEditorActivity : AppCompatActivity() {
                 throw e
             } catch (e: Exception) {
                 root.removeAllViews()
-                root.addView(Ui.text(this@MealEditorActivity, e.message ?: UiStrings.s(com.familyrecipes.android.R.string.ui_866b795eae)))
+                root.addView(Ui.text(this@MealEditorActivity, Ui.errorMessage(this@MealEditorActivity,e)))
                 root.addView(Ui.back(this@MealEditorActivity) { finish() })
             }
         }
@@ -104,8 +112,10 @@ class MealEditorActivity : AppCompatActivity() {
     private fun draw() {
         ready = false
         root.removeAllViews()
-        root.addView(Ui.back(this) { finish() })
-        root.addView(Ui.text(this, if (model.kind == "prep") UiStrings.s(com.familyrecipes.android.R.string.ui_90e2746c75) else UiStrings.s(com.familyrecipes.android.R.string.ui_d85522beda), 24f, true))
+        val heading=Ui.row(this)
+        heading.addView(Ui.back(this){finish()})
+        heading.addView(Ui.text(this,if(model.kind=="prep")getString(R.string.ui_90e2746c75) else getString(R.string.ui_d85522beda),22f,true))
+        root.addView(heading)
         val editable = model.ownerId == null || model.ownerId == PreferenceManager.userId
         title = Ui.field(this, UiStrings.s(com.familyrecipes.android.R.string.ui_8ee9f276a6), model.title)
         root.addView(title)
@@ -119,7 +129,7 @@ class MealEditorActivity : AppCompatActivity() {
             dialog.setOnShowListener {dialog.getButton(-1).setOnClickListener {
                 val name=input.text.toString().trim()
                 if(name.isBlank()){input.error=getString(com.familyrecipes.android.R.string.meal_dish_name);return@setOnClickListener}
-                model=model.copy(dishes=model.dishes+MealDish(name=name));renderDishes();draft();dialog.dismiss()
+                saved=false;model=model.copy(dishes=model.dishes+MealDish(name=name));renderDishes();draft();dialog.dismiss()
             }};dialog.show()
         })
         val choose =
@@ -127,13 +137,24 @@ class MealEditorActivity : AppCompatActivity() {
                 picker.launch(Intent(this, RecipePickerActivity::class.java))
             }
         root.addView(choose)
-        date = Ui.field(this, UiStrings.s(com.familyrecipes.android.R.string.ui_f0f2a7ce59), model.mealDate.orEmpty())
+        date = Ui.field(this, getString(R.string.review_date_hint), model.mealDate.orEmpty()).apply {
+            isFocusable=false
+            setOnClickListener {
+                val current=runCatching{java.time.LocalDate.parse(text.toString())}.getOrDefault(java.time.LocalDate.now())
+                val picker=android.app.DatePickerDialog(this@MealEditorActivity,{_,year,month,day->
+                    setText(java.time.LocalDate.of(year,month+1,day).toString())
+                },current.year,current.monthValue-1,current.dayOfMonth)
+                picker.setButton(android.content.DialogInterface.BUTTON_NEUTRAL,getString(R.string.review_clear_date)){_,_->setText("")}
+                picker.show()
+            }
+        }
         root.addView(date)
         meal = model.meal.orEmpty()
         val meals = listOf(UiStrings.s(com.familyrecipes.android.R.string.ui_7dc2d8a222), "早餐", "午餐", "晚餐", "加餐")
         val select =
             Ui.select(this, meals.map{UiStrings.domain(it)}, meals.indexOf(meal).coerceAtLeast(0)) {
                 meal = if (it == 0) "" else meals[it]
+                if(ready)saved=false
                 draft()
             }
         root.addView(select)
@@ -149,6 +170,7 @@ class MealEditorActivity : AppCompatActivity() {
                         isChecked = item.done
                         isEnabled = editable
                         setOnCheckedChangeListener { _, v ->
+                            saved=false
                             model =
                                 model.copy(
                                     shopping =
@@ -162,7 +184,7 @@ class MealEditorActivity : AppCompatActivity() {
         }
         listOf(title, date, shopping).forEach {
             it.isEnabled = editable
-            it.doAfterTextChanged { draft() }
+            it.doAfterTextChanged { if(ready && !busy)saved=false;draft() }
         }
         choose.isEnabled = editable
         select.isEnabled = editable
@@ -193,31 +215,47 @@ class MealEditorActivity : AppCompatActivity() {
     private fun renderDishes() {
         dishList.removeAllViews()
         val editable=model.ownerId==null || model.ownerId==PreferenceManager.userId
-        if(model.dishes.isEmpty())dishList.addView(Ui.text(this,getString(com.familyrecipes.android.R.string.meal_dishes_empty)))
+        if(model.dishes.isEmpty())dishList.addView(Ui.text(this,getString(R.string.meal_dishes_empty)))
         model.dishes.forEachIndexed { index,dish ->
             val card=Ui.card(this)
-            card.addView(Ui.text(this,"${index+1}. ${dish.name}",18f,true))
-            card.addView(Ui.text(this,getString(if(dish.recipeId!=null)com.familyrecipes.android.R.string.meal_recipe_linked else com.familyrecipes.android.R.string.meal_manual_dish),14f))
-            val actions=Ui.row(this)
-            if(dish.recipeId!=null)actions.addView(Ui.button(this,getString(com.familyrecipes.android.R.string.meal_open_recipe)) {
-                startActivity(Intent(this,com.familyrecipes.android.ui.recipe.RecipeDetailActivity::class.java).putExtra("recipe_id",dish.recipeId))
-            },LinearLayout.LayoutParams(0,-2,1f))
-            if(editable) {
-                actions.addView(Ui.button(this,getString(com.familyrecipes.android.R.string.meal_rename_dish)) {
-                    val input=Ui.field(this,getString(com.familyrecipes.android.R.string.meal_dish_name),dish.name)
-                    val dialog=androidx.appcompat.app.AlertDialog.Builder(this).setTitle(com.familyrecipes.android.R.string.meal_rename_dish)
-                        .setView(input).setNegativeButton(android.R.string.cancel,null).setPositiveButton(android.R.string.ok,null).create()
-                    dialog.setOnShowListener {dialog.getButton(-1).setOnClickListener {
-                        val name=input.text.toString().trim()
-                        if(name.isBlank()){input.error=getString(com.familyrecipes.android.R.string.meal_dish_name);return@setOnClickListener}
-                        model=model.copy(dishes=model.dishes.mapIndexed { i,d->if(i==index)d.copy(name=name) else d });renderDishes();draft();dialog.dismiss()
-                    }};dialog.show()
-                },LinearLayout.LayoutParams(0,-2,1f))
-                actions.addView(Ui.button(this,getString(com.familyrecipes.android.R.string.meal_remove_dish)) {
-                    model=model.copy(dishes=model.dishes.filterIndexed { i,_->i!=index });renderDishes();draft()
-                },LinearLayout.LayoutParams(0,-2,1f))
+            val row=Ui.row(this)
+            val info=Ui.box(this,0).apply{setBackgroundColor(android.graphics.Color.TRANSPARENT)}
+            info.addView(Ui.text(this,"${index+1}. ${dish.name}",18f,true))
+            info.addView(Ui.text(this,getString(if(dish.recipeId!=null)R.string.meal_recipe_linked else R.string.meal_manual_dish),14f).apply{setTextColor(Ui.muted)})
+            row.addView(info,LinearLayout.LayoutParams(0,-2,1f))
+            fun openRecipe(){startActivity(Intent(this,com.familyrecipes.android.ui.recipe.RecipeDetailActivity::class.java).putExtra("recipe_id",dish.recipeId))}
+            fun rename(){
+                val input=Ui.field(this,getString(R.string.meal_dish_name),dish.name)
+                val dialog=androidx.appcompat.app.AlertDialog.Builder(this).setTitle(R.string.meal_rename_dish)
+                    .setView(input).setNegativeButton(android.R.string.cancel,null).setPositiveButton(android.R.string.ok,null).create()
+                dialog.setOnShowListener {dialog.getButton(-1).setOnClickListener {
+                    val name=input.text.toString().trim()
+                    if(name.isBlank()){input.error=getString(R.string.meal_dish_name);return@setOnClickListener}
+                    model=model.copy(dishes=model.dishes.mapIndexed { i,d->if(i==index)d.copy(name=name) else d })
+                    saved=false;renderDishes();draft();dialog.dismiss()
+                }};dialog.show()
             }
-            card.addView(actions);dishList.addView(card)
+            if(dish.recipeId!=null){card.isFocusable=true;card.setOnClickListener{openRecipe()}}
+            if(editable) {
+                val more=androidx.appcompat.widget.AppCompatImageButton(this).apply {
+                    setImageResource(R.drawable.ic_more_vert);imageTintList=android.content.res.ColorStateList.valueOf(Ui.blue)
+                    setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                    contentDescription=getString(R.string.review_meal_edit_dish)+": "+dish.name
+                    setPadding(dp(12),dp(12),dp(12),dp(12))
+                    setOnClickListener {anchor->PopupMenu(this@MealEditorActivity,anchor).apply {
+                        if(dish.recipeId!=null)menu.add(0,0,0,R.string.meal_open_recipe)
+                        menu.add(0,1,1,R.string.meal_rename_dish)
+                        menu.add(0,2,2,R.string.meal_remove_dish)
+                        setOnMenuItemClickListener {item->when(item.itemId){
+                            0->openRecipe()
+                            1->rename()
+                            2->{model=model.copy(dishes=model.dishes.filterIndexed { i,_->i!=index });saved=false;renderDishes();draft()}
+                        };true};show()
+                    }}
+                }
+                row.addView(more,LinearLayout.LayoutParams(dp(48),dp(48)))
+            } else if(dish.recipeId!=null)row.addView(Ui.text(this,"›",24f))
+            card.addView(row);dishList.addView(card)
         }
     }
 
@@ -237,12 +275,12 @@ class MealEditorActivity : AppCompatActivity() {
                     .map { n -> model.shopping.find { it.name == n } ?: ShoppingItem(n) })
 
     private fun draft() {
-        if (ready && title.text.isBlank() && model.dishes.isEmpty()) return
+        if (ready && !hasDraft && title.text.isBlank() && model.dishes.isEmpty() && shopping.text.isBlank()) return
         if (ready &&
             !saved &&
             !busy &&
             (model.ownerId == null || model.ownerId == PreferenceManager.userId))
-            DraftWrites.put(account, key, Gson().toJson(value()))
+            {hasDraft=true;DraftWrites.put(account, key, Gson().toJson(value()))}
     }
 
     override fun onStop() {
@@ -264,7 +302,7 @@ class MealEditorActivity : AppCompatActivity() {
                 val extra = mutableListOf<String>()
                 for (d in snapshot.dishes) {
                     d.recipeId?.let { id ->
-                        Ui.data(ApiClient.getService().getRecipeDetail(id, original = true))
+                        Ui.data(ApiClient.getService().getRecipeDetail(id))
                             .ingredients
                             .orEmpty()
                             .filter { it.ingredientId !in stock }
@@ -288,6 +326,7 @@ class MealEditorActivity : AppCompatActivity() {
                 Ui.toast(this@MealEditorActivity, e)
             } finally {
                 busy = false
+                saved=false
                 draft()
             }
         }
@@ -321,6 +360,9 @@ class MealEditorActivity : AppCompatActivity() {
                 model = result
                 saved = true
                 DraftWrites.clear(account, key)
+                hasDraft=false
+                key="meal:${result.id}"
+                setResult(RESULT_OK)
                 if (share) share(result)
                 else {
                     Toast.makeText(this@MealEditorActivity, UiStrings.s(com.familyrecipes.android.R.string.ui_f8dfedcd8a), Toast.LENGTH_SHORT).show()
@@ -339,7 +381,12 @@ class MealEditorActivity : AppCompatActivity() {
 
     private suspend fun share(m: MealArrangement) {
         val groups = Ui.data(ApiClient.getService().getGroupsList())
+        if(groups.isEmpty()) {
+            Toast.makeText(this,getString(R.string.review_saved_no_group),Toast.LENGTH_LONG).show()
+            finish();return
+        }
         androidx.appcompat.app.AlertDialog.Builder(this)
+            .setOnCancelListener { saved=false }
             .setTitle(UiStrings.s(com.familyrecipes.android.R.string.ui_c809061b3c))
             .setItems(groups.map { it.name }.toTypedArray()) { _, index ->
                 lifecycleScope.launch {

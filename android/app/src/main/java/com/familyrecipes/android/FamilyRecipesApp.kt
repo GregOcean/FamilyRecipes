@@ -57,7 +57,7 @@ class FamilyRecipesApp : Application() {
             PeriodicWorkRequestBuilder<com.familyrecipes.android.worker.ChatSyncWorker>(15,TimeUnit.MINUTES)
                 .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()).build())
         if(Build.VERSION.SDK_INT>=26) getSystemService(NotificationManager::class.java).createNotificationChannel(
-            NotificationChannel("family_messages","家庭消息",NotificationManager.IMPORTANCE_DEFAULT))
+            NotificationChannel("family_messages",getString(R.string.channel_messages),NotificationManager.IMPORTANCE_DEFAULT))
     }
     
     /**
@@ -82,10 +82,10 @@ class FamilyRecipesApp : Application() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 NOTIFICATION_CHANNEL_ID,
-                NOTIFICATION_CHANNEL_NAME,
+                getString(R.string.channel_expiry),
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
-                description = "用于提醒冰箱中即将过期的食材"
+                description = getString(R.string.channel_expiry_description)
                 enableVibration(false)
             }
             

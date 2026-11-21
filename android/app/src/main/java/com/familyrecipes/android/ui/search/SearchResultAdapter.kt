@@ -72,6 +72,7 @@ class SearchResultAdapter(
                     .centerCrop()
                     .into(binding.ivRecipeCover)
             } else {
+                Glide.with(binding.root.context).clear(binding.ivRecipeCover)
                 binding.ivRecipeCover.setImageResource(R.drawable.ic_recipe)
             }
 
@@ -82,7 +83,7 @@ class SearchResultAdapter(
                 "hard" -> "困难"
                 else -> UiStrings.s(com.familyrecipes.android.R.string.ui_1622dc9b6b)
             }
-            binding.tvDifficulty.text = difficultyText
+            binding.tvDifficulty.text = UiStrings.domain(difficultyText)
             binding.tvCookTime.text = item.cookTime?.let { UiStrings.f(com.familyrecipes.android.R.string.minutes_value, it) } ?: UiStrings.s(com.familyrecipes.android.R.string.ui_1622dc9b6b)
 
             binding.root.setOnClickListener { onClick(item) }
@@ -94,18 +95,10 @@ class SearchResultAdapter(
 
         fun bind(item: SearchItem, onClick: (SearchItem) -> Unit) {
             binding.tvIngredientName.text = item.name
-            binding.tvIngredientCategory.text = item.category ?: "其他"
+            binding.tvIngredientCategory.text = item.category?.let{UiStrings.domain(it)} ?: UiStrings.s(R.string.review_other_photo)
 
-            // 根据分类显示不同的图标
-            val iconRes = when (item.category) {
-                "肉类" -> R.drawable.ic_food
-                "蔬菜" -> R.drawable.ic_food
-                "水果" -> R.drawable.ic_food
-                "海鲜水产" -> R.drawable.ic_food
-                else -> R.drawable.ic_food
-            }
-            binding.ivIngredientIcon.setImageResource(iconRes)
-
+            binding.ivIngredientIcon.imageTintList=null
+            binding.ivIngredientIcon.setImageDrawable(com.familyrecipes.android.util.IngredientIcon.drawable(item.name,item.category.orEmpty()))
             binding.root.setOnClickListener { onClick(item) }
         }
     }

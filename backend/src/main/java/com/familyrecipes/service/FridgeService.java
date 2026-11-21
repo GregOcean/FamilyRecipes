@@ -22,6 +22,8 @@ import java.util.List;
 public class FridgeService {
 
     @Autowired private java.time.Clock clock;
+    @Autowired private org.springframework.jdbc.core.JdbcTemplate db;
+    @Autowired private IngredientResolutionService resolution;
 
     private static final Logger log = LoggerFactory.getLogger(FridgeService.class);
 
@@ -52,9 +54,20 @@ public class FridgeService {
      */
     @Transactional
     public FridgeItem addItem(FridgeItem item) {
+        validateItemFields(item);
         validateCategoryOverride(item);
         kitchens.validateReservedFor(kitchens.requireMember(item.getKitchenId(), item.getUserId()), item.getOwnerUserId());
-        if (item.getExpiryDate() == null) throw new com.familyrecipes.common.ApiException(400, "过期日期不能为空");
+        if(item.getDisplayName()!=null && item.getDisplayName().length()>100) throw new com.familyrecipes.common.ApiException(400,"商品名过长 / Product name too long");
+        if(item.getClientMutationId()!=null) {
+            try {java.util.UUID.fromString(item.getClientMutationId());}catch(IllegalArgumentException e){throw new com.familyrecipes.common.ApiException(400,"Invalid request ID");}
+            db.queryForObject("SELECT id FROM user WHERE id=? FOR UPDATE",Long.class,item.getUserId());
+            FridgeItem previous=fridgeItemMapper.findByMutation(item.getUserId(),item.getClientMutationId());
+            if(previous!=null) {
+                if(!java.util.Objects.equals(previous.getKitchenId(),item.getKitchenId()) || !java.util.Objects.equals(previous.getIngredientId(),item.getIngredientId()) || !java.util.Objects.equals(previous.getAmount(),item.getAmount()) || !java.util.Objects.equals(previous.getExpiryDate(),item.getExpiryDate()) || !java.util.Objects.equals(previous.getStorageLocation(),item.getStorageLocation()) || !java.util.Objects.equals(previous.getDisplayName(),item.getDisplayName()) || !java.util.Objects.equals(previous.getOwnerUserId(),item.getOwnerUserId()) || !java.util.Objects.equals(previous.getCategoryOverrideId(),item.getCategoryOverrideId()) || !java.util.Objects.equals(previous.getImageUrl(),item.getImageUrl()) || !java.util.Objects.equals(previous.getNotes(),item.getNotes()) || !java.util.Objects.equals(previous.getPurchaseDate(),item.getPurchaseDate()))
+                    throw new com.familyrecipes.common.ApiException(409,"请求内容已改变 / Retry payload changed");
+                return previous;
+            }
+        }
         media.requireOwned(item.getImageUrl(), item.getUserId());
         log.info("用户ID: {}", item.getUserId());
         log.info("食材ID: {}", item.getIngredientId());
@@ -97,16 +110,25 @@ public class FridgeService {
     public FridgeItem updateItem(FridgeItem item) {
         FridgeItem previous = requireOwner(item.getId(), item.getUserId());
         item.setKitchenId(previous.getKitchenId());
+        validateItemFields(item);
         validateCategoryOverride(item);
         kitchens.validateReservedFor(kitchens.requireMember(item.getKitchenId(), item.getUserId()), item.getOwnerUserId());
         if (!java.util.Objects.equals(previous.getImageUrl(), item.getImageUrl())) media.requireOwned(item.getImageUrl(), item.getUserId());
-        if (item.getExpiryDate() == null) throw new com.familyrecipes.common.ApiException(400, "过期日期不能为空");
+        if(item.getDisplayName()!=null && item.getDisplayName().length()>100) throw new com.familyrecipes.common.ApiException(400,"商品名过长 / Product name too long");
         if (fridgeItemMapper.update(item) != 1) throw new com.familyrecipes.common.ApiException(404, "食材不存在");
         updateExpiryStatus(item.getKitchenId());
         media.retireIfUnlinked(previous.getImageUrl());
         return fridgeItemMapper.findById(item.getId());
     }
 
+    private void validateItemFields(FridgeItem item) {
+        if(item.getAmount()!=null&&item.getAmount().length()>50 || item.getNotes()!=null&&item.getNotes().length()>255 || item.getStorageLocation()!=null&&item.getStorageLocation().length()>50)
+            throw new com.familyrecipes.common.ApiException(400,"数量或备注过长 / Quantity or notes are too long");
+        if(item.getStorageLocation()!=null) {
+            String canonical=IngredientShelfLife.storage(item.getStorageLocation());
+            if(canonical!=null)item.setStorageLocation(canonical);
+        }
+    }
     private void validateCategoryOverride(FridgeItem item) {
         if (item.getCategoryOverrideId() != null && categoryService.getCategoryById(item.getCategoryOverrideId()) == null)
             throw new com.familyrecipes.common.ApiException(400,"请选择有效分类");
@@ -206,9 +228,9 @@ public class FridgeService {
 
     public Ingredient previewIngredient(String rawName) {
         String name = validateIngredientName(rawName);
-        Ingredient existing = ingredientMapper.findByName(name);
+        Ingredient existing = resolution.match(name,null);
         if (existing != null) return existing;
-        Ingredient draft = new Ingredient(); draft.setName(name);
+        Ingredient draft = new Ingredient(); draft.setName(name); draft.setCatalog(false);
         draft.setCategoryId(categoryService.smartMatchCategory(name));
         draft.setCategory(categoryService.getCategoryById(draft.getCategoryId()).getName());
         return draft;
@@ -225,26 +247,8 @@ public class FridgeService {
         name = validateIngredientName(name);
         log.info("--- 开始获取或创建食材: {} ---", name);
         
-        Ingredient ingredient = ingredientMapper.findByName(name);
-        
-        if (ingredient == null) {
-            log.info("食材不存在，创建新食材...");
-            ingredient = new Ingredient();
-            ingredient.setName(name);
-            Long selected = categoryId == null ? categoryService.smartMatchCategory(name) : categoryId;
-            var classification = categoryService.getCategoryById(selected);
-            if (classification == null) throw new com.familyrecipes.common.ApiException(400,"请选择有效分类");
-            ingredient.setCategory(classification.getName());
-            ingredient.setCategoryId(selected);
-            ingredientMapper.insert(ingredient);
-            log.info("✅ 食材已创建，ID: {}, 名称: {}, 分类: {}", 
-                ingredient.getId(), 
-                ingredient.getName(), 
-                ingredient.getCategory());
-        } else {
-            log.info("✅ 食材已存在，ID: {}, 名称: {}", ingredient.getId(), ingredient.getName());
-        }
-        
+        Ingredient ingredient = resolution.match(name,null);
+        if(ingredient==null) ingredient=resolution.unresolved(name,categoryId);
         return ingredient;
     }
 }

@@ -66,16 +66,11 @@ object QRCodeUtil {
      * 解析用户名片二维码
      */
     fun parseUserCardContent(content: String): Long? {
-        if (!content.startsWith("familyrecipes://add_friend")) {
-            return null
-        }
-        
         return try {
             val uri = android.net.Uri.parse(content)
-            uri.getQueryParameter("userId")?.toLongOrNull()
-        } catch (e: Exception) {
-            null
-        }
+            if (uri.scheme != "familyrecipes" || uri.host != "add_friend" || !uri.path.isNullOrEmpty() || uri.fragment != null || uri.port != -1 || uri.userInfo != null || uri.queryParameterNames != setOf("userId") || uri.getQueryParameters("userId").size != 1) null
+            else uri.getQueryParameter("userId")?.toLongOrNull()?.takeIf { it > 0 }
+        } catch (_: Exception) { null }
     }
 }
 

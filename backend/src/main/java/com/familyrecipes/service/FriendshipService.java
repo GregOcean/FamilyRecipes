@@ -31,7 +31,11 @@ public class FriendshipService {
         String q=query==null?"":query.trim();
         if(q.isBlank() || q.length()>50) throw new com.familyrecipes.common.ApiException(400,"请输入完整用户名或用户ID");
         Long id=null;try{id=Long.valueOf(q);}catch(NumberFormatException ignored){}
-        return db.queryForList("SELECT id,username,avatar FROM user WHERE id<>? AND (id=? OR username=?) LIMIT 20",user,id,q);
+        return db.queryForList("SELECT u.id,u.username,u.avatar,CASE " +
+            "WHEN EXISTS(SELECT 1 FROM friendship f WHERE f.user_id=? AND f.friend_id=u.id AND f.status='accepted') THEN 'accepted' " +
+            "WHEN EXISTS(SELECT 1 FROM friendship f WHERE f.user_id=? AND f.friend_id=u.id AND f.status='pending') THEN 'outgoing' " +
+            "WHEN EXISTS(SELECT 1 FROM friendship f WHERE f.user_id=u.id AND f.friend_id=? AND f.status='pending') THEN 'incoming' " +
+            "ELSE 'none' END AS relationship FROM user u WHERE u.id<>? AND (u.id=? OR u.username=?) LIMIT 20",user,user,user,user,id,q);
     }
     public List<java.util.Map<String,Object>> invitations(Long user) {
         return db.queryForList("SELECT f.id,f.user_id AS sender_id,f.friend_id AS recipient_id,u.username,u.avatar FROM friendship f JOIN user u ON u.id=CASE WHEN f.user_id=? THEN f.friend_id ELSE f.user_id END WHERE (f.friend_id=? OR f.user_id=?) AND f.status='pending' ORDER BY f.id DESC LIMIT 100",user,user,user);
@@ -61,6 +65,13 @@ public class FriendshipService {
 
     }
     
+    @Transactional
+    public void cancelInvitation(Long user,Long recipient) {
+        lockPair(user,recipient);
+        if(db.update("DELETE FROM friendship WHERE user_id=? AND friend_id=? AND status='pending'",user,recipient)!=1)
+            throw new com.familyrecipes.common.ApiException(409,"邀请已处理，请刷新好友列表");
+    }
+
     /**
      * 获取好友列表
      */
@@ -73,6 +84,7 @@ public class FriendshipService {
      */
     @Transactional
     public void deleteFriend(Long userId, Long friendId) {
+        lockPair(userId,friendId);
         friendshipMapper.deleteFriendship(userId, friendId);
         friendshipMapper.deleteFriendship(friendId, userId);
         log.info("用户{}删除好友{}", userId, friendId);
@@ -82,7 +94,9 @@ public class FriendshipService {
      * 更新好友备注
      */
     public void updateNickname(Long userId, Long friendId, String nickname) {
-        friendshipMapper.updateNickname(userId, friendId, nickname);
+        if(nickname!=null && nickname.length()>50) throw new com.familyrecipes.common.ApiException(400,"备注最多50字符");
+        if(!isFriend(userId,friendId)) throw new com.familyrecipes.common.ApiException(404,"好友关系不存在");
+        friendshipMapper.updateNickname(userId, friendId, nickname==null?null:nickname.trim());
         log.info("用户{}更新好友{}备注为: {}", userId, friendId, nickname);
     }
     

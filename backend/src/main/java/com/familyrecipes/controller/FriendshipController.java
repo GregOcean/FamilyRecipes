@@ -35,6 +35,10 @@ public class FriendshipController {
         if(!body.containsKey("accept") || body.get("accept")==null) throw new com.familyrecipes.common.ApiException(400,"请选择接受或拒绝");
         friendshipService.respond((Long)r.getAttribute("userId"),sender,body.get("accept"));return Result.success();
     }
+    @DeleteMapping("/invitations/{recipient}")
+    public Result<Void> cancelInvitation(@PathVariable Long recipient,HttpServletRequest r) {
+        friendshipService.cancelInvitation((Long)r.getAttribute("userId"),recipient);return Result.success();
+    }
     /**
      * 添加好友
      */

@@ -64,7 +64,13 @@ public class MediaService {
         return baseUrl+name;
     }
     public void requireOwned(String url, Long userId) {
-        if (url == null || !url.contains("/api/upload/files/")) return;
+        if (url == null || url.isBlank()) return;
+        try {
+            var uri=java.net.URI.create(url);
+            if(!("https".equalsIgnoreCase(uri.getScheme()) || "http".equalsIgnoreCase(uri.getScheme())) || uri.getHost()==null || uri.getUserInfo()!=null)
+                throw new IllegalArgumentException();
+        } catch(IllegalArgumentException e) { throw new ApiException(400,"图片地址必须是已上传的图片或HTTP/HTTPS地址"); }
+        if (!url.contains("/api/upload/files/")) return;
         if (!url.startsWith(baseUrl)) throw new ApiException(400, "本地图片地址不合法");
         String name = url.substring(baseUrl.length());
         if (!userId.equals(mapper.owner(name))) throw new ApiException(400, "不能引用其他用户上传的图片");

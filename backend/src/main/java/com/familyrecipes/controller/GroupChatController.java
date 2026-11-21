@@ -191,6 +191,12 @@ public class GroupChatController {
         }
     }
     
+    @PostMapping("/{groupId}/transfer")
+    public Result<Void> transfer(@PathVariable Long groupId,@RequestBody Map<String,Long> body,HttpServletRequest request) {
+        groupChatService.transferManager(groupId,(Long)request.getAttribute("userId"),body.get("userId"));
+        return Result.success();
+    }
+
     @Data
     static class CreateGroupRequest {
         private String name;

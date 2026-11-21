@@ -12,8 +12,8 @@ public class ReceiptController {
     private final ReceiptService receipts;
     public ReceiptController(ReceiptService receipts){this.receipts=receipts;}
     @PostMapping(value="/recognize",consumes="multipart/form-data")
-    public Result<List<ReceiptService.Item>> recognize(@RequestParam Long kitchenId,@RequestPart("image") MultipartFile image,HttpServletRequest r){
-        return Result.success(receipts.recognize((Long)r.getAttribute("userId"),kitchenId,image));
+    public Result<List<ReceiptService.Item>> recognize(@RequestParam Long kitchenId,@RequestPart("image") MultipartFile image,@RequestParam(defaultValue="receipt") String mode,HttpServletRequest r){
+        return Result.success(receipts.recognize((Long)r.getAttribute("userId"),kitchenId,image,mode));
     }
     @PostMapping("/import")
     public Result<Integer> save(@RequestBody ReceiptService.SaveRequest request,HttpServletRequest r)throws Exception{

@@ -1,0 +1,13 @@
+<resources>
+<string name="session_expired">登录已过期，请重新登录。草稿和待发消息已保留。</string>
+<string name="login_required_short">登录后即可继续此操作</string>
+<string name="login_for_reminders">登录后设置食材提醒</string>
+<string name="kitchen_retry_message">暂时无法加载厨房。操作已保留，可重试后继续。</string>
+<string name="scan_choose_title">扫描什么？</string>
+<string name="scan_friend">好友二维码</string>
+<string name="scan_receipt">购物小票</string>
+<string name="scan_food">食品与包装</string>
+<string name="channel_messages">消息通知</string>
+<string name="channel_expiry">食材到期提醒</string>
+<string name="channel_expiry_description">提醒库存中即将到期的食材</string>
+</resources>

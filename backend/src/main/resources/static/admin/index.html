@@ -1,0 +1,18 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>家肴 · 管理后台</title><link rel="stylesheet" href="/admin/style.css"><script src="/admin/admin.js" defer></script></head><body>
+<header><strong><span class="brand-mark">家</span> 家肴 <small>Operations</small></strong><div class="header-actions"><span id="refreshState">实时运行看板</span><button id="logout" hidden>退出登录</button></div></header>
+<main><section id="login" class="card narrow"><h1>管理员登录</h1><p>使用 App 中的管理员账号。</p><form id="loginForm"><label>邮箱<input id="email" type="email" autocomplete="username" required></label><label>密码<input id="password" type="password" autocomplete="current-password" required></label><button>登录</button><a href="/reset-password.html">忘记密码？</a></form></section>
+<div id="app" hidden><nav aria-label="后台导航"><span class="nav-label">工作空间</span><button data-tab="monitor">服务监控</button><button data-tab="recipes">菜谱内容</button><button data-tab="jobs">补充任务</button><span class="nav-note">单机 · 实时采样<br>不保存监控历史</span></nav><div class="workspace">
+<section id="recipes" class="card"><h1>补充图片与教程</h1><p>选择最多30道初始化菜谱。搜索只生成候选，确认后才入库。使用搜索 API，不调用 LLM；每批最多120次搜索请求。</p>
+<form id="searchForm" class="row"><input id="query" placeholder="搜索菜名（中英文）" aria-label="搜索菜名"><label class="inline"><input id="missing" type="checkbox">仅缺封面或不足2条链接</label><button>搜索</button></form>
+<div class="row"><button id="selectPage">选择本页</button><button id="clear">清空选择</button><span id="selection">已选0道</span><button id="create">开始补充</button></div><div class="table-scroll"><table><thead><tr><th>选择</th><th>菜谱</th><th>封面</th><th>外链</th></tr></thead><tbody id="recipeRows"></tbody></table></div><div class="row"><button id="prev">上一页</button><span id="page"></span><button id="next">下一页</button></div></section>
+<section id="jobs" class="card" hidden><div class="row"><h1>补充任务</h1><button id="refreshJobs">刷新</button></div><p>页面每10秒刷新。暂停或重启后可继续，已完成结果和请求缓存保留。每道菜最多尝试3次。</p><div id="jobRows"></div><div id="review"></div></section>
+<section id="monitor" hidden>
+<div class="page-heading"><div><span class="eyebrow">LIVE OVERVIEW</span><h1>服务监控</h1><p>实时观察应用与服务器状态</p></div><div class="row"><label class="inline"><input type="checkbox" id="autoRefresh" checked>自动刷新</label><select id="refreshInterval" aria-label="刷新间隔"><option value="5000">5 秒</option><option value="10000">10 秒</option><option value="30000">30 秒</option></select><button id="refreshMonitor">立即刷新</button></div></div>
+<div id="monitorError" role="alert" hidden></div><p id="observedAt" class="muted">等待首次采样</p>
+<div class="section-heading"><h2>机器硬件</h2><span>CPU · 内存 · 磁盘 · 网络</span></div><div id="hardwareMetrics" class="grid metrics-grid"></div>
+<div class="section-heading"><h2>应用健康度</h2><span>当前 Java 实例</span></div><div id="applicationMetrics" class="grid metrics-grid"></div>
+<div class="section-heading"><h2>应用流量</h2><span>最近 60 秒 · API 请求，不包含后台轮询与 Nginx 静态下载</span></div><div id="trafficMetrics" class="grid metrics-grid"></div><div id="routeMetrics" class="card table-scroll"></div>
+<div class="section-heading"><h2>特殊任务管理</h2><span>暂停在当前请求结束后生效 · 服务重启后按配置恢复</span></div><div id="taskMetrics" class="grid"></div>
+<div class="section-heading"><h2>数据库监控</h2><span>连接池 · MySQL 当前状态</span></div><div id="databaseMetrics" class="grid metrics-grid"></div><div id="databaseTables" class="card table-scroll"></div>
+</section></div></div>
+<p id="message" role="status" aria-live="polite"></p></main></body></html>

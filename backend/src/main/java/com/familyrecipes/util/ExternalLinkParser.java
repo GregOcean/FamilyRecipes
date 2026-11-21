@@ -160,20 +160,22 @@ public class ExternalLinkParser {
     public static String sourceForUrl(String url) {
         String host;
         try {
-            java.net.URI uri = java.net.URI.create(url);
-            if (!java.util.List.of("https", "http").contains(uri.getScheme()) || uri.getUserInfo()!=null) return "网络";
+            java.net.URI uri = java.net.URI.create(url.trim());
+            if (!java.util.List.of("https", "http").contains(uri.getScheme()==null?"":uri.getScheme().toLowerCase(java.util.Locale.ROOT)) || uri.getUserInfo()!=null) return "网络";
             host = uri.getHost();
             if (host == null) return "网络";
             host = host.toLowerCase(java.util.Locale.ROOT);
+            if(host.endsWith(".")) host=host.substring(0,host.length()-1);
         } catch (Exception e) { return "网络"; }
         String[][] platforms = {
             {"微信视频号","channels.weixin.qq.com","finder.video.qq.com"},
             {"微信公众号","mp.weixin.qq.com"},
             {"微信","weixin.qq.com"},
             {"抖音","douyin.com","iesdouyin.com"},
-            {"小红书","xiaohongshu.com","xhslink.com"},
+            {"TikTok","tiktok.com"},
+            {"小红书","xiaohongshu.com","xhslink.com","xhslink.cn"},
             {"下厨房","xiachufang.com"},
-            {"YouTube","youtube.com","youtu.be"},
+            {"YouTube","youtube.com","youtu.be","youtube-nocookie.com"},
             {"Instagram","instagram.com","instagr.am"},
             {"Facebook","facebook.com","fb.watch","fb.com"},
             {"哔哩哔哩","bilibili.com","b23.tv"},

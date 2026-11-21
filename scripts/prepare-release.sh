@@ -26,9 +26,10 @@ mkdir -p "$fr_bundle"
 cp backend/target/backend-1.0.0.jar "$fr_bundle/"
 cp android/app/build/outputs/apk/release/app-release.apk "$fr_bundle/FamilyRecipes-$fr_version.apk"
 cp scripts/deploy-current-server.sh "$fr_bundle/"
-for fr_migration in 2026-11-08-translations.sql 2026-11-08-recommendation-signals.sql 2026-11-08-receipt-import.sql 2026-11-08-public-recipes.sql 2026-11-09-recipe-classification.sql 2026-11-10-cuisine-refinement.sql; do
+cp backend/scripts/seed/clean_imported_text.py backend/scripts/seed/recipe_text.py "$fr_bundle/"
+for fr_migration in 2026-11-08-translations.sql 2026-11-08-recommendation-signals.sql 2026-11-08-receipt-import.sql 2026-11-08-public-recipes.sql 2026-11-09-recipe-classification.sql 2026-11-10-cuisine-refinement.sql 2026-11-11-discovery.sql 2026-11-15-admin-and-reset.sql 2026-11-19-inventory-resolution.sql; do
     cp "backend/src/main/resources/migrations/$fr_migration" "$fr_bundle/"
 done
 printf '%s\n' "$fr_version" > "$fr_bundle/VERSION"
-(cd "$fr_bundle" && shasum -a 256 *.apk *.jar *.sql *.sh VERSION > SHA256SUMS)
+(cd "$fr_bundle" && shasum -a 256 *.apk *.jar *.sql *.sh *.py VERSION > SHA256SUMS)
 echo "仅已打包：${fr_bundle}；未部署。"

@@ -3,33 +3,50 @@ package com.familyrecipes.android.ui
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
+import android.os.SystemClock
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import com.familyrecipes.android.BuildConfig
+import com.familyrecipes.android.R
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
-/**
- * 启动欢迎页面
- */
 @SuppressLint("CustomSplashScreen")
 class SplashActivity : AppCompatActivity() {
-
+    private var systemSplashRemovedAt=0L
+    private var openedMain=false
     override fun onCreate(savedInstanceState: Bundle?) {
-        // 安装splash screen（会让系统splash快速消失）
-        installSplashScreen()
-        
+        val splash=installSplashScreen()
         super.onCreate(savedInstanceState)
-        
-        // 显示自定义的启动页面（带"家肴"字样）
-        setContentView(com.familyrecipes.android.R.layout.activity_splash)
-
-        // 延迟后跳转到主页面
-        Handler(Looper.getMainLooper()).postDelayed({
-            startActivity(Intent(this, MainActivity::class.java))
-            finish()
-            // 添加淡入淡出动画
-            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-        }, 500) // 0.5秒
+        setContentView(R.layout.activity_splash)
+        findViewById<TextView>(R.id.splash_version).text =
+            "${getString(R.string.app_version)} ${BuildConfig.VERSION_NAME}"
+        // The exit callback is optional on warm/recreated launches. It only adjusts
+        // the visible interval; it must never be the sole trigger for navigation.
+        splash.setOnExitAnimationListener { provider ->
+            provider.remove()
+            systemSplashRemovedAt=SystemClock.elapsedRealtime()
+        }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                val resumedAt=SystemClock.elapsedRealtime()
+                while(!openedMain) {
+                    val remaining=maxOf(resumedAt,systemSplashRemovedAt)+1000L-SystemClock.elapsedRealtime()
+                    if(remaining>0)delay(remaining) else break
+                }
+                // repeatOnLifecycle cancels the delay when the app leaves the
+                // foreground. A later resume starts a fresh visible interval.
+                if(!openedMain && !isFinishing && !isDestroyed) {
+                    openedMain=true
+                    startActivity(Intent(this@SplashActivity,MainActivity::class.java))
+                    finish()
+                    overridePendingTransition(android.R.anim.fade_in,android.R.anim.fade_out)
+                }
+            }
+        }
     }
 }
-

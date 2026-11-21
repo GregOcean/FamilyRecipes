@@ -136,7 +136,8 @@ class GroupsAdapter(
         
         holder.tvName.text = group.name
         holder.tvDescription.text = group.description ?: UiStrings.s(com.familyrecipes.android.R.string.ui_1f2d6b1b2c)
-        holder.tvMemberCount.text = "${group.memberCount ?: 0}人"
+        val count=group.memberCount?:0
+        holder.tvMemberCount.text = holder.itemView.resources.getQuantityString(R.plurals.social_member_count,count,count)
         
         // 设置默认头像
         holder.ivAvatar.setImageResource(R.drawable.ic_groups)

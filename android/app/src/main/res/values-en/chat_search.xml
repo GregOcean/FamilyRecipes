@@ -1,0 +1,9 @@
+<resources>
+<string name="chat_search_hint">Search chat history</string>
+<string name="chat_search_loading">Searching chat history…</string>
+<string name="chat_search_cached">Offline: searching only chat history cached on this device</string>
+<string name="chat_search_results">Chat history</string>
+<string name="chat_search_empty">No matching messages</string>
+<string name="chat_search_more">Load more messages</string>
+<string name="chat_search_retry">Retry online search</string>
+</resources>

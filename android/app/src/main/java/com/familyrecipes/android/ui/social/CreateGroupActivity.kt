@@ -1,155 +1,69 @@
 package com.familyrecipes.android.ui.social
 
-import com.familyrecipes.android.ui.design.UiStrings
+import android.content.Intent
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.familyrecipes.android.R
+import com.familyrecipes.android.data.local.*
+import com.familyrecipes.android.data.model.CreateGroupRequest
 import com.familyrecipes.android.data.remote.ApiClient
-import com.familyrecipes.android.databinding.ActivityCreateGroupBinding
+import com.familyrecipes.android.ui.design.Ui
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
-/**
- * 创建群聊页面
- */
-class CreateGroupActivity : AppCompatActivity() {
-
-    private lateinit var binding: ActivityCreateGroupBinding
-    private val maxMembers = 10 // 默认最大成员数
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        
-        binding = ActivityCreateGroupBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-        
-        setupToolbar()
-        setupTextWatchers()
-        setupCreateButton()
-        updateMaxMembersHint()
-    }
-
-    /**
-     * 设置工具栏
-     */
-    private fun setupToolbar() {
-        binding.toolbar.setNavigationOnClickListener {
-            finish()
+class CreateGroupActivity:AppCompatActivity(){
+    private lateinit var name:EditText
+    private lateinit var about:EditText
+    private lateinit var friends:LinearLayout
+    private val selected=linkedSetOf<Long>()
+    private val account=LocalStore.account
+    override fun onCreate(state:Bundle?){
+        super.onCreate(state)
+        if(!PreferenceManager.isLoggedIn()){finish();return}
+        selected.addAll(state?.getLongArray("selected")?.toList().orEmpty())
+        val root=Ui.box(this);root.addView(Ui.back(this){finish()});root.addView(Ui.text(this,getString(R.string.social_create_group),24f,true))
+        name=Ui.field(this,getString(R.string.social_group_name),state?.getString("name").orEmpty()).apply{filters=arrayOf(android.text.InputFilter.LengthFilter(100))}
+        about=Ui.field(this,getString(R.string.social_group_about),state?.getString("about").orEmpty()).apply{filters=arrayOf(android.text.InputFilter.LengthFilter(500))}
+        root.addView(name);root.addView(about)
+        root.addView(Ui.text(this,getString(R.string.social_choose_friends),18f,true))
+        friends=Ui.box(this,0);root.addView(friends)
+        val create=Ui.button(this,getString(R.string.social_create_group),true){}
+        create.setOnClickListener{
+            val title=name.text.toString().trim()
+            if(title.isBlank()){name.error=getString(R.string.social_name_invalid);return@setOnClickListener}
+            create.isEnabled=false;create.text=getString(R.string.social_creating)
+            lifecycleScope.launch{try{
+                check(account==LocalStore.account)
+                val group=Ui.data(ApiClient.getAccountService(account).createGroup(CreateGroupRequest(title,about.text.toString().trim(),10,selected.toList())))
+                if(account!=LocalStore.account){finish();return@launch}
+                // The group already exists: a later refresh failure must never offer creation again.
+                try {
+                    val groups=Ui.data(ApiClient.getAccountService(account).getGroupsList())
+                    if(account==LocalStore.account)GroupCache.save(account,groups)
+                }catch(e:CancellationException){throw e}catch(_:Exception){}
+                if(account!=LocalStore.account){finish();return@launch}
+                startActivity(Intent(this@CreateGroupActivity,GroupChatActivity::class.java).putExtra(GroupChatActivity.EXTRA_GROUP_ID,group.id).putExtra(GroupChatActivity.EXTRA_GROUP_NAME,group.name))
+                setResult(RESULT_OK);finish()
+            }catch(e:CancellationException){throw e}catch(e:Exception){Ui.toast(this@CreateGroupActivity,e)}finally{create.isEnabled=true;create.text=getString(R.string.social_create_group)}}
         }
+        root.addView(create);setContentView(Ui.scroll(this,root))
     }
-
-    /**
-     * 设置文本输入监听器（字符计数）
-     */
-    private fun setupTextWatchers() {
-        // 群名称字符计数
-        binding.etGroupName.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) {
-                val length = s?.length ?: 0
-                binding.tvNameCount.text = "$length/24"
-            }
-        })
-
-        // 群介绍字符计数
-        binding.etGroupDescription.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) {
-                val length = s?.length ?: 0
-                binding.tvDescriptionCount.text = "$length/100"
-            }
-        })
-    }
-
-    /**
-     * 更新最大成员数提示
-     */
-    private fun updateMaxMembersHint() {
-        binding.tvMaxMembersHint.text = "当前群聊最多支持 $maxMembers 人"
-    }
-
-    /**
-     * 设置创建按钮
-     */
-    private fun setupCreateButton() {
-        binding.btnCreate.setOnClickListener {
-            val name = binding.etGroupName.text.toString().trim()
-            val description = binding.etGroupDescription.text.toString().trim()
-
-            // 表单验证
-            when {
-                name.isEmpty() -> {
-                    Toast.makeText(this, UiStrings.s(com.familyrecipes.android.R.string.ui_5b6af8959a), Toast.LENGTH_SHORT).show()
-                    binding.etGroupName.requestFocus()
-                    return@setOnClickListener
-                }
-                description.isEmpty() -> {
-                    Toast.makeText(this, UiStrings.s(com.familyrecipes.android.R.string.ui_0156231b04), Toast.LENGTH_SHORT).show()
-                    binding.etGroupDescription.requestFocus()
-                    return@setOnClickListener
-                }
-            }
-
-            // 创建群聊
-            createGroup(name, description)
-        }
-    }
-
-    /**
-     * 创建群聊
-     */
-    private fun createGroup(name: String, description: String) {
-        // 禁用按钮，防止重复点击
-        binding.btnCreate.isEnabled = false
-        binding.btnCreate.text = UiStrings.s(com.familyrecipes.android.R.string.ui_b26107b6c5)
-
-        lifecycleScope.launch {
-            try {
-                val request = com.familyrecipes.android.data.model.CreateGroupRequest(
-                    name = name,
-                    description = description,
-                    maxMembers = maxMembers,
-                    memberIds = emptyList()  // 创建时不添加成员
-                )
-
-                val response = ApiClient.getService().createGroup(request)
-
-                if (response.isSuccessful && response.body()?.code == 200) {
-                    Toast.makeText(
-                        this@CreateGroupActivity,
-                        UiStrings.s(com.familyrecipes.android.R.string.ui_730321fcf0),
-                        Toast.LENGTH_SHORT
-                    ).show()
-
-                    // 返回结果
-                    setResult(RESULT_OK)
-                    finish()
-                } else {
-                    val message = response.body()?.message ?: UiStrings.s(com.familyrecipes.android.R.string.ui_a889286a51)
-                    Toast.makeText(
-                        this@CreateGroupActivity,
-                        message,
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    binding.btnCreate.isEnabled = true
-                    binding.btnCreate.text = UiStrings.s(com.familyrecipes.android.R.string.ui_9fd0002489)
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                Toast.makeText(
-                    this@CreateGroupActivity,
-                    "创建失败：${e.message}",
-                    Toast.LENGTH_SHORT
-                ).show()
-                binding.btnCreate.isEnabled = true
-                binding.btnCreate.text = UiStrings.s(com.familyrecipes.android.R.string.ui_9fd0002489)
-            }
-        }
-    }
+    override fun onResume(){super.onResume();if(::friends.isInitialized)loadFriends()}
+    private fun loadFriends(){lifecycleScope.launch{try{
+        val rows=Ui.data(ApiClient.getAccountService(account).getFriendsList());if(account!=LocalStore.account){finish();return@launch}
+        selected.retainAll(rows.mapNotNull{it.friendId}.toSet());friends.removeAllViews()
+        if(rows.isEmpty())friends.addView(Ui.text(this@CreateGroupActivity,getString(R.string.social_empty_friends),15f))
+        rows.forEach{friend->friend.friendId?.let{id->
+            friends.addView(CheckBox(this@CreateGroupActivity).apply{
+                text=friend.nickname?.takeIf{it.isNotBlank()}?:friend.friend?.username?:id.toString()
+                textSize=17f;setTextColor(Ui.ink);minHeight=dp(48);isChecked=id in selected
+                setOnCheckedChangeListener{button,checked->if(checked && selected.size>=9){button.isChecked=false;Toast.makeText(this@CreateGroupActivity,getString(R.string.social_member_limit,9),Toast.LENGTH_SHORT).show()}else if(checked)selected.add(id) else selected.remove(id)}
+            })
+        }}
+        friends.addView(Ui.button(this@CreateGroupActivity,getString(R.string.social_manage_friends)){startActivity(Intent(this@CreateGroupActivity,FriendsListActivity::class.java))})
+    }catch(e:CancellationException){throw e}catch(e:Exception){friends.removeAllViews();friends.addView(Ui.button(this@CreateGroupActivity,getString(R.string.social_retry)){loadFriends()})}}}
+    override fun onSaveInstanceState(out:Bundle){out.putString("name",name.text.toString());out.putString("about",about.text.toString());out.putLongArray("selected",selected.toLongArray());super.onSaveInstanceState(out)}
+    private fun dp(n:Int)=(resources.displayMetrics.density*n).toInt()
 }
-

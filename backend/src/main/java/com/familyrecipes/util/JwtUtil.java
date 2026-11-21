@@ -16,6 +16,10 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
+    @org.springframework.beans.factory.annotation.Autowired private org.springframework.jdbc.core.JdbcTemplate db;
+    private long version(long userId) {
+        return db.queryForObject("SELECT COALESCE((SELECT version FROM user_auth_version WHERE user_id=?),0)", Long.class, userId);
+    }
     @Value("${jwt.secret}")
     private String secret;
 
@@ -45,6 +49,7 @@ public class JwtUtil {
         return Jwts.builder()
                 .subject(String.valueOf(userId))
                 .claim("email", email)
+                .claim("av", version(userId))
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(getSignKey())
@@ -76,7 +81,9 @@ public class JwtUtil {
     public boolean validateToken(String token) {
         try {
             Claims claims = getClaimsFromToken(token);
-            return Long.parseLong(claims.getSubject()) > 0 && claims.getExpiration() != null && !claims.getExpiration().before(new Date());
+            return ((Number)claims.getOrDefault("av", 0)).longValue() == version(Long.parseLong(claims.getSubject())) && Long.parseLong(claims.getSubject()) > 0 && claims.getExpiration() != null && !claims.getExpiration().before(new Date());
+        } catch (org.springframework.dao.DataAccessException e) {
+            throw new com.familyrecipes.common.ApiException(503, "登录验证服务暂不可用，请稍后重试");
         } catch (Exception e) {
             return false;
         }

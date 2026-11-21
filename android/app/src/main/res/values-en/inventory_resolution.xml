@@ -1,0 +1,31 @@
+<resources>
+ <string name="inventory_unknown_expiry">Expiry unknown</string>
+ <string name="inventory_optional_expiry">Estimated days (optional)</string>
+ <string name="inventory_estimated">An estimate for planning; use the package date when available.</string>
+ <string name="inventory_unresolved">Unclassified: original product name kept. You can choose a standard food.</string>
+ <string name="inventory_match">Matched food: %1$s</string>
+ <string name="inventory_use_estimate">Estimate again for this storage method</string>
+ <string name="inventory_select_match">Choose matching food</string>
+ <string name="inventory_keep_name">Keep original name without a match</string>
+ <string name="inventory_date_optional">Expiry date (YYYY-MM-DD, optional)</string>
+ <string name="inventory_item_scan">Recognize food and packaging</string>
+ <string name="inventory_item_help">Photograph food or its packaging. Review the name, quantity and date before adding.</string>
+ <string name="inventory_camera">Photograph and recognize</string>
+ <string name="inventory_gallery">Recognize a photo</string>
+ <string name="inventory_camera_denied">Allow camera access to take a photo, or choose from photos.</string>
+ <string name="inventory_camera_missing">Cannot open the camera. Choose from photos instead.</string>
+ <string name="inventory_pending_save">The last import is unconfirmed. Retry safely without duplicates.</string>
+ <string name="inventory_retry_save">Retry last import</string>
+ <string name="inventory_receipt_optional">Names are required; quantity, storage and days can be left blank.</string>
+ <string name="scan_friend_title">Scan a friend card</string>
+ <string name="scan_gallery">Read a QR code from photos</string>
+ <string name="scan_camera">Open camera</string>
+ <string name="scan_confirm_friend">Add %1$s (ID %2$d) as a friend?</string>
+ <string name="scan_invalid">No valid friend QR code found.</string>
+ <string name="scan_self">This is your own card.</string>
+ <string name="scan_retry">Could not read the code. Retry or choose another image.</string>
+ <string name="inventory_replace_draft">Replace the current inventory draft with the selected food?</string>
+ <string name="inventory_unclassified">Unclassified</string>
+ <string name="inventory_loading">Preparing your kitchen…</string>
+ <string name="inventory_loading_failed">Kitchen unavailable. Reconnect and try again.</string>
+</resources>

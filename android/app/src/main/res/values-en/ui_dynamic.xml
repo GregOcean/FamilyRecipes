@@ -18,7 +18,7 @@
 <string name="network_error_value">Network error: %s</string>
 <string name="retry_error_value">%s · Retry</string>
 <string name="current_location">Current location</string>
-<string name="recipe_results_count">%s · %s recipes</string>
+<string name="recipe_results_count">%1$s · %2$s recipes</string>
 <string name="search_results_title">Search results</string>
 <string name="discover_title">What sounds good?</string>
 <string name="empty_prep">No prep plans yet. Create one for yourself or share it later.</string>

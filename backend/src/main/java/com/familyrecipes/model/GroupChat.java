@@ -28,6 +28,7 @@ public class GroupChat {
     // 关联查询字段（非数据库字段）
     private List<GroupMember> members;  // 群成员列表
     private Message lastMessage;  // 最后一条消息
+    private Long lastReadMessageId;
     private Integer unreadCount;  // 未读消息数（针对当前用户）
 }
 

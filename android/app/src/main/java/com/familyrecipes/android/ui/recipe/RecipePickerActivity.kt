@@ -24,7 +24,7 @@ class RecipePickerActivity : AppCompatActivity() {
                         arguments =
                             Bundle().apply {
                                 putBoolean("picker", true)
-                                putString("scope", "mine")
+                                putString("scope", "discovery")
                             }
                     })
                 .commit()

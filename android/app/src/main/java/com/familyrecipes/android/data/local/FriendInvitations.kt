@@ -30,7 +30,7 @@ object FriendInvitations {
         if(!PreferenceManager.isLoggedIn()) return@withLock emptyList()
         val account=LocalStore.account
         val user=PreferenceManager.userId
-        val items=Ui.data(ApiClient.getService().friendInvitations())
+        val items=Ui.data(ApiClient.getAccountService(account).friendInvitations())
         if(account!=LocalStore.account) return@withLock emptyList()
         val dao=LocalStore.instance.records()
         dao.put(LocalRecord(account,"friend-invitations","pending",gson.toJson(items)))
@@ -46,10 +46,10 @@ object FriendInvitations {
             val intent=Intent(context,FriendsListActivity::class.java).putExtra("invitation_account",account)
             val target=PendingIntent.getActivity(context,account.hashCode(),intent,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
             try {
-                manager.notify(tag,1,NotificationCompat.Builder(context,"family_messages")
+                if(!ChatNotifications.publish(account,tag,1,NotificationCompat.Builder(context,"family_messages")
                     .setSmallIcon(R.drawable.ic_notification).setContentTitle(context.getString(R.string.friends_title))
                     .setContentText(context.getString(R.string.friend_incoming_count,pending.size))
-                    .setContentIntent(target).setAutoCancel(true).build())
+                    .setContentIntent(target).setAutoCancel(true).build()))return@withLock items
             } catch (_: SecurityException) { return@withLock items }
         }
         // Opening the list counts as seeing requests even with notifications disabled.

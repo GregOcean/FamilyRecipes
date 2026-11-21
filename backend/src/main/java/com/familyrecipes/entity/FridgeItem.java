@@ -13,6 +13,8 @@ public class FridgeItem {
     private Long userId;
     private Long kitchenId;
     private Long ingredientId;
+    private String displayName;
+    private String clientMutationId;
     private Long categoryOverrideId;
     private String categoryOverrideName;
     private String amount;

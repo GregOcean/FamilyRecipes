@@ -1,14 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:paddingTop="16dp" android:paddingHorizontal="16dp" android:background="@color/background">
- <EditText android:id="@+id/et_inventory_search" android:layout_width="match_parent" android:layout_height="56dp" android:background="@drawable/search_background" android:paddingHorizontal="12dp" android:hint="@string/ui_93e4998872" android:textSize="17sp" android:inputType="text" android:singleLine="true" />
- <com.google.android.material.tabs.TabLayout android:id="@+id/tab_layout" android:layout_width="match_parent" android:layout_height="56dp" android:background="@android:color/transparent" app:tabSelectedTextColor="@color/primary" app:tabTextColor="@color/text_secondary">
-  <com.google.android.material.tabs.TabItem android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/ui_a8b0c20416" />
-  <com.google.android.material.tabs.TabItem android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/ui_d813eea6b6" />
-  <com.google.android.material.tabs.TabItem android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/ui_2cae0566ad" />
- </com.google.android.material.tabs.TabLayout>
- <com.google.android.material.button.MaterialButton android:id="@+id/btn_categories" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/ui_7e450d2325" android:textSize="16sp" />
- <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/ui_7aa52f0c9e" android:textSize="14sp" android:textColor="@color/text_secondary" android:paddingVertical="8dp" />
- <androidx.recyclerview.widget.RecyclerView android:id="@+id/category_sidebar" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:paddingTop="8dp" android:paddingHorizontal="12dp" android:background="@color/background">
+ <EditText android:id="@+id/et_inventory_search" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:background="@drawable/search_background" android:paddingHorizontal="12dp" android:hint="@string/ui_93e4998872" android:textSize="17sp" android:inputType="text" android:singleLine="true" />
+ <LinearLayout android:id="@+id/inventory_filters" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="6dp" android:layout_marginBottom="4dp">
+  <com.familyrecipes.android.ui.design.FilterButton android:id="@+id/btn_categories" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginEnd="4dp" />
+  <com.familyrecipes.android.ui.design.FilterButton android:id="@+id/btn_status" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="4dp" />
+ </LinearLayout>
  <androidx.swiperefreshlayout.widget.SwipeRefreshLayout android:id="@+id/swipe_refresh" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
   <FrameLayout android:layout_width="match_parent" android:layout_height="match_parent">
    <androidx.recyclerview.widget.RecyclerView android:id="@+id/recycler_view" android:layout_width="match_parent" android:layout_height="match_parent" android:clipToPadding="false" android:paddingVertical="8dp" />

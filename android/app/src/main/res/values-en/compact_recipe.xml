@@ -1,0 +1,5 @@
+<resources>
+<string name="dislike_short">Dislike</string>
+<string name="about_sources_summary">Recipes from HowToCook, Wikibooks, UniTools and community contributions. Beginner and advanced guides are adapted from HowToCook.</string>
+<string name="about_catalog_count">Public recipes: %1$d</string>
+</resources>

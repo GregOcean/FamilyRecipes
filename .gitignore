@@ -80,3 +80,7 @@ backend.env
 
 # Local model API credential
 /kimi_api_key.log
+
+# Local administrator discovery jobs and cached candidates
+/catalog-jobs/
+/backend/catalog-jobs/

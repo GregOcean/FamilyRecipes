@@ -25,8 +25,8 @@ import com.familyrecipes.android.data.remote.ApiClient
 import com.familyrecipes.android.databinding.FragmentFridgeBinding
 import com.familyrecipes.android.ui.SearchableFragment
 import com.familyrecipes.android.ui.adapter.FridgeAdapter
-import com.familyrecipes.android.ui.fridge.adapter.CategorySidebarAdapter
-import com.google.android.material.tabs.TabLayout
+import com.familyrecipes.android.R
+
 import kotlinx.coroutines.launch
 
 /**
@@ -40,7 +40,6 @@ class FridgeFragment : Fragment(), SearchableFragment {
     private val binding get() = _binding!!
     
     private lateinit var fridgeAdapter: FridgeAdapter
-    private lateinit var categoryAdapter: CategorySidebarAdapter
     private val items = mutableListOf<FridgeItem>()
     private val allItems = mutableListOf<FridgeItem>() // 保存所有数据用于筛选
     private val categories = mutableListOf<InventoryCategory>()
@@ -80,9 +79,9 @@ class FridgeFragment : Fragment(), SearchableFragment {
             return
         }
         
-        setupCategorySidebar()
+        setupCategoryFilter()
         setupRecyclerView()
-        setupTabLayout()
+        setupStatusFilter()
         setupListeners()
         loadCategories()
         loadData()
@@ -91,24 +90,16 @@ class FridgeFragment : Fragment(), SearchableFragment {
     /**
      * 设置分类侧边栏
      */
-    private fun setupCategorySidebar() {
+    private fun setupCategoryFilter() {
         binding.btnCategories.setOnClickListener {
             val choices=categories.flatMap{listOf(it)+it.children.orEmpty()}
             androidx.appcompat.app.AlertDialog.Builder(requireContext()).setTitle(UiStrings.s(com.familyrecipes.android.R.string.ui_5fcb1e4d94)).setItems((listOf(UiStrings.s(com.familyrecipes.android.R.string.ui_1a75030502))+choices.map{"${it.icon.orEmpty()} ${it.name}"}).toTypedArray()){_,index->
-                val selected=choices.getOrNull(index-1);selectedCategoryId=selected?.id;binding.btnCategories.text=(selected?.name?:UiStrings.s(com.familyrecipes.android.R.string.ui_1a75030502))+" ▾";filterItemsByCategory()
+                val selected=choices.getOrNull(index-1);selectedCategoryId=selected?.id;binding.btnCategories.setValue(selected?.name?:getString(R.string.ui_1a75030502));filterItemsByCategory()
             }.show()
         }
         binding.etInventorySearch.doAfterTextChanged { filterItemsByCategory() }
-        categoryAdapter = CategorySidebarAdapter { category, isExpanded ->
-            // 点击分类时的回调
-            selectedCategoryId = category?.id
-            filterItemsByCategory()
-        }
-        
-        binding.categorySidebar.apply {
-            layoutManager = LinearLayoutManager(context)
-            adapter = categoryAdapter
-        }
+        binding.btnCategories.setLabel(getString(R.string.inventory_category_filter))
+        binding.btnCategories.setValue(categories.flatMap{listOf(it)+it.children.orEmpty()}.find{it.id==selectedCategoryId}?.name ?: getString(R.string.ui_1a75030502))
     }
 
     /**
@@ -123,7 +114,7 @@ class FridgeFragment : Fragment(), SearchableFragment {
                     val categoryList = response.body()?.data ?: emptyList()
                     categories.clear()
                     categories.addAll(categoryList)
-                    categoryAdapter.submitList(categoryList)
+                    binding.btnCategories.setValue(categoryList.flatMap{listOf(it)+it.children.orEmpty()}.find{it.id==selectedCategoryId}?.name ?: getString(R.string.ui_1a75030502))
                     filterItemsByCategory()
                 }
             } catch (e: kotlinx.coroutines.CancellationException) {
@@ -140,14 +131,9 @@ class FridgeFragment : Fragment(), SearchableFragment {
     private fun filterItemsByCategory() {
         items.clear()
         val query = binding.etInventorySearch.text.toString().trim()
-        val searched = allItems.filter { currentTab!=2 || it.status==FridgeItem.STATUS_EXPIRING || it.status==FridgeItem.STATUS_EXPIRED }.filter { query.isEmpty() || it.ingredient?.name?.contains(query, ignoreCase=true) == true || it.ingredient?.aliases?.contains(query, ignoreCase=true) == true }
+        val searched = allItems.filter { when(currentTab){2->it.status==FridgeItem.STATUS_EXPIRING;3->it.status==FridgeItem.STATUS_EXPIRED;4->it.status!=FridgeItem.STATUS_EXPIRING && it.status!=FridgeItem.STATUS_EXPIRED;else->true} }.filter { query.isEmpty() || it.displayName?.contains(query, ignoreCase=true) == true || it.originalContent?.values?.any{value->value.contains(query,ignoreCase=true)}==true || it.ingredient?.name?.contains(query, ignoreCase=true) == true || it.ingredient?.aliases?.contains(query, ignoreCase=true) == true }
         val ids = selectedCategoryId?.let { com.familyrecipes.android.util.InventoryCategories.descendants(it, categories) }
         items.addAll(searched.filter { ids == null || (it.categoryOverrideId ?: it.ingredient?.categoryId) in ids })
-        val counts = categories.associate { category ->
-            val descendants = com.familyrecipes.android.util.InventoryCategories.descendants(category.id, categories)
-            category.id to searched.count { (it.categoryOverrideId ?: it.ingredient?.categoryId) in descendants }
-        }
-        categoryAdapter.setCounts(counts, searched.size)
         binding.tvInventoryEmpty.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
         binding.tvInventoryEmpty.text = if (query.isNotEmpty()) UiStrings.s(com.familyrecipes.android.R.string.ui_4a04af28b2)
             else UiStrings.s(com.familyrecipes.android.R.string.ui_9762b17785)
@@ -155,7 +141,7 @@ class FridgeFragment : Fragment(), SearchableFragment {
         fridgeAdapter.notifyDataSetChanged()
         
         // 更新适配器选中状态
-        categoryAdapter.setSelectedCategory(selectedCategoryId)
+
     }
 
     private fun setupRecyclerView() {
@@ -290,16 +276,30 @@ class FridgeFragment : Fragment(), SearchableFragment {
         itemTouchHelper.attachToRecyclerView(binding.recyclerView)
     }
     
-    private fun setupTabLayout() {
-        binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
-            override fun onTabSelected(tab: TabLayout.Tab?) {
-                currentTab = tab?.position ?: TAB_CURRENT
-                loadData()
+    private fun setupStatusFilter() {
+        val choices=listOf(
+            TAB_CURRENT to R.string.inventory_status_all,
+            4 to R.string.inventory_status_fresh,
+            2 to R.string.ui_ac148b4c87,
+            3 to R.string.ui_4d5ccd0118,
+            TAB_CONSUMED to R.string.ui_d813eea6b6)
+        binding.btnStatus.setLabel(getString(R.string.inventory_expiry_filter))
+        binding.btnStatus.setValue(getString(choices.first{it.first==currentTab}.second))
+        binding.btnStatus.setOnClickListener {
+            android.widget.PopupMenu(requireContext(),binding.btnStatus).apply {
+                choices.forEachIndexed { index,(id,label)-> menu.add(0,id,index,getString(label)).apply {isCheckable=true;isChecked=id==currentTab} }
+                setOnMenuItemClickListener {
+                    val previous=currentTab
+                    currentTab=it.itemId
+                    binding.btnStatus.setValue(it.title.toString())
+                    if((previous==TAB_CONSUMED)!=(currentTab==TAB_CONSUMED)) {
+                        allItems.clear();filterItemsByCategory();loadData()
+                    } else filterItemsByCategory()
+                    true
+                }
+                show()
             }
-            
-            override fun onTabUnselected(tab: TabLayout.Tab?) {}
-            override fun onTabReselected(tab: TabLayout.Tab?) {}
-        })
+        }
     }
 
     private fun setupListeners() {
@@ -317,8 +317,8 @@ class FridgeFragment : Fragment(), SearchableFragment {
             try {
                 val account=com.familyrecipes.android.data.local.LocalStore.account
                 val dao=com.familyrecipes.android.data.local.LocalStore.instance.records()
-                val item = ApiClient.getService().getFridgeItems(selectedItem.kitchenId, original = true)
-                    .body()?.data?.find { it.id == selectedItem.id } ?: return@launch
+                val response=if(selectedItem.status==FridgeItem.STATUS_CONSUMED)ApiClient.getAccountService(account).getConsumedItems(selectedItem.kitchenId,original=true) else ApiClient.getAccountService(account).getFridgeItems(selectedItem.kitchenId,original=true)
+                val item = com.familyrecipes.android.ui.design.Ui.data(response).find { it.id == selectedItem.id } ?: return@launch
                 val key="stock:${item.id}"
                 val draft=dao.get(account,"draft",key)?.let { com.google.gson.Gson().fromJson(it,FridgeItem::class.java) } ?: item
                 val kitchen=ApiClient.getService().getKitchens().body()?.data?.find { it.id==item.kitchenId } ?: return@launch
@@ -347,7 +347,7 @@ class FridgeFragment : Fragment(), SearchableFragment {
                 }
                 box.addView(classification)
 
-                fun value()=item.copy(amount=amount.text.toString(),expiryDate=expiry.text.toString(),
+                fun value()=item.copy(amount=amount.text.toString(),expiryDate=expiry.text.toString().trim().ifBlank{null},
                     categoryOverrideId=choices.getOrNull(classification.selectedItemPosition-1)?.id,
                     storageLocation=location.text.toString(),notes=notes.text.toString(),
                     ownerUserId=if(owner.selectedItemPosition==0)null else members[owner.selectedItemPosition-1].userId)
@@ -367,12 +367,18 @@ class FridgeFragment : Fragment(), SearchableFragment {
                 dialog.show();dialog.getButton(-1).setOnClickListener {
                     viewLifecycleOwner.lifecycleScope.launch {
                         try {
-                            val response=ApiClient.getService().updateFridgeItem(item.id!!,value())
-                            check(response.isSuccessful && response.body()?.code==200)
+                            if(account!=com.familyrecipes.android.data.local.LocalStore.account)return@launch
+                            val value=value()
+                            if(value.expiryDate!=null)java.time.LocalDate.parse(value.expiryDate)
+                            dialog.getButton(-1).isEnabled=false
+                            val response=ApiClient.getAccountService(account).updateFridgeItem(item.id!!,value)
+                            com.familyrecipes.android.ui.design.Ui.data(response)
                             com.familyrecipes.android.data.local.DraftWrites.clear(account,key)
                             dialog.dismiss();loadData()
                         } catch(e:kotlinx.coroutines.CancellationException) { throw e }
-                          catch(_:Exception) { expiry.error=UiStrings.s(com.familyrecipes.android.R.string.ui_add39f45f2) }
+                          catch(e:java.time.DateTimeException) { expiry.error=UiStrings.s(com.familyrecipes.android.R.string.ui_add39f45f2) }
+                          catch(e:Exception) {com.familyrecipes.android.ui.design.Ui.toast(requireContext(),e)}
+                          finally {if(dialog.isShowing)dialog.getButton(-1).isEnabled=true}
                     }
                 }
             } catch(e:kotlinx.coroutines.CancellationException) { throw e }
@@ -382,7 +388,7 @@ class FridgeFragment : Fragment(), SearchableFragment {
 
     private fun loadData() {
         when (currentTab) {
-            TAB_CURRENT, 2 -> loadFridgeItems()
+            TAB_CURRENT, 2, 3, 4 -> loadFridgeItems()
             TAB_CONSUMED -> loadConsumedItems()
         }
     }
@@ -522,7 +528,7 @@ class FridgeFragment : Fragment(), SearchableFragment {
             try {
                 // 重新加载数据
                 when (currentTab) {
-                    TAB_CURRENT, 2 -> loadFridgeItems(keyword)
+                    TAB_CURRENT, 2, 3, 4 -> loadFridgeItems(keyword)
                     TAB_CONSUMED -> loadConsumedItems(keyword)
                 }
             } catch (e: kotlinx.coroutines.CancellationException) {
@@ -543,8 +549,7 @@ class FridgeFragment : Fragment(), SearchableFragment {
         // 隐藏主要内容
         binding.recyclerView.visibility = View.GONE
         binding.swipeRefresh.visibility = View.GONE
-        binding.tabLayout.visibility = View.GONE
-        binding.categorySidebar.visibility = View.GONE
+        binding.inventoryFilters.visibility = View.GONE
         
         // 显示提示信息（可以用一个TextView或者空状态视图）
         android.widget.Toast.makeText(context, UiStrings.s(com.familyrecipes.android.R.string.ui_49eff504a4), android.widget.Toast.LENGTH_LONG).show()
@@ -561,12 +566,11 @@ class FridgeFragment : Fragment(), SearchableFragment {
             if (binding.recyclerView.visibility == View.GONE) {
                 binding.recyclerView.visibility = View.VISIBLE
                 binding.swipeRefresh.visibility = View.VISIBLE
-                binding.tabLayout.visibility = View.VISIBLE
-                binding.categorySidebar.visibility = View.VISIBLE
+                binding.inventoryFilters.visibility = View.VISIBLE
                 
-                setupCategorySidebar()
+                setupCategoryFilter()
                 setupRecyclerView()
-                setupTabLayout()
+                setupStatusFilter()
                 setupListeners()
                 loadCategories()
             }

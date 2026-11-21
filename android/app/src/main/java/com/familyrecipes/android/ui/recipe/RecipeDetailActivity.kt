@@ -3,6 +3,7 @@ package com.familyrecipes.android.ui.recipe
 import com.familyrecipes.android.ui.design.UiStrings
 import android.os.Bundle
 import android.view.View
+import androidx.core.view.doOnLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
@@ -12,6 +13,9 @@ import com.familyrecipes.android.data.model.Recipe
 import com.familyrecipes.android.data.remote.ApiClient
 import com.familyrecipes.android.databinding.ActivityRecipeDetailBinding
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.CancellationException
+import com.familyrecipes.android.ui.design.Ui
 
 /**
  * 菜谱详情页
@@ -21,6 +25,17 @@ class RecipeDetailActivity : AppCompatActivity() {
     private lateinit var binding: ActivityRecipeDetailBinding
     private var recipeId: Long = 0
     private var recipe: Recipe? = null
+    private var loadJob:Job?=null
+    private var loadedContext=""
+    private var loadedAccount=""
+    private var recordsJob:Job?=null
+    private var pendingAction:(()->Unit)?=null
+    private var reactionBusy=false
+    private fun Int.dp()=(this*resources.displayMetrics.density).toInt()
+    private val contextKey get()="${com.familyrecipes.android.data.local.LocalStore.account}:${ApiClient.contentLanguage()}"
+    private val editLauncher=registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) {
+        if(it.resultCode==RESULT_OK)loadRecipeDetail()
+    }
 
     companion object {
         const val EXTRA_RECIPE_ID = "recipe_id"
@@ -39,12 +54,62 @@ class RecipeDetailActivity : AppCompatActivity() {
             loadRecipeDetail()
         } catch (e: Exception) {
             e.printStackTrace()
-            android.widget.Toast.makeText(this, "初始化失败: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+            Ui.toast(this,e)
             finish()
         }
     }
 
-    override fun onResume(){super.onResume();if(::binding.isInitialized && recipe!=null)loadRecipeDetail()}
+    override fun onResume(){
+        super.onResume()
+        if(::binding.isInitialized && ((recipe!=null && loadedContext!=contextKey) || (pendingAction!=null && PreferenceManager.isLoggedIn()))) {
+            if(loadedAccount!=com.familyrecipes.android.data.local.LocalStore.account){recipe=null;binding.contentLayout.visibility=View.GONE}
+            loadRecipeDetail()
+        }
+    }
+    private fun authenticated(action:()->Unit) {
+        if(com.familyrecipes.android.util.AuthUtil.requireLogin(this))action() else pendingAction=action
+    }
+    private fun returnUpdatedRecipe() {
+        recipe?.let{setResult(RESULT_OK,android.content.Intent().putExtra("updated_recipe",com.google.gson.Gson().toJson(it)))}
+    }
+
+    private fun showMoreActions(recipe:Recipe) {
+        val ui=com.familyrecipes.android.ui.design.Ui
+        val sheet=com.google.android.material.bottomsheet.BottomSheetDialog(this)
+        val content=ui.box(this)
+        content.addView(ui.text(this,getString(R.string.recipe_more_actions),22f,true))
+        fun action(label:String,icon:Int,run:()->Unit) {
+            content.addView(ui.entry(this,label,"",icon) {
+                sheet.dismiss()
+                authenticated(run)
+            })
+        }
+        action(getString(R.string.ui_ad1a148b7b),R.drawable.ic_recipe_simple) {
+            startActivity(android.content.Intent(this,EditRecipeActivity::class.java).putExtra("adapt_source_id",recipeId))
+        }
+        val known=recipe.cooks.orEmpty().any { it.id==PreferenceManager.userId }
+        action(getString(if(known) R.string.ui_c07569f86e else R.string.ui_0191cf83a3),R.drawable.ic_book_outline) {
+            lifecycleScope.launch {
+                try {
+                    ui.ok(ApiClient.getService().setKnown(recipeId,mapOf("known" to !known)))
+                    loadRecipeDetail()
+                } catch(e:kotlinx.coroutines.CancellationException) { throw e }
+                  catch(e:Exception) { ui.toast(this@RecipeDetailActivity,e) }
+            }
+        }
+        listOf(Triple("order",R.string.ui_b26b310008,R.drawable.ic_ui_order),
+            Triple("prep",R.string.ui_7a73e91a1d,R.drawable.ic_ui_prep)).forEach { (kind,label,icon) ->
+            action(getString(label),icon) {
+                startActivity(android.content.Intent(this,com.familyrecipes.android.ui.meal.MealEditorActivity::class.java)
+                    .putExtra("kind",kind).putExtra("recipe_id",recipe.id).putExtra("recipe_name",recipe.name))
+            }
+        }
+        action(getString(R.string.ui_00f9d79879),R.drawable.ic_clock_filled) {
+            editLauncher.launch(android.content.Intent(this,CookingRecordActivity::class.java).putExtra("recipe_id",recipe.id))
+        }
+        sheet.setContentView(ui.scroll(this,content))
+        sheet.show()
+    }
 
     private fun setupToolbar() {
         // 简单设置返回按钮，不使用 ActionBar
@@ -61,33 +126,45 @@ class RecipeDetailActivity : AppCompatActivity() {
             return
         }
 
-        binding.progressBar.visibility = View.VISIBLE
-        binding.contentLayout.visibility = View.GONE
+        loadJob?.cancel()
+        binding.progressBar.visibility = if(recipe==null) View.VISIBLE else View.GONE
+        binding.detailError.visibility=View.GONE
+        binding.btnRetry.setOnClickListener{loadRecipeDetail()}
+        val requestContext=contextKey
+        val account=com.familyrecipes.android.data.local.LocalStore.account
+        val cacheKey="$recipeId:${ApiClient.contentLanguage()}"
 
-        lifecycleScope.launch {
+        loadJob=lifecycleScope.launch {
             try {
-                val historyAccount=com.familyrecipes.android.data.local.LocalStore.account
+                if(recipe==null) {
+                    val cached=com.familyrecipes.android.data.local.LocalStore.instance.records().get(account,"recipe_detail",cacheKey)
+                    runCatching{com.google.gson.Gson().fromJson(cached,Recipe::class.java)}.getOrNull()?.let {
+                        recipe=it;loadedAccount=account;displayRecipe(it)
+                    }
+                }
                 val response = ApiClient.getService().getRecipeDetail(recipeId)
-                
+                if(requestContext!=contextKey)return@launch
                 if (response.isSuccessful && response.body()?.code == 200) {
                     recipe = response.body()?.data
-                    recipe?.let { item -> displayRecipe(item); try { com.familyrecipes.android.data.local.RecipeHistory.record(historyAccount,item) } catch(e:kotlinx.coroutines.CancellationException){throw e} catch(_:Exception){ /* History must not prevent reading a recipe. */ } }
+                    recipe?.let { item ->
+                        loadedContext=requestContext;loadedAccount=account;displayRecipe(item)
+                        if(PreferenceManager.isLoggedIn()){val action=pendingAction;pendingAction=null;action?.invoke()}
+                        try {
+                            com.familyrecipes.android.data.local.RecipeHistory.record(account,item)
+                            com.familyrecipes.android.data.local.LocalStore.instance.records().put(com.familyrecipes.android.data.local.LocalRecord(account,"recipe_detail",cacheKey,com.google.gson.Gson().toJson(item)))
+                        } catch(e:CancellationException){throw e} catch(_:Exception){ /* Reading remains available if history cannot be saved. */ }
+                    }
                 } else {
-                    android.widget.Toast.makeText(
-                        this@RecipeDetailActivity,
-                        "加载失败：${response.body()?.message ?: "未知错误"}",
-                        android.widget.Toast.LENGTH_SHORT
-                    ).show()
-                    finish()
+                    if(response.code() in listOf(401,403,404)) {
+                        recipe=null;binding.contentLayout.visibility=View.GONE
+                        com.familyrecipes.android.data.local.LocalStore.instance.records().delete(account,"recipe_detail",cacheKey)
+                    }
+                    throw retrofit2.HttpException(response)
                 }
+            } catch(e:CancellationException){throw e
             } catch (e: Exception) {
-                android.widget.Toast.makeText(
-                    this@RecipeDetailActivity,
-                    UiStrings.f(com.familyrecipes.android.R.string.network_error_value, e.message),
-                    android.widget.Toast.LENGTH_SHORT
-                ).show()
-                e.printStackTrace()
-                finish()
+                binding.detailError.visibility=View.VISIBLE
+                binding.tvDetailError.text=Ui.errorMessage(this@RecipeDetailActivity,e)
             } finally {
                 binding.progressBar.visibility = View.GONE
             }
@@ -103,11 +180,9 @@ class RecipeDetailActivity : AppCompatActivity() {
         
         // 显示编辑按钮（如果是当前用户创建的菜谱）
         val currentUserId = PreferenceManager.userId
-        val isLoggedIn = PreferenceManager.isLoggedIn()
-        val authToken = PreferenceManager.authToken
         
         binding.btnEdit.visibility=if(currentUserId>0 && recipe.creatorId==currentUserId) View.VISIBLE else View.GONE
-        binding.btnEdit.setOnClickListener{startActivity(android.content.Intent(this,EditRecipeActivity::class.java).putExtra("recipe_id",recipe.id))}
+        binding.btnEdit.setOnClickListener{editLauncher.launch(android.content.Intent(this,EditRecipeActivity::class.java).putExtra("recipe_id",recipe.id))}
         // 设置封面图片
         if (!recipe.coverImage.isNullOrEmpty()) {
             Glide.with(this)
@@ -125,15 +200,19 @@ class RecipeDetailActivity : AppCompatActivity() {
         
         // 设置标签
         binding.chipGroup.removeAllViews()
-        recipe.tags?.filter { it.tagValue.trim().removePrefix("#") !in listOf("", "待确认") }?.distinctBy { it.tagValue }?.forEach { tag ->
+        recipe.tags?.filter { it.tagValue.trim().removePrefix("#") !in listOf("", "待确认") }?.distinctBy { (it.displayValue ?: it.tagValue).trim().removePrefix("#").trim().lowercase(java.util.Locale.ROOT) }?.forEach { tag ->
             val chip = com.google.android.material.chip.Chip(this).apply {
                 // 如果tagValue已经包含#，就不再添加；否则添加#
-                val displayText = "#${(tag.displayValue ?: tag.tagValue).removePrefix("#")}"
+                val displayText = "#${UiStrings.domain((tag.displayValue ?: tag.tagValue).trim().removePrefix("#").trim())}"
                 text = displayText
                 isClickable = true
                 isCheckable = false
-                setChipBackgroundColorResource(R.color.primary)
-                setTextColor(getColor(R.color.on_primary))
+                chipBackgroundColor=android.content.res.ColorStateList.valueOf(Ui.pale)
+                setTextColor(Ui.ink)
+                textSize=14f
+                chipStrokeWidth=0f
+                chipMinHeight=32.dp().toFloat()
+                setEnsureMinTouchTargetSize(true)
                 setOnClickListener {
                     // 点击tag跳转到搜索页面，搜索该tag（移除#前缀）
                     val searchTag = tag.tagValue.removePrefix("#")
@@ -145,37 +224,48 @@ class RecipeDetailActivity : AppCompatActivity() {
         
         // 设置描述
         if (!recipe.description.isNullOrEmpty()) {
-            binding.tvDescription.text = recipe.description
+            binding.tvDescription.text = com.familyrecipes.android.util.RecipeDocument.render(com.familyrecipes.android.util.RecipeText.clean(recipe.description.orEmpty()))
             binding.tvDescription.visibility = View.VISIBLE
+            binding.descriptionHeading.visibility=View.VISIBLE
+            val collapsed=!recipe.steps.isNullOrEmpty()
+            binding.tvDescription.maxLines=if(collapsed)4 else Int.MAX_VALUE
+            binding.tvDescription.ellipsize=if(collapsed)android.text.TextUtils.TruncateAt.END else null
+            binding.btnExpandDescription.visibility=View.GONE
+            binding.tvDescription.doOnLayout {
+                val layout=binding.tvDescription.layout
+                binding.btnExpandDescription.visibility=if(collapsed && layout!=null && (0 until layout.lineCount).any{layout.getEllipsisCount(it)>0})View.VISIBLE else View.GONE
+            }
+            binding.btnExpandDescription.setOnClickListener {binding.tvDescription.maxLines=Int.MAX_VALUE;binding.tvDescription.ellipsize=null;binding.btnExpandDescription.visibility=View.GONE}
         } else {
             binding.tvDescription.visibility = View.GONE
+            binding.descriptionHeading.visibility=View.GONE
+            binding.btnExpandDescription.visibility=View.GONE
         }
         
         binding.gallery.removeAllViews()
-        recipe.images.orEmpty().forEach { photo ->
-            val image=android.widget.ImageView(this).apply { adjustViewBounds=true }
-            binding.gallery.addView(image,android.widget.LinearLayout.LayoutParams(-1,-2))
-            com.bumptech.glide.Glide.with(this).load(com.familyrecipes.android.util.MediaImages.model(photo.url))
-                .signature(com.bumptech.glide.signature.ObjectKey(com.familyrecipes.android.data.local.PreferenceManager.userId)).into(image)
-            if(!photo.caption.isNullOrBlank()) binding.gallery.addView(android.widget.TextView(this).apply { text=photo.caption;setPadding(0,8,0,24) })
-        }
         val ui=com.familyrecipes.android.ui.design.Ui
         recipe.sourceRecipeName?.let{binding.gallery.addView(ui.text(this,UiStrings.f(com.familyrecipes.android.R.string.adapted_value, it),15f))}
-        binding.gallery.addView(ui.text(this,UiStrings.s(com.familyrecipes.android.R.string.ui_c45c4747bb),21f,true))
-        recipe.ingredients.orEmpty().forEach{binding.gallery.addView(ui.text(this,"${it.ingredient?.name.orEmpty()}  ${it.amount.orEmpty()}"))}
-        binding.gallery.addView(ui.text(this,UiStrings.s(com.familyrecipes.android.R.string.ui_fea10d57e2),21f,true))
-        recipe.steps.orEmpty().forEach{step->binding.gallery.addView(ui.text(this,"${step.stepNumber}. ${step.description}"));step.image?.let{url->val image=android.widget.ImageView(this).apply{adjustViewBounds=true};binding.gallery.addView(image);Glide.with(this).load(com.familyrecipes.android.util.MediaImages.model(url)).into(image)}}
-        binding.gallery.addView(ui.button(this,UiStrings.s(com.familyrecipes.android.R.string.ui_ad1a148b7b)){
-            startActivity(android.content.Intent(this,EditRecipeActivity::class.java).putExtra("adapt_source_id",recipeId))
-        })
-        val known=recipe.cooks.orEmpty().any{it.id==currentUserId}
-        binding.gallery.addView(ui.button(this,if(known)UiStrings.s(com.familyrecipes.android.R.string.ui_c07569f86e) else UiStrings.s(com.familyrecipes.android.R.string.ui_0191cf83a3)){
-            lifecycleScope.launch{try{ui.ok(ApiClient.getService().setKnown(recipeId,mapOf("known" to !known)));loadRecipeDetail()}catch(e:kotlinx.coroutines.CancellationException){throw e}catch(e:Exception){ui.toast(this@RecipeDetailActivity,e)}}
-        })
-        listOf("order" to UiStrings.s(com.familyrecipes.android.R.string.ui_b26b310008),"prep" to UiStrings.s(com.familyrecipes.android.R.string.ui_7a73e91a1d)).forEach{(kind,label)->binding.gallery.addView(ui.button(this,label){startActivity(android.content.Intent(this,com.familyrecipes.android.ui.meal.MealEditorActivity::class.java).putExtra("kind",kind).putExtra("recipe_id",recipe.id).putExtra("recipe_name",recipe.name))})}
-        binding.gallery.addView(ui.button(this,UiStrings.s(com.familyrecipes.android.R.string.ui_00f9d79879)){startActivity(android.content.Intent(this,CookingRecordActivity::class.java).putExtra("recipe_id",recipe.id))})
+        if(!recipe.ingredients.isNullOrEmpty()) binding.gallery.addView(ui.text(this,getString(R.string.review_recipe_ingredients),21f,true))
+        recipe.ingredients.orEmpty().forEach{
+            val row=ui.row(this).apply{setPadding(0,2.dp(),0,2.dp())}
+            row.addView(ui.text(this,it.ingredient?.name.orEmpty(),17f),android.widget.LinearLayout.LayoutParams(0,-2,1f))
+            row.addView(ui.text(this,it.amount.orEmpty(),16f).apply{setTextColor(Ui.muted);maxWidth=(resources.displayMetrics.widthPixels*0.35f).toInt();setPadding(12.dp(),0,0,0)})
+            binding.gallery.addView(row)
+        }
+        if(!recipe.steps.isNullOrEmpty()) binding.gallery.addView(ui.text(this,getString(R.string.review_recipe_steps),21f,true))
+        recipe.steps.orEmpty().forEach{step->
+            binding.gallery.addView(ui.text(this,getString(R.string.review_recipe_step,step.stepNumber),15f,true).apply{setTextColor(Ui.blue);setPadding(0,16.dp(),0,6.dp())})
+            binding.gallery.addView(ui.text(this,com.familyrecipes.android.util.RecipeText.clean(step.description),18f).apply{setLineSpacing(4.dp().toFloat(),1.08f)})
+            step.image?.takeIf{it!=recipe.coverImage}?.let{addPhoto(it,null)}
+        }
+        val galleryUrls=com.familyrecipes.android.util.RecipeEditorRules.galleryUrls(recipe.coverImage,recipe.steps.orEmpty().map{it.image},recipe.images.orEmpty().map{it.url})
+        if(galleryUrls.isNotEmpty())binding.gallery.addView(ui.text(this,getString(R.string.review_recipe_photos),21f,true))
+        galleryUrls.forEach{url->addPhoto(url,recipe.images.orEmpty().firstOrNull{it.url==url}?.caption)}
+        if(recipe.description.isNullOrBlank() && recipe.steps.isNullOrEmpty() && recipe.ingredients.isNullOrEmpty())binding.gallery.addView(ui.text(this,getString(R.string.review_recipe_empty),16f))
+        binding.btnMore.setOnClickListener { showMoreActions(recipe) }
         val history=android.widget.LinearLayout(this).apply{orientation=android.widget.LinearLayout.VERTICAL};binding.gallery.addView(history)
-        lifecycleScope.launch{try{val records=ui.data(ApiClient.getService().cookingRecords(recipeId));history.addView(ui.text(this@RecipeDetailActivity,UiStrings.s(com.familyrecipes.android.R.string.ui_a40e588383),21f,true));records.forEach{r->history.addView(ui.text(this@RecipeDetailActivity,"${r.cookedAt.take(10)}\n${r.notes}"));com.google.gson.Gson().fromJson(r.images,Array<String>::class.java).orEmpty().forEach{url->val image=android.widget.ImageView(this@RecipeDetailActivity).apply{adjustViewBounds=true};history.addView(image);Glide.with(this@RecipeDetailActivity).load(com.familyrecipes.android.util.MediaImages.model(url)).into(image)}}}catch(e:kotlinx.coroutines.CancellationException){throw e}catch(e:Exception){history.addView(ui.text(this@RecipeDetailActivity,UiStrings.s(com.familyrecipes.android.R.string.ui_f24e502e92)))}}
+        recordsJob?.cancel()
+        recordsJob=lifecycleScope.launch{try{val records=ui.data(ApiClient.getService().cookingRecords(recipeId));if(records.isNotEmpty())history.addView(ui.text(this@RecipeDetailActivity,UiStrings.s(com.familyrecipes.android.R.string.ui_a40e588383),21f,true));records.forEach{r->history.addView(ui.text(this@RecipeDetailActivity,"${r.cookedAt.take(10)}\n${r.notes}"));com.google.gson.Gson().fromJson(r.images,Array<String>::class.java).orEmpty().forEach{url->val image=android.widget.ImageView(this@RecipeDetailActivity).apply{adjustViewBounds=true};history.addView(image);Glide.with(this@RecipeDetailActivity).load(com.familyrecipes.android.util.MediaImages.model(url)).into(image)}}}catch(e:kotlinx.coroutines.CancellationException){throw e}catch(e:Exception){history.addView(ui.text(this@RecipeDetailActivity,UiStrings.s(com.familyrecipes.android.R.string.ui_f24e502e92)))}}
         // 设置统计信息
         binding.tvViewCount.text = getString(R.string.recipe_views_compact, recipe.viewCount ?: 0)
         binding.tvFavoriteCount.text = getString(R.string.recipe_favorites_compact, recipe.favoriteCount ?: 0)
@@ -242,6 +332,14 @@ class RecipeDetailActivity : AppCompatActivity() {
         binding.btnDislike.setOnClickListener {
             toggleDislike()
         }
+        returnUpdatedRecipe()
+    }
+
+    private fun addPhoto(url:String,caption:String?) {
+        val image=android.widget.ImageView(this).apply{adjustViewBounds=true;maxHeight=(resources.displayMetrics.heightPixels*0.55f).toInt();scaleType=android.widget.ImageView.ScaleType.FIT_CENTER;contentDescription=caption ?: getString(R.string.review_image_description)}
+        binding.gallery.addView(image,android.widget.LinearLayout.LayoutParams(-1,-2).apply{topMargin=8.dp();bottomMargin=8.dp()})
+        Glide.with(this).load(com.familyrecipes.android.util.MediaImages.model(url)).signature(com.bumptech.glide.signature.ObjectKey(PreferenceManager.userId)).into(image)
+        if(!caption.isNullOrBlank())binding.gallery.addView(Ui.text(this,caption,14f).apply{setTextColor(Ui.muted)})
     }
 
     private fun updateFavoriteButton(isFavorite: Boolean) {
@@ -264,107 +362,36 @@ class RecipeDetailActivity : AppCompatActivity() {
         }
     }
 
-    private fun toggleFavorite() {
-        // 检查登录状态
-        if (!com.familyrecipes.android.util.AuthUtil.requireLogin(this, UiStrings.s(com.familyrecipes.android.R.string.ui_ae336cd047))) {
-            return
-        }
-        
-        lifecycleScope.launch {
-            try {
-                val response = ApiClient.getService().toggleFavorite(recipeId)
-                
-                if (response.isSuccessful && response.body()?.code == 200) {
-                    val isFavorite = response.body()?.data ?: false
-                    updateFavoriteButton(isFavorite)
-                    
-                    // 更新收藏数
-                    recipe?.let {
-                        val newCount = if (isFavorite) {
-                            (it.favoriteCount ?: 0) + 1
-                        } else {
-                            maxOf((it.favoriteCount ?: 0) - 1, 0)
-                        }
-                        recipe = it.copy(
-                            isFavorite = isFavorite,
-                            favoriteCount = newCount
-                        )
-                        binding.tvFavoriteCount.text = getString(R.string.recipe_favorites_compact, newCount)
-                    }
-                    
-                    // 设置 RESULT_OK 以便列表刷新
-                    setResult(RESULT_OK)
-                    
-                    val message = if (isFavorite) UiStrings.s(com.familyrecipes.android.R.string.ui_934ebd87e6) else UiStrings.s(com.familyrecipes.android.R.string.ui_3a906c714a)
-                    android.widget.Toast.makeText(this@RecipeDetailActivity, message, android.widget.Toast.LENGTH_SHORT).show()
-                } else {
-                    android.widget.Toast.makeText(
-                        this@RecipeDetailActivity,
-                        UiStrings.s(com.familyrecipes.android.R.string.ui_5fa802bef5),
-                        android.widget.Toast.LENGTH_SHORT
-                    ).show()
-                }
-            } catch (e: Exception) {
-                android.widget.Toast.makeText(
-                    this@RecipeDetailActivity,
-                    UiStrings.s(com.familyrecipes.android.R.string.ui_0bffc62bb3),
-                    android.widget.Toast.LENGTH_SHORT
-                ).show()
-                e.printStackTrace()
+    private fun toggleFavorite() = authenticated {
+        if(!reactionBusy) {
+            reactionBusy=true;binding.btnFavorite.isEnabled=false;binding.btnDislike.isEnabled=false
+            lifecycleScope.launch {
+                try {
+                    val favorite=Ui.data(ApiClient.getService().toggleFavorite(recipeId))
+                    recipe=recipe?.let{it.copy(isFavorite=favorite,favoriteCount=((it.favoriteCount?:0)+if(favorite)1 else -1).coerceAtLeast(0))}
+                    updateFavoriteButton(favorite)
+                    binding.tvFavoriteCount.text=getString(R.string.recipe_favorites_compact,recipe?.favoriteCount?:0)
+                    returnUpdatedRecipe()
+                } catch(e:CancellationException){throw e} catch(e:Exception){Ui.toast(this@RecipeDetailActivity,e)}
+                finally{reactionBusy=false;binding.btnFavorite.isEnabled=true;binding.btnDislike.isEnabled=true}
             }
         }
     }
-    
-    private fun toggleDislike() {
-        // 检查登录状态
-        if (!com.familyrecipes.android.util.AuthUtil.requireLogin(this, UiStrings.s(com.familyrecipes.android.R.string.ui_e62fbccc78))) {
-            return
-        }
-        
-        lifecycleScope.launch {
-            try {
-                val response = ApiClient.getService().toggleDislike(recipeId)
-                
-                if (response.isSuccessful && response.body()?.code == 200) {
-                    val isDisliked = response.body()?.data ?: false
-                    updateDislikeButton(isDisliked)
-                    
-                    // 更新差评数
-                    recipe?.let {
-                        val newCount = if (isDisliked) {
-                            (it.dislikeCount ?: 0) + 1
-                        } else {
-                            maxOf((it.dislikeCount ?: 0) - 1, 0)
-                        }
-                        recipe = it.copy(
-                            isDisliked = isDisliked,
-                            dislikeCount = newCount
-                        )
-                    }
-                    
-                    // 设置 RESULT_OK 以便列表刷新
-                    setResult(RESULT_OK)
-                    
-                    val message = if (isDisliked) UiStrings.s(com.familyrecipes.android.R.string.ui_6d02714217) else UiStrings.s(com.familyrecipes.android.R.string.ui_bf709ae4c8)
-                    android.widget.Toast.makeText(this@RecipeDetailActivity, message, android.widget.Toast.LENGTH_SHORT).show()
-                } else {
-                    android.widget.Toast.makeText(
-                        this@RecipeDetailActivity,
-                        UiStrings.s(com.familyrecipes.android.R.string.ui_5fa802bef5),
-                        android.widget.Toast.LENGTH_SHORT
-                    ).show()
-                }
-            } catch (e: Exception) {
-                android.widget.Toast.makeText(
-                    this@RecipeDetailActivity,
-                    UiStrings.s(com.familyrecipes.android.R.string.ui_0bffc62bb3),
-                    android.widget.Toast.LENGTH_SHORT
-                ).show()
-                e.printStackTrace()
+
+    private fun toggleDislike() = authenticated {
+        if(!reactionBusy) {
+            reactionBusy=true;binding.btnFavorite.isEnabled=false;binding.btnDislike.isEnabled=false
+            lifecycleScope.launch {
+                try {
+                    val disliked=Ui.data(ApiClient.getService().toggleDislike(recipeId))
+                    recipe=recipe?.let{it.copy(isDisliked=disliked,dislikeCount=((it.dislikeCount?:0)+if(disliked)1 else -1).coerceAtLeast(0))}
+                    updateDislikeButton(disliked);returnUpdatedRecipe()
+                } catch(e:CancellationException){throw e} catch(e:Exception){Ui.toast(this@RecipeDetailActivity,e)}
+                finally{reactionBusy=false;binding.btnFavorite.isEnabled=true;binding.btnDislike.isEnabled=true}
             }
         }
     }
-    
+
     /**
      * 通过tag搜索
      */
@@ -418,7 +445,6 @@ class ExternalLinkDetailAdapter(
     class LinkViewHolder(view: android.view.View) : androidx.recyclerview.widget.RecyclerView.ViewHolder(view) {
         val ivThumbnail: android.widget.ImageView = view.findViewById(com.familyrecipes.android.R.id.iv_thumbnail)
         val tvTitle: android.widget.TextView = view.findViewById(com.familyrecipes.android.R.id.tv_title)
-        val tvSource: android.widget.TextView = view.findViewById(com.familyrecipes.android.R.id.tv_source)
         val tvNotes: android.widget.TextView = view.findViewById(com.familyrecipes.android.R.id.tv_link_notes)
         val btnCopy: android.widget.ImageView = view.findViewById(com.familyrecipes.android.R.id.btn_copy)
         val btnOpen: android.widget.ImageView = view.findViewById(com.familyrecipes.android.R.id.btn_open)
@@ -433,25 +459,15 @@ class ExternalLinkDetailAdapter(
     override fun onBindViewHolder(holder: LinkViewHolder, position: Int) {
         val link = links[position]
         
-        holder.tvTitle.text = link.title
-        holder.tvSource.text = link.source ?: UiStrings.s(com.familyrecipes.android.R.string.ui_7ddbe15c84)
+        val platform=com.familyrecipes.android.util.LinkPlatform.fromUrl(link.url)
+        holder.tvTitle.text = link.title.ifBlank { link.url }
+        holder.ivThumbnail.setImageDrawable(com.familyrecipes.android.ui.design.PlatformBadge(platform))
+        holder.ivThumbnail.contentDescription=platform.label
         holder.tvNotes.text=link.notes.orEmpty()
         holder.tvNotes.visibility=if(link.notes.isNullOrBlank()) android.view.View.GONE else android.view.View.VISIBLE
         
-        // 加载缩略图
-        if (!link.thumbnail.isNullOrEmpty()) {
-            com.bumptech.glide.Glide.with(holder.itemView.context)
-                .load(com.familyrecipes.android.util.MediaImages.model(link.thumbnail))
-                .signature(com.bumptech.glide.signature.ObjectKey(com.familyrecipes.android.data.local.PreferenceManager.userId))
-                .placeholder(com.familyrecipes.android.R.drawable.placeholder_recipe)
-                .into(holder.ivThumbnail)
-        } else {
-            holder.ivThumbnail.setImageResource(com.familyrecipes.android.R.drawable.placeholder_recipe)
-        }
-        
         holder.itemView.setOnClickListener { onOpenClick(link.url) }
         holder.tvTitle.setOnClickListener { onOpenClick(link.url) }
-        holder.tvSource.setOnClickListener { onOpenClick(link.url) }
 
         // 复制按钮
         holder.btnCopy.setOnClickListener {

@@ -10,6 +10,8 @@ object UiStrings {
     fun domain(value:String):String = when(value) {
         "甜" -> s(com.familyrecipes.android.R.string.taste_sweet)
         "麻" -> s(com.familyrecipes.android.R.string.taste_numbing)
+        "苦" -> s(com.familyrecipes.android.R.string.taste_bitter)
+        "臭" -> s(com.familyrecipes.android.R.string.taste_pungent)
         "咸" -> s(com.familyrecipes.android.R.string.taste_salty)
         "酸" -> s(com.familyrecipes.android.R.string.enum_778b84eb)
         "辣" -> s(com.familyrecipes.android.R.string.enum_2134a402)

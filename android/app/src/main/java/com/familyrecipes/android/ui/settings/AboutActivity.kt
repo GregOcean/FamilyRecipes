@@ -2,7 +2,10 @@ package com.familyrecipes.android.ui.settings
 
 import android.content.Intent
 import android.os.Bundle
-import android.text.util.Linkify
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
+import com.familyrecipes.android.data.remote.ApiClient
 import androidx.appcompat.app.AppCompatActivity
 import com.familyrecipes.android.BuildConfig
 import com.familyrecipes.android.R
@@ -19,10 +22,14 @@ class AboutActivity:AppCompatActivity() {
         root.addView(Ui.text(this,getString(R.string.about_description),16f))
         root.addView(Ui.text(this,getString(R.string.about_learning_sources),20f,true))
         root.addView(Ui.text(this,getString(R.string.about_learning_note),16f))
-        val chapters=JSONArray(assets.open("learning/index.json").bufferedReader().use{it.readText()})
-        for(i in 0 until chapters.length()) {
-            val c=chapters.getJSONObject(i)
-            root.addView(Ui.text(this,"${c.getString("title")}\n${c.getString("source")}\n${c.getString("license")} · ${c.getString("revision")}",14f).apply { Linkify.addLinks(this,Linkify.WEB_URLS) })
+        root.addView(Ui.text(this,getString(R.string.about_sources_summary),16f))
+        val count=Ui.text(this,"",16f).apply{visibility=android.view.View.GONE}
+        root.addView(count)
+        lifecycleScope.launch {
+            try {
+                val total=Ui.data(ApiClient.getService().catalogSummary())["publicRecipes"]
+                if(total!=null){count.text=getString(R.string.about_catalog_count,total);count.visibility=android.view.View.VISIBLE}
+            }catch(e:CancellationException){throw e}catch(_:Exception){ /* Never display a guessed count. */ }
         }
         root.addView(Ui.button(this,getString(R.string.content_sources)) {startActivity(Intent(this,ContentSourcesActivity::class.java))})
     }

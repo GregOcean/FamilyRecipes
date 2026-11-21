@@ -1,0 +1,11 @@
+<resources>
+    <string name="filter_source">来源</string>
+    <string name="source_all">全部</string>
+    <string name="source_created">我创建的</string>
+    <string name="source_known">我会做</string>
+    <string name="source_favorites">我收藏的</string>
+    <string name="source_shared">分享给我的</string>
+    <string name="source_selected_count">已选 %1$d 项</string>
+    <string name="recipe_search_short">搜索菜谱</string>
+    <string name="recipe_search_clear">清空搜索</string>
+</resources>

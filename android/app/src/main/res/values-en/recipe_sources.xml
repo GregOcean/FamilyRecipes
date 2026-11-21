@@ -1,0 +1,11 @@
+<resources>
+    <string name="filter_source">Source</string>
+    <string name="source_all">All</string>
+    <string name="source_created">Created by me</string>
+    <string name="source_known">I can cook</string>
+    <string name="source_favorites">My favorites</string>
+    <string name="source_shared">Shared with me</string>
+    <string name="source_selected_count">%1$d selected</string>
+    <string name="recipe_search_short">Search recipes</string>
+    <string name="recipe_search_clear">Clear search</string>
+</resources>

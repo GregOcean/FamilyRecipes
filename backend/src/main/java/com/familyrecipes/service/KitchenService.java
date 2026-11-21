@@ -11,17 +11,23 @@ public class KitchenService {
     @Autowired private KitchenMapper kitchens;
     @Autowired private GroupChatMapper groups;
     @Autowired private UserMapper users;
+    static String defaultName(String chinese,String english) {
+        var context=org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+        String language=context instanceof org.springframework.web.context.request.ServletRequestAttributes servlet
+            ? servlet.getRequest().getHeader("Accept-Language") : null;
+        return "en".equals(com.familyrecipes.translation.TranslationService.language(language))?english:chinese;
+    }
     @Transactional
     public List<Kitchen> list(Long userId) {
         // Serialize first-use initialization across concurrent requests for the same account.
         if (users.lockId(userId) == null) throw new ApiException(404,"用户不存在");
         List<Kitchen> existing = kitchens.list(userId);
-        if (existing.isEmpty()) createPersonalKitchen("我的厨房", userId);
+        if (existing.isEmpty()) createPersonalKitchen(defaultName("我的厨房","My kitchen"), userId);
         return kitchens.list(userId);
     }
     private Kitchen createPersonalKitchen(String name, Long userId) {
         var group = new com.familyrecipes.model.GroupChat();
-        group.setName("我的家庭"); group.setCreatorId(userId); group.setManagerId(userId);
+        group.setName(defaultName("我的厨房群","My kitchen group")); group.setCreatorId(userId); group.setManagerId(userId);
         group.setMemberCount(1); group.setMaxMembers(10);
         groups.insertGroup(group);
         var member = new com.familyrecipes.model.GroupMember();

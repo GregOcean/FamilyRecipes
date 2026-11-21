@@ -1,0 +1,5 @@
+<resources>
+<string name="dislike_short">踩</string>
+<string name="about_sources_summary">菜谱来源：HowToCook、Wikibooks、UniTools 及用户分享。新手入门和进阶知识整理自 HowToCook。</string>
+<string name="about_catalog_count">公共菜谱：%1$d 道</string>
+</resources>

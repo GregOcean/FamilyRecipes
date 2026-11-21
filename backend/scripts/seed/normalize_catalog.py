@@ -6,6 +6,7 @@ import json
 import re
 from pathlib import Path
 from collect_open_sources import OUT, write_json
+from recipe_text import clean as clean_artifacts, strip_templates
 
 
 def clean(text, wiki=False):
@@ -19,7 +20,7 @@ def clean(text, wiki=False):
     text=re.sub(r'<br\s*/?>','\n',text,flags=re.I)
     text=re.sub(r'<[^>]+>','',text)
     text=html.unescape(text).replace("'''",'').replace("''",'')
-    return text.strip()
+    return clean_artifacts(text)
 
 
 def sections(text,wiki=False):
@@ -50,7 +51,7 @@ def normalize(r):
         if not ingredients_text.strip() or not procedure.strip():return None,'missing recognizable ingredients/procedure'
         if wiki and ('{{' in procedure or '{{' in ingredients_text):return None,'unresolved wiki templates; needs structured parsing/review'
         intro=clean(parts.get('intro',''),wiki)
-        if wiki:intro=re.sub(r'\{\{.*?\}\}','',intro,flags=re.S).strip(' |\n')
+        if wiki:intro=strip_templates(intro).strip(' |\n')
         else:intro=re.sub(r'^# .*\n?','',intro).strip()
         recipe['description']=intro+'\n\n'+('Ingredients' if wiki else '食材与用量')+'\n'+clean(ingredients_text,wiki)
         # Keep quantities verbatim; do not guess ingredient IDs from free text.
