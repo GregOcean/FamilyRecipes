@@ -300,7 +300,7 @@ class MealEditorActivity : AppCompatActivity() {
         if (!::shoppingList.isInitialized) return
         shoppingList.removeAllViews()
         if (model.shopping.isEmpty()) {
-            shoppingList.addView(Ui.text(this, getString(R.string.meal_dishes_empty), 14f).apply { setTextColor(Ui.muted) })
+            shoppingList.addView(Ui.text(this, getString(R.string.meal_shopping_empty), 14f).apply { setTextColor(Ui.muted) })
             return
         }
         model.shopping.forEachIndexed { i, item ->
@@ -315,7 +315,7 @@ class MealEditorActivity : AppCompatActivity() {
                         draft()
                     }
                 }, LinearLayout.LayoutParams(0, -2, 1f))
-            row.addView(Ui.button(this, getString(R.string.draft_delete)) {
+            row.addView(Ui.button(this, getString(R.string.meal_remove_item)) {
                 saved = false
                 model = model.copy(shopping = model.shopping.filterIndexed { j, _ -> j != i })
                 renderShopping(); draft()

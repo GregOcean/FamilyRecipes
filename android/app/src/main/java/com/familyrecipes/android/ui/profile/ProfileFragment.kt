@@ -198,12 +198,14 @@ class ProfileFragment : Fragment() {
         if (isLoginMode) {
             binding.layoutUsername.visibility = View.GONE
             binding.etEmail.hint = getString(R.string.login_account_hint)
+            binding.tilEmail.hint = getString(R.string.login_account_hint)
             binding.etEmail.inputType = android.text.InputType.TYPE_CLASS_TEXT
             binding.btnLogin.text = UiStrings.s(com.familyrecipes.android.R.string.ui_402d19e50f)
             binding.tvSwitchMode.text = UiStrings.s(com.familyrecipes.android.R.string.ui_d8f9fa703c)
         } else {
             binding.layoutUsername.visibility = View.VISIBLE
             binding.etEmail.hint = UiStrings.s(com.familyrecipes.android.R.string.ui_3bc5e602b2)
+            binding.tilEmail.hint = UiStrings.s(com.familyrecipes.android.R.string.ui_3bc5e602b2)
             binding.etEmail.inputType = android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
             binding.btnLogin.text = UiStrings.s(com.familyrecipes.android.R.string.ui_fe0e8bf768)
             binding.tvSwitchMode.text = UiStrings.s(com.familyrecipes.android.R.string.ui_7c1277e4fd)

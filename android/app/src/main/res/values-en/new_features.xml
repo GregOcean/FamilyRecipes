@@ -82,4 +82,6 @@ Steamed fish: sea bass, scallion, ginger</string>
 <string name="meal_no_ingredients">No ingredients yet. Build them from recipes or add manually</string>
 <string name="meal_add_shopping_hint">Add a shopping item</string>
 <string name="meal_when">This meal</string>
+<string name="meal_remove_item">Remove</string>
+<string name="meal_shopping_empty">Nothing to buy yet. Build from recipes or add manually</string>
 </resources>

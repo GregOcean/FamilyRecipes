@@ -68,10 +68,15 @@ public class UserService {
 
     public record LoginResult(String token, User user) {}
 
+    /** 兼容原有调用方，只返回 token。 */
+    public String login(String account, String password) {
+        return loginForAccount(account, password).token();
+    }
+
     /**
      * 用户登录（支持邮箱或用户名）。用户名并非唯一索引，因此按密码匹配唯一账号。
      */
-    public LoginResult login(String account, String password) {
+    public LoginResult loginForAccount(String account, String password) {
         String value = account == null ? "" : account.trim();
         User user = null;
         if (value.contains("@")) {

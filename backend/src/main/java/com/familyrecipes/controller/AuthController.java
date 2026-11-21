@@ -47,7 +47,7 @@ public class AuthController {
     public Result<LoginResponse> login(@jakarta.validation.Valid @RequestBody LoginRequest request) {
         try {
             String account = request.resolvedAccount();
-            var login = userService.login(account, request.getPassword());
+            var login = userService.loginForAccount(account, request.getPassword());
             String token = login.token();
             User user = login.user();
             user.setPassword(null);
