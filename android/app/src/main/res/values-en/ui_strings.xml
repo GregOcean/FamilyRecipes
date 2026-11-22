@@ -24,6 +24,7 @@
   <string name="expiry_date" formatted="false">Expiry date</string>
   <string name="mark_consumed" formatted="false">Mark used up</string>
   <string name="logout" formatted="false">Sign out</string>
+  <string name="switch_account" formatted="false">Switch account</string>
   <string name="my_recipes" formatted="false">My recipes</string>
   <string name="my_favorites" formatted="false">Favorites</string>
   <string name="ui_d2ff29c1f6" formatted="false">No available kitchen</string>

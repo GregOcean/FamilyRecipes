@@ -36,6 +36,7 @@
     
     <!-- 个人中心 -->
     <string name="logout">退出登录</string>
+    <string name="switch_account">切换账号</string>
     <string name="my_recipes">我的菜谱</string>
     <string name="my_favorites">我的收藏</string>
     <string name="chat_search_hint">搜索聊天记录</string>

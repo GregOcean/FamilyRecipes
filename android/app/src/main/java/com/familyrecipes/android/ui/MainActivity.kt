@@ -32,6 +32,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var drawer: DrawerLayout
     private lateinit var recipeSearch: com.google.android.material.button.MaterialButton
     private lateinit var inventorySearch: EditText
+    private lateinit var mealOrderTab: com.google.android.material.button.MaterialButton
+    private lateinit var mealPrepTab: com.google.android.material.button.MaterialButton
     private lateinit var kitchenLabel: Button
     private lateinit var container: FrameLayout
     private lateinit var bottom: LinearLayout
@@ -44,6 +46,7 @@ class MainActivity : AppCompatActivity() {
     private var pendingNeedsKitchen = false
     private var kitchenJob: Job? = null
     private var selected = "recipes"
+    private var mealTab = "order"
     private var currentKitchenName = UiStrings.s(com.familyrecipes.android.R.string.ui_056b3fdd26)
 
     override fun onCreate(state: Bundle?) {
@@ -51,6 +54,7 @@ class MainActivity : AppCompatActivity() {
         pendingPage = state?.getString("pending_page")
         pendingLaunch = state?.getParcelable("pending_launch")
         pendingNeedsKitchen = state?.getBoolean("pending_kitchen") ?: false
+        mealTab = if (state?.getString("meal_tab") == "prep") "prep" else "order"
         drawer = DrawerLayout(this)
         val shell = Ui.box(this, 0)
         val top =
@@ -119,6 +123,18 @@ class MainActivity : AppCompatActivity() {
                 fridge?.filterByQuery(query)
             }
         })
+        mealOrderTab = Ui.button(this, UiStrings.s(com.familyrecipes.android.R.string.ui_d85522beda)) { switchMealTab("order") }.apply {
+            isAllCaps=false;textSize=13f;minWidth=0;minimumWidth=0;minHeight=0;minimumHeight=0
+            setPadding(10.dp(),0,10.dp(),0)
+            visibility=android.view.View.GONE
+        }
+        mealPrepTab = Ui.button(this, UiStrings.s(com.familyrecipes.android.R.string.ui_90e2746c75)) { switchMealTab("prep") }.apply {
+            isAllCaps=false;textSize=13f;minWidth=0;minimumWidth=0;minHeight=0;minimumHeight=0
+            setPadding(10.dp(),0,10.dp(),0)
+            visibility=android.view.View.GONE
+        }
+        top.addView(mealOrderTab, LinearLayout.LayoutParams(-2, 36.dp()).apply { gravity=Gravity.CENTER_VERTICAL; marginEnd=2.dp() })
+        top.addView(mealPrepTab, LinearLayout.LayoutParams(-2, 36.dp()).apply { gravity=Gravity.CENTER_VERTICAL; marginEnd=6.dp() })
         avatar=FrameLayout(this).apply {
             contentDescription=getString(R.string.ui_c32eedbf88)
             isFocusable=true
@@ -261,6 +277,7 @@ class MainActivity : AppCompatActivity() {
         out.putString("pending_page", pendingPage)
         out.putParcelable("pending_launch", pendingLaunch)
         out.putBoolean("pending_kitchen", pendingNeedsKitchen)
+        out.putString("meal_tab", mealTab)
     }
 
     fun showPage(page: String) {
@@ -286,6 +303,10 @@ class MainActivity : AppCompatActivity() {
         if (found == null) transaction.add(container.id, fragment, tag) else transaction.show(found)
         transaction.setMaxLifecycle(found ?: fragment,Lifecycle.State.RESUMED)
         transaction.commit()
+        if(page=="meals") {
+            supportFragmentManager.executePendingTransactions()
+            (supportFragmentManager.findFragmentByTag(tag) as? MealFragment)?.showTab(mealTab)
+        }
         if(page=="recipes")setRecipeSearchQuery((found as? RecipeListFragment)?.currentQuery().orEmpty())
         if(page=="stock") {
             supportFragmentManager.executePendingTransactions()
@@ -305,10 +326,33 @@ class MainActivity : AppCompatActivity() {
     private fun updateHeaderLayout() {
         recipeSearch.visibility=if(selected=="recipes")android.view.View.VISIBLE else android.view.View.GONE
         inventorySearch.visibility=if(selected=="stock")android.view.View.VISIBLE else android.view.View.GONE
+        val showMealTabs = selected == "meals"
+        mealOrderTab.visibility=if(showMealTabs)android.view.View.VISIBLE else android.view.View.GONE
+        mealPrepTab.visibility=if(showMealTabs)android.view.View.VISIBLE else android.view.View.GONE
         // Show kitchen label for both recipes and stock pages
         val showKitchen = selected=="recipes" || selected=="stock"
         kitchenLabel.visibility = if(showKitchen) android.view.View.VISIBLE else android.view.View.INVISIBLE
         kitchenLabel.layoutParams=LinearLayout.LayoutParams(if(showKitchen)96.dp() else 0,-2,if(showKitchen)0f else 1f)
+        refreshMealTabStyle()
+    }
+
+    /** 点菜/备菜由顶部按钮和页面左右滑动共同控制。 */
+    fun switchMealTab(value: String) {
+        mealTab = if (value == "prep") "prep" else "order"
+        refreshMealTabStyle()
+        supportFragmentManager.executePendingTransactions()
+        (supportFragmentManager.findFragmentByTag("main:meals") as? MealFragment)?.showTab(mealTab)
+    }
+
+    private fun refreshMealTabStyle() {
+        if (!::mealOrderTab.isInitialized) return
+        listOf(mealOrderTab to "order", mealPrepTab to "prep").forEach { (button, key) ->
+            val active = key == mealTab
+            button.setTextColor(if (active) Ui.blue else Ui.muted)
+            button.backgroundTintList = android.content.res.ColorStateList.valueOf(if (active) Ui.pale else android.graphics.Color.TRANSPARENT)
+            button.strokeWidth = if (active) 1.dp() else 0
+            button.strokeColor = android.content.res.ColorStateList.valueOf(Ui.blue)
+        }
     }
 
     fun setRecipeSearchQuery(query:String) {

@@ -109,5 +109,21 @@ class SettingsActivity: AppCompatActivity(){
         else form.addView(Ui.button(this,getString(com.familyrecipes.android.R.string.login_for_reminders)) {
             com.familyrecipes.android.util.AuthUtil.navigateToProfile(this)
         })
+        if (com.familyrecipes.android.data.local.PreferenceManager.isLoggedIn()) {
+            root.addView(android.view.View(this).apply { layoutParams = LinearLayout.LayoutParams(-1, (24 * resources.displayMetrics.density).toInt()) })
+            root.addView(Ui.entry(this, getString(com.familyrecipes.android.R.string.switch_account), "", com.familyrecipes.android.R.drawable.ic_person_filled) {
+                com.familyrecipes.android.data.local.PreferenceManager.clearUserData()
+                startActivity(Intent(this, com.familyrecipes.android.ui.MainActivity::class.java)
+                    .putExtra("navigate_to", "profile")
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+                finish()
+            })
+            root.addView(Ui.entry(this, getString(com.familyrecipes.android.R.string.logout), "", com.familyrecipes.android.R.drawable.ic_logout, Ui.muted, Ui.bg) {
+                com.familyrecipes.android.data.local.PreferenceManager.clearUserData()
+                startActivity(Intent(this, com.familyrecipes.android.ui.MainActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+                finish()
+            })
+        }
     }
 }

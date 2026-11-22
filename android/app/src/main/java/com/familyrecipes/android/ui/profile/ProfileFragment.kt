@@ -113,8 +113,8 @@ class ProfileFragment : Fragment() {
     }
     private fun openMeals(tab:String) {
         val host=activity as? com.familyrecipes.android.ui.MainActivity ?: return
-        host.showPage("meals");host.supportFragmentManager.executePendingTransactions()
-        (host.supportFragmentManager.findFragmentByTag("main:meals") as? com.familyrecipes.android.ui.meal.MealFragment)?.showTab(tab)
+        host.showPage("meals")
+        host.switchMealTab(tab)
     }
     private fun showProfilePage() {
         binding.layoutLogin.visibility=View.GONE
@@ -155,10 +155,6 @@ class ProfileFragment : Fragment() {
         root.addView(Ui.entry(c,UiStrings.s(com.familyrecipes.android.R.string.ui_e366ccf155),UiStrings.s(com.familyrecipes.android.R.string.ui_c86435dc69),R.drawable.ic_settings){startActivity(Intent(c,com.familyrecipes.android.ui.settings.SettingsActivity::class.java))})
         root.addView(Ui.entry(c,UiStrings.s(com.familyrecipes.android.R.string.ui_4a86cd505e),UiStrings.s(com.familyrecipes.android.R.string.ui_8b4169e947),R.drawable.ic_qr_code){startActivity(Intent(c,com.familyrecipes.android.ui.social.MyQRCodeActivity::class.java))})
         root.addView(Ui.entry(c,UiStrings.s(com.familyrecipes.android.R.string.ui_c3af9f8f1d),UiStrings.s(com.familyrecipes.android.R.string.ui_a1d036fe76),R.drawable.ic_ui_draft){showTrash()})
-        root.addView(Ui.button(c,UiStrings.s(com.familyrecipes.android.R.string.ui_44efd179aa)){
-            PreferenceManager.clearUserData()
-            startActivity(Intent(c,com.familyrecipes.android.ui.MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        })
         loadRecipeCounts()
     }
 

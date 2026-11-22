@@ -25,21 +25,15 @@ class MealFragment : Fragment() {
     private lateinit var quickSend: com.google.android.material.button.MaterialButton
     private var quickBusy = false
     private var tab = "order"
-    private val tabButtons=mutableMapOf<String,com.google.android.material.button.MaterialButton>()
     private var job: Job? = null
 
     override fun onCreateView(i: LayoutInflater, c: ViewGroup?, s: Bundle?): View {
         tab = if ((s?.getString("tab") ?: tab)=="prep") "prep" else "order"
+        val swipe = com.familyrecipes.android.ui.design.SwipeTabLayout(requireContext())
         val root = Ui.box(requireContext(),12)
-        val row = Ui.row(requireContext())
-        listOf("order" to UiStrings.s(com.familyrecipes.android.R.string.ui_d85522beda), "prep" to UiStrings.s(com.familyrecipes.android.R.string.ui_90e2746c75)).forEach { (key, title) ->
-            val button=Ui.button(requireContext(), title) {showTab(key)}
-            tabButtons[key]=button
-            row.addView(
-                button,
-                LinearLayout.LayoutParams(0, -2, 1f).apply { marginStart = requireContext().dp(2); marginEnd = requireContext().dp(2) })
-        }
-        root.addView(row)
+        swipe.addView(root, FrameLayout.LayoutParams(-1, -1))
+        swipe.onSwipeLeft = { switchBySwipe("prep") }
+        swipe.onSwipeRight = { switchBySwipe("order") }
         composer = buildOrderComposer()
         root.addView(composer)
         val section=Ui.row(requireContext())
@@ -54,7 +48,13 @@ class MealFragment : Fragment() {
         val content=Ui.box(requireContext(),0)
         content.addView(list);content.addView(drafts)
         root.addView(Ui.scroll(requireContext(), content), LinearLayout.LayoutParams(-1, 0, 1f))
-        return root
+        return swipe
+    }
+
+    private fun switchBySwipe(value: String) {
+        if (tab == value) return
+        val host = activity as? com.familyrecipes.android.ui.MainActivity
+        if (host != null) host.switchMealTab(value) else showTab(value)
     }
 
     /**
@@ -159,6 +159,8 @@ class MealFragment : Fragment() {
         if (!hidden) load()
     }
 
+    fun currentTab(): String = tab
+
     fun showTab(value:String) { tab=if(value=="prep")"prep" else "order";load() }
 
     private fun load() {
@@ -168,12 +170,6 @@ class MealFragment : Fragment() {
             else getString(com.familyrecipes.android.R.string.meal_my_order)
         addButton.text=if(tab=="prep")getString(com.familyrecipes.android.R.string.meal_prep_new)
             else getString(com.familyrecipes.android.R.string.meal_quick_more)
-        tabButtons.forEach{(key,b)->
-            b.setTextColor(if(key==tab)Ui.blue else Ui.muted)
-            b.backgroundTintList=android.content.res.ColorStateList.valueOf(if(key==tab)Ui.pale else Ui.bg)
-            b.strokeWidth=if(key==tab)requireContext().dp(1) else 0
-            b.strokeColor=android.content.res.ColorStateList.valueOf(Ui.blue)
-        }
         job?.cancel()
         val kind=tab
         val account=LocalStore.account
