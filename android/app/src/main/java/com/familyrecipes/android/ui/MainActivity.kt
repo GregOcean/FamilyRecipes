@@ -176,6 +176,7 @@ class MainActivity : AppCompatActivity() {
             clear.commitNow()
         }
         if (state == null || accountChanged) showPage(selected)
+        applySearchIntent(intent)
         initializeKitchen()
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.RESUMED) {
@@ -232,7 +233,21 @@ class MainActivity : AppCompatActivity() {
             "profile" -> showPage("profile")
             "message" -> showPage("messages")
             "fridge" -> showPage("stock")
+            "recipes" -> showPage("recipes")
         }
+        applySearchIntent(intent)
+    }
+
+    /** 从标签等处打开时，直接按搜索框同样的方式展示菜谱搜索结果。 */
+    private fun applySearchIntent(intent: Intent?) {
+        val query = intent?.getStringExtra("search_keyword")?.trim().orEmpty()
+        if (query.isEmpty()) return
+        intent?.removeExtra("search_keyword")
+        showPage("recipes")
+        supportFragmentManager.executePendingTransactions()
+        (supportFragmentManager.findFragmentByTag("main:recipes") as? RecipeListFragment)
+            ?.performSearch(query)
+        setRecipeSearchQuery(query)
     }
 
     override fun onResume(){super.onResume();if(::kitchenLabel.isInitialized)initializeKitchen()}
@@ -292,7 +307,7 @@ class MainActivity : AppCompatActivity() {
         inventorySearch.visibility=if(selected=="stock")android.view.View.VISIBLE else android.view.View.GONE
         // Show kitchen label for both recipes and stock pages
         val showKitchen = selected=="recipes" || selected=="stock"
-        kitchenLabel.visibility = if(showKitchen) android.view.View.VISIBLE else android.view.View.GONE
+        kitchenLabel.visibility = if(showKitchen) android.view.View.VISIBLE else android.view.View.INVISIBLE
         kitchenLabel.layoutParams=LinearLayout.LayoutParams(if(showKitchen)96.dp() else 0,-2,if(showKitchen)0f else 1f)
     }
 

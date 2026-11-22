@@ -486,11 +486,14 @@ class RecipeDetailActivity : AppCompatActivity() {
      * 通过tag搜索
      */
     private fun searchByTag(tagValue: String) {
-        val intent = android.content.Intent(this, com.familyrecipes.android.ui.search.SearchResultActivity::class.java).apply {
-            putExtra(com.familyrecipes.android.ui.search.SearchResultActivity.EXTRA_KEYWORD, "#$tagValue")
-            putExtra(com.familyrecipes.android.ui.search.SearchResultActivity.EXTRA_PRIORITY_TYPE, "relevance")
+        // 回到菜谱页并使用搜索框同样的搜索路径，保证结果与手动搜标签一致。
+        val intent = android.content.Intent(this, com.familyrecipes.android.ui.MainActivity::class.java).apply {
+            putExtra("navigate_to", "recipes")
+            putExtra("search_keyword", "#$tagValue")
+            addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP or android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP)
         }
         startActivity(intent)
+        finish()
     }
     
     /**
