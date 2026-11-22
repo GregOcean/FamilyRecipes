@@ -77,7 +77,7 @@ public class MediaService {
     }
 
     public void validateCategory(String category) {
-        if(category==null || !java.util.Set.of("cover","step","screenshot","cooking_record","inventory","sticker","other").contains(category))
+        if(category==null || !java.util.Set.of("cover","step","screenshot","cooking_record","inventory","sticker","avatar","other").contains(category))
             throw new ApiException(400,"图片分类不合法");
     }
     public String upload(MultipartFile file, Long userId,String category) throws IOException {

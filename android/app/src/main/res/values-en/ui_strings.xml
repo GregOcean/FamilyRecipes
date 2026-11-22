@@ -25,6 +25,14 @@
   <string name="mark_consumed" formatted="false">Mark used up</string>
   <string name="logout" formatted="false">Sign out</string>
   <string name="switch_account" formatted="false">Switch account</string>
+  <string name="cancel_switch" formatted="false">Cancel</string>
+  <string name="edit_profile" formatted="false">Edit profile</string>
+  <string name="edit_profile_sub" formatted="false">Photo and username</string>
+  <string name="change_avatar" formatted="false">Change photo</string>
+  <string name="avatar_uploading" formatted="false">Uploading photo…</string>
+  <string name="avatar_updated" formatted="false">Photo updated</string>
+  <string name="upload_failed" formatted="false">Photo upload failed</string>
+  <string name="profile_updated" formatted="false">Profile updated</string>
   <string name="my_recipes" formatted="false">My recipes</string>
   <string name="my_favorites" formatted="false">Favorites</string>
   <string name="ui_d2ff29c1f6" formatted="false">No available kitchen</string>

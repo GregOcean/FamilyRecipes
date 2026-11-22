@@ -40,8 +40,18 @@ class FridgeAdapter(
             val expiry = item.expiryDate?.let{if(status!=null)it else binding.root.context.getString(com.familyrecipes.android.R.string.expiry_value,it)}
                 ?: binding.root.context.getString(com.familyrecipes.android.R.string.inventory_unknown_expiry)
             binding.tvExpiryDate.text = listOfNotNull(status?.let{binding.root.context.getString(it)},expiry).joinToString(" · ")
-            binding.tvExpiryDate.setTextColor(binding.root.context.getColor(
-                if(item.status==FridgeItem.STATUS_EXPIRED || item.status==FridgeItem.STATUS_EXPIRING)com.familyrecipes.android.R.color.primary else com.familyrecipes.android.R.color.text_secondary))
+            val expiryColor = when (item.status) {
+                FridgeItem.STATUS_EXPIRED -> com.familyrecipes.android.R.color.expiry_expired
+                FridgeItem.STATUS_EXPIRING -> com.familyrecipes.android.R.color.expiry_soon
+                FridgeItem.STATUS_NORMAL -> com.familyrecipes.android.R.color.expiry_fresh
+                else -> com.familyrecipes.android.R.color.text_secondary
+            }
+            binding.tvExpiryDate.setTextColor(binding.root.context.getColor(expiryColor))
+            binding.tvExpiryDate.setTypeface(
+                null,
+                if (item.status == FridgeItem.STATUS_EXPIRED || item.status == FridgeItem.STATUS_EXPIRING)
+                    android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL
+            )
 
             binding.btnMore.setOnClickListener { onManage(item) }
             binding.root.setOnLongClickListener { onManage(item);true }

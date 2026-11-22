@@ -60,7 +60,7 @@ object UserAvatar {
         if(!url.isNullOrBlank()) {
             val image=ImageView(c)
             frame.addView(image,FrameLayout.LayoutParams(-1,-1))
-            Glide.with(image).load(MediaImages.model(url)).signature(ObjectKey(PreferenceManager.userId)).centerCrop().into(image)
+            Glide.with(image).load(MediaImages.model(url)).signature(ObjectKey(url)).centerCrop().into(image)
         }
         return frame
     }

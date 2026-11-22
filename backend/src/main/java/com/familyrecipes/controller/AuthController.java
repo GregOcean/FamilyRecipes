@@ -73,6 +73,17 @@ public class AuthController {
         return Result.success(OwnUser.from(user));
     }
 
+    /**
+     * 更新当前用户的资料（用户名、头像）
+     */
+    @PutMapping("/profile")
+    public Result<OwnUser> updateProfile(@jakarta.validation.Valid @RequestBody ProfileRequest request,
+                                         HttpServletRequest httpRequest) {
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        User user = userService.updateProfile(userId, request.getUsername(), request.getAvatar());
+        return Result.success(OwnUser.from(user));
+    }
+
     @Autowired private com.familyrecipes.service.EmailVerificationService emailCodes;
     @PostMapping("/registration-code")
     public Result<java.util.Map<String,Integer>> sendRegistrationCode(@jakarta.validation.Valid @RequestBody CodeRequest request,
@@ -91,6 +102,17 @@ public class AuthController {
         passwordReset.reset(body.getEmail(),body.getCode(),body.getPassword());
         return Result.success();
     }
+    @Data
+    static class ProfileRequest {
+        @NotBlank(message = "用户名不能为空")
+        @jakarta.validation.constraints.Size(min = 1, max = 50, message = "用户名最多50个字符")
+        private String username;
+
+        /** 为空表示不修改头像 */
+        @jakarta.validation.constraints.Size(max = 500)
+        private String avatar;
+    }
+
     @Data
     static class ResetRequest {
         @NotBlank @Email @jakarta.validation.constraints.Size(max=100) private String email;

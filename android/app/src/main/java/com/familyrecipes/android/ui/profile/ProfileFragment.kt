@@ -18,6 +18,8 @@ import com.familyrecipes.android.data.local.PreferenceManager
 import com.familyrecipes.android.data.remote.ApiClient
 import com.familyrecipes.android.databinding.FragmentProfileBinding
 import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.asRequestBody
 
 /**
  * 我的Fragment - 整合登录和个人信息
@@ -29,6 +31,10 @@ class ProfileFragment : Fragment() {
     
     // 登录/注册模式标志
     private var isLoginMode = true
+    private val switchAccountMode get() = arguments?.getBoolean("switch_account") == true
+    private val avatarPicker = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
+        uri?.let { uploadAvatar(it) }
+    }
     private var codeRequestPending=false
     private var codeCooldown:kotlinx.coroutines.Job?=null
     private val resendAt=mutableMapOf<String,Long>()
@@ -89,7 +95,10 @@ class ProfileFragment : Fragment() {
     }
 
     private fun checkLoginStatus() {
-        if (PreferenceManager.isLoggedIn()) {
+        if (switchAccountMode) {
+            // 切换账号页面始终从登录视图开始，登录成功前不改动当前会话。
+            showLoginPage()
+        } else if (PreferenceManager.isLoggedIn()) {
             // 已登录，显示个人信息页面
             showProfilePage()
         } else {
@@ -104,6 +113,20 @@ class ProfileFragment : Fragment() {
         
         renderLoginMode()
         setupLoginListeners()
+        addSwitchCancelButton()
+    }
+
+    /** 切换账号是独立页面，未完成登录前当前账号保持不变；这里提供返回入口。 */
+    private fun addSwitchCancelButton() {
+        if (!switchAccountMode || binding.layoutLogin.findViewWithTag<View>("switch_cancel") != null) return
+        val c = requireContext()
+        val container = binding.layoutLogin.getChildAt(0) as? LinearLayout ?: return
+        val cancel = Ui.button(c, UiStrings.s(R.string.cancel_switch)) { requireActivity().finish() }.apply {
+            tag = "switch_cancel"
+            setBackgroundColor(android.graphics.Color.TRANSPARENT)
+            setTextColor(Ui.muted)
+        }
+        container.addView(cancel, 0, LinearLayout.LayoutParams(-1, c.dp(44)).apply { bottomMargin = c.dp(4) })
     }
 
     private var quickLinksAdded=false
@@ -125,11 +148,15 @@ class ProfileFragment : Fragment() {
         val root=Ui.box(c)
         binding.layoutProfile.removeAllViews();binding.layoutProfile.addView(root)
         val identity=Ui.row(c)
-        identity.addView(com.familyrecipes.android.ui.design.UserAvatar.current(c, viewLifecycleOwner),LinearLayout.LayoutParams(c.dp(76),c.dp(76)))
+        val avatarView = com.familyrecipes.android.ui.design.UserAvatar.current(c, viewLifecycleOwner)
+        avatarView.setOnClickListener { avatarPicker.launch("image/*") }
+        identity.addView(avatarView,LinearLayout.LayoutParams(c.dp(76),c.dp(76)))
         val bio=Ui.box(c,0).apply{setPadding(c.dp(16),0,0,0)}
         bio.addView(Ui.text(c,PreferenceManager.userName ?: UiStrings.s(com.familyrecipes.android.R.string.ui_2878420820),25f,true))
         bio.addView(Ui.text(c,PreferenceManager.userEmail.orEmpty(),14f).apply{setTextColor(Ui.muted)})
         identity.addView(bio,LinearLayout.LayoutParams(0,-2,1f));root.addView(identity)
+        root.addView(Ui.entry(c, UiStrings.s(R.string.edit_profile), UiStrings.s(R.string.edit_profile_sub), R.drawable.ic_person_filled) { showEditProfile() },
+            LinearLayout.LayoutParams(-1,-2).apply{topMargin=c.dp(8)})
         val numbers=Ui.card(c).apply{orientation=LinearLayout.HORIZONTAL;setPadding(0,c.dp(14),0,c.dp(14))}
         listOf("created" to UiStrings.s(com.familyrecipes.android.R.string.ui_2f8ba39ad4),"favorites" to UiStrings.s(com.familyrecipes.android.R.string.ui_975ff67ee1),"known" to UiStrings.s(com.familyrecipes.android.R.string.ui_d3617a614a)).forEach{(key,label)->
             val item=Ui.box(c,0).apply{setBackgroundColor(android.graphics.Color.TRANSPARENT);gravity=android.view.Gravity.CENTER;minimumHeight=c.dp(72);isFocusable=true}
@@ -238,6 +265,13 @@ class ProfileFragment : Fragment() {
                             loginData.user.email,
                             loginData.user.username
                         )
+                        if (switchAccountMode) {
+                            // 新账号登录成功，关闭切换页，回到原来的页面。
+                            requireActivity().setResult(android.app.Activity.RESULT_OK)
+                            requireActivity().finish()
+                            return@launch
+                        }
+                        quickLinksAdded = false
                         showProfilePage()
                         (activity as? com.familyrecipes.android.ui.MainActivity)?.initializeKitchen()
                         com.familyrecipes.android.util.AuthUtil.completeLogin(requireActivity())
@@ -309,6 +343,107 @@ class ProfileFragment : Fragment() {
             } catch (e: Exception) {
                 android.widget.Toast.makeText(context, Ui.errorMessage(requireContext(),e), android.widget.Toast.LENGTH_SHORT).show()
                 binding.btnLogin.isEnabled = true
+            }
+        }
+    }
+
+    private fun showEditProfile() {
+        val c = requireContext()
+        val input = EditText(c).apply {
+            setText(PreferenceManager.userName.orEmpty())
+            setSelection(text.length)
+            hint = UiStrings.s(R.string.username)
+            filters = arrayOf(android.text.InputFilter.LengthFilter(50))
+            setSingleLine(true)
+        }
+        val box = LinearLayout(c).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(c.dp(20), c.dp(8), c.dp(20), 0)
+            addView(Ui.button(c, UiStrings.s(R.string.change_avatar)) { avatarPicker.launch("image/*") },
+                LinearLayout.LayoutParams(-1, c.dp(44)).apply { topMargin = c.dp(8); bottomMargin = c.dp(14) })
+            addView(Ui.text(c, UiStrings.s(R.string.username), 14f, false).apply { setTextColor(Ui.muted) })
+            addView(input, LinearLayout.LayoutParams(-1, c.dp(52)))
+        }
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(c)
+            .setTitle(UiStrings.s(R.string.edit_profile))
+            .setView(box)
+            .setPositiveButton(UiStrings.s(R.string.save), null)
+            .setNegativeButton(UiStrings.s(R.string.cancel), null)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val name = input.text.toString().trim()
+                if (name.isEmpty()) {
+                    input.error = UiStrings.s(R.string.username)
+                    return@setOnClickListener
+                }
+                dialog.dismiss()
+                saveUsername(name)
+            }
+        }
+        dialog.show()
+    }
+
+    private fun saveUsername(name: String) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val response = ApiClient.getService().updateProfile(mapOf("username" to name))
+                if (response.isSuccessful && response.body()?.code == 200) {
+                    PreferenceManager.userName = name
+                    quickLinksAdded = false
+                    showProfilePage()
+                    (activity as? com.familyrecipes.android.ui.MainActivity)?.refreshAvatar()
+                    android.widget.Toast.makeText(context, UiStrings.s(R.string.profile_updated), android.widget.Toast.LENGTH_SHORT).show()
+                } else {
+                    android.widget.Toast.makeText(context, com.familyrecipes.android.data.remote.ApiErrors.message(response, UiStrings.s(R.string.profile_updated)), android.widget.Toast.LENGTH_LONG).show()
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.widget.Toast.makeText(context, Ui.errorMessage(requireContext(), e), android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun uploadAvatar(uri: android.net.Uri) {
+        val c = requireContext()
+        val file = java.io.File(c.cacheDir, "avatar-${System.currentTimeMillis()}.jpg")
+        try {
+            c.contentResolver.openInputStream(uri)?.use { input ->
+                file.outputStream().use { output -> input.copyTo(output) }
+            } ?: return
+        } catch (e: Exception) {
+            android.widget.Toast.makeText(c, Ui.errorMessage(c, e), android.widget.Toast.LENGTH_SHORT).show()
+            return
+        }
+        android.widget.Toast.makeText(c, UiStrings.s(R.string.avatar_uploading), android.widget.Toast.LENGTH_SHORT).show()
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val part = okhttp3.MultipartBody.Part.createFormData(
+                    "file", file.name, file.asRequestBody("image/*".toMediaType())
+                )
+                val uploaded = ApiClient.getService().uploadImage(part, "avatar")
+                val url = if (uploaded.isSuccessful && uploaded.body()?.code == 200) uploaded.body()?.data else null
+                if (url.isNullOrBlank()) {
+                    android.widget.Toast.makeText(context, UiStrings.s(R.string.upload_failed), android.widget.Toast.LENGTH_LONG).show()
+                    return@launch
+                }
+                val body = mutableMapOf("username" to (PreferenceManager.userName.orEmpty()), "avatar" to url)
+                val response = ApiClient.getService().updateProfile(body)
+                if (response.isSuccessful && response.body()?.code == 200) {
+                    (activity as? com.familyrecipes.android.ui.MainActivity)?.refreshAvatar()
+                    quickLinksAdded = false
+                    showProfilePage()
+                    android.widget.Toast.makeText(context, UiStrings.s(R.string.avatar_updated), android.widget.Toast.LENGTH_SHORT).show()
+                } else {
+                    android.widget.Toast.makeText(context, com.familyrecipes.android.data.remote.ApiErrors.message(response, UiStrings.s(R.string.avatar_updated)), android.widget.Toast.LENGTH_LONG).show()
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.widget.Toast.makeText(context, Ui.errorMessage(requireContext(), e), android.widget.Toast.LENGTH_LONG).show()
+            } finally {
+                file.delete()
             }
         }
     }

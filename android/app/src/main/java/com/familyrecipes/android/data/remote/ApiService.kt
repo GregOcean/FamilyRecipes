@@ -65,6 +65,9 @@ interface ApiService {
 
     @GET("/api/auth/me")
     suspend fun getCurrentUser(): Response<ApiResponse<User>>
+
+    @PUT("/api/auth/profile")
+    suspend fun updateProfile(@Body request: Map<String, String>): Response<ApiResponse<User>>
     
     // ========== 配置相关 ==========
     @GET("/api/config/all")

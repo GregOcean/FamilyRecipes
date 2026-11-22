@@ -23,6 +23,9 @@
     <color name="success">#FF4CAF50</color>
     <color name="warning">#FFFF9800</color>
     <color name="error">#FFF44336</color>
+    <color name="expiry_fresh">#FF2E7D32</color>
+    <color name="expiry_soon">#FFB26A00</color>
+    <color name="expiry_expired">#FFC62828</color>
     <color name="text_primary">#302820</color>
     <color name="text_secondary">#69584C</color>
     <color name="text_hint">#69584C</color>

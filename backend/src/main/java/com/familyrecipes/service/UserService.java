@@ -132,6 +132,34 @@ public class UserService {
     }
 
     /**
+     * 更新当前用户资料：用户名、头像
+     */
+    @org.springframework.transaction.annotation.Transactional
+    public User updateProfile(Long userId, String username, String avatar) {
+        User user = userMapper.findById(userId);
+        if (user == null) throw new com.familyrecipes.common.ApiException(404, "用户不存在");
+        String name = username == null ? "" : username.trim();
+        if (name.isEmpty()) throw new com.familyrecipes.common.ApiException(400, "用户名不能为空");
+        if (name.length() > 50) throw new com.familyrecipes.common.ApiException(400, "用户名最多50个字符");
+        java.util.List<User> sameName = userMapper.findByUsername(name);
+        for (User other : sameName) {
+            if (other.getId() != null && !other.getId().equals(userId)) {
+                throw new com.familyrecipes.common.ApiException(409, "该用户名已被使用");
+            }
+        }
+        String nextAvatar = avatar == null ? null : avatar.trim();
+        if (nextAvatar != null && !nextAvatar.isEmpty()
+                && !(nextAvatar.startsWith("/") || nextAvatar.startsWith("http://") || nextAvatar.startsWith("https://"))) {
+            throw new com.familyrecipes.common.ApiException(400, "头像地址不合法");
+        }
+        user.setUsername(name);
+        if (nextAvatar != null) user.setAvatar(nextAvatar.isEmpty() ? null : nextAvatar);
+        userMapper.update(user);
+        user.setPassword(null);
+        return user;
+    }
+
+    /**
      * 修改密码
      */
     @org.springframework.transaction.annotation.Transactional

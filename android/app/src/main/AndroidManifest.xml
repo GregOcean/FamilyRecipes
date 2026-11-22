@@ -43,6 +43,7 @@
         <activity android:name=".ui.settings.ContentSourcesActivity" android:exported="false" />
         <activity android:name=".ui.settings.AboutActivity" android:exported="false" />
         <activity android:name=".ui.settings.SettingsActivity" android:exported="false" />
+        <activity android:name=".ui.settings.AccountSwitchActivity" android:exported="false" />
         <activity android:name=".ui.recipe.RecipeHistoryActivity" android:exported="false" />
         <!-- 启动欢迎页 -->
         <activity

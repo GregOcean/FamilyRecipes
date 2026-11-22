@@ -133,8 +133,8 @@ class MainActivity : AppCompatActivity() {
             setPadding(10.dp(),0,10.dp(),0)
             visibility=android.view.View.GONE
         }
-        top.addView(mealOrderTab, LinearLayout.LayoutParams(-2, 36.dp()).apply { gravity=Gravity.CENTER_VERTICAL; marginEnd=2.dp() })
-        top.addView(mealPrepTab, LinearLayout.LayoutParams(-2, 36.dp()).apply { gravity=Gravity.CENTER_VERTICAL; marginEnd=6.dp() })
+        top.addView(mealOrderTab, LinearLayout.LayoutParams(0, 36.dp(), 1f).apply { gravity=Gravity.CENTER_VERTICAL; marginEnd=2.dp() })
+        top.addView(mealPrepTab, LinearLayout.LayoutParams(0, 36.dp(), 1f).apply { gravity=Gravity.CENTER_VERTICAL; marginEnd=8.dp() })
         avatar=FrameLayout(this).apply {
             contentDescription=getString(R.string.ui_c32eedbf88)
             isFocusable=true
@@ -332,7 +332,7 @@ class MainActivity : AppCompatActivity() {
         // Show kitchen label for both recipes and stock pages
         val showKitchen = selected=="recipes" || selected=="stock"
         kitchenLabel.visibility = if(showKitchen) android.view.View.VISIBLE else android.view.View.INVISIBLE
-        kitchenLabel.layoutParams=LinearLayout.LayoutParams(if(showKitchen)96.dp() else 0,-2,if(showKitchen)0f else 1f)
+        kitchenLabel.layoutParams=LinearLayout.LayoutParams(if(showKitchen)96.dp() else 0,-2,0f)
         refreshMealTabStyle()
     }
 
@@ -466,7 +466,7 @@ class MainActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    private fun refreshAvatar() {
+    fun refreshAvatar() {
         avatar.removeAllViews()
         avatar.addView(com.familyrecipes.android.ui.design.UserAvatar.current(this,this),FrameLayout.LayoutParams(-1,-1))
     }
