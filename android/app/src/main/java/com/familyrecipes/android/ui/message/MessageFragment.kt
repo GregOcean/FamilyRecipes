@@ -56,6 +56,7 @@ class MessageFragment : Fragment() {
     override fun onCreateView(i: LayoutInflater, c: ViewGroup?, b: Bundle?): View {
         val root = Ui.box(requireContext())
         search = Ui.field(requireContext(), getString(R.string.chat_search_hint))
+        search.visibility = View.GONE
         root.addView(search)
         val heading=Ui.row(requireContext())
         heading.addView(Ui.text(requireContext(),UiStrings.s(com.familyrecipes.android.R.string.ui_ff692f04ac),23f,true),LinearLayout.LayoutParams(0,-2,1f))
@@ -77,6 +78,17 @@ class MessageFragment : Fragment() {
         super.onHiddenChanged(hidden)
         if (!hidden) load()
     }
+
+    /** 由顶部全局搜索框驱动，消息页自身不再占用一行搜索栏。 */
+    fun setSearchQuery(value: String) {
+        if (!::search.isInitialized) return
+        val next = value.take(100)
+        if (search.text.toString() == next) return
+        search.setText(next)
+        search.setSelection(next.length)
+    }
+
+    fun currentQuery(): String = if (::search.isInitialized) search.text.toString() else ""
 
     private fun load() {
         if (!::list.isInitialized) return

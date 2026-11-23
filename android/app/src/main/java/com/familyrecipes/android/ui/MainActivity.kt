@@ -32,6 +32,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var drawer: DrawerLayout
     private lateinit var recipeSearch: com.google.android.material.button.MaterialButton
     private lateinit var inventorySearch: EditText
+    private lateinit var messageSearch: EditText
+    private lateinit var headerSpacer: android.view.View
     private lateinit var mealOrderTab: com.google.android.material.button.MaterialButton
     private lateinit var mealPrepTab: com.google.android.material.button.MaterialButton
     private lateinit var kitchenLabel: Button
@@ -123,6 +125,41 @@ class MainActivity : AppCompatActivity() {
                 fridge?.filterByQuery(query)
             }
         })
+        messageSearch = EditText(this).apply {
+            hint = getString(R.string.chat_search_hint)
+            textSize = 14f
+            setSingleLine(true)
+            inputType = android.text.InputType.TYPE_CLASS_TEXT
+            background = androidx.core.content.ContextCompat.getDrawable(this@MainActivity, R.drawable.search_background)
+            setPadding(12.dp(), 8.dp(), 12.dp(), 8.dp())
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            imeOptions = android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH
+            filters = arrayOf(android.text.InputFilter.LengthFilter(100))
+            visibility = android.view.View.GONE
+            val icon = androidx.core.content.ContextCompat.getDrawable(this@MainActivity, R.drawable.ic_search)
+            setCompoundDrawablesRelativeWithIntrinsicBounds(icon, null, null, null)
+            compoundDrawablePadding = 8.dp()
+            androidx.core.widget.TextViewCompat.setCompoundDrawableTintList(
+                this, android.content.res.ColorStateList.valueOf(Ui.blue))
+        }
+        messageSearch.setOnEditorActionListener { _, action, _ ->
+            if (action == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH) {
+                hideKeyboard()
+                true
+            } else false
+        }
+        messageSearch.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: android.text.Editable?) {
+                val fragment = supportFragmentManager.findFragmentByTag("main:messages") as? MessageFragment
+                fragment?.setSearchQuery(s?.toString().orEmpty())
+            }
+        })
+        top.addView(messageSearch, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = 4.dp() })
+        headerSpacer = android.view.View(this)
+        top.addView(headerSpacer, LinearLayout.LayoutParams(0, 1, 1f))
         mealOrderTab = Ui.button(this, UiStrings.s(com.familyrecipes.android.R.string.ui_d85522beda)) { switchMealTab("order") }.apply {
             isAllCaps=false;textSize=13f;minWidth=0;minimumWidth=0;minHeight=0;minimumHeight=0
             setPadding(10.dp(),0,10.dp(),0)
@@ -142,7 +179,7 @@ class MainActivity : AppCompatActivity() {
         }
         refreshAvatar()
         top.addView(avatar,LinearLayout.LayoutParams(42.dp(),42.dp()).apply {gravity=Gravity.CENTER_VERTICAL;marginEnd=8.dp()})
-        shell.addView(top)
+        shell.addView(top, LinearLayout.LayoutParams(-1, -2))
         container = FrameLayout(this).apply { id = R.id.fragment_container }
         shell.addView(container, LinearLayout.LayoutParams(-1, 0, 1f))
         bottom = Ui.row(this).apply { setBackgroundColor(Ui.surface) }
@@ -313,22 +350,30 @@ class MainActivity : AppCompatActivity() {
             val fridge = supportFragmentManager.findFragmentByTag(tag) as? FridgeFragment
             inventorySearch.setText(fridge?.externalQueryText().orEmpty())
         } else hideKeyboard()
+        if(page=="messages") {
+            supportFragmentManager.executePendingTransactions()
+            val messages = supportFragmentManager.findFragmentByTag(tag) as? MessageFragment
+            messageSearch.setText(messages?.currentQuery().orEmpty())
+        }
         drawNavigation()
     }
 
     private fun hideKeyboard() {
-        val input = currentFocus ?: return
         val manager = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
-        manager.hideSoftInputFromWindow(input.windowToken, 0)
-        input.clearFocus()
+        val token = (currentFocus ?: window.decorView).windowToken
+        manager.hideSoftInputFromWindow(token, 0)
+        currentFocus?.clearFocus()
     }
 
     private fun updateHeaderLayout() {
         recipeSearch.visibility=if(selected=="recipes")android.view.View.VISIBLE else android.view.View.GONE
         inventorySearch.visibility=if(selected=="stock")android.view.View.VISIBLE else android.view.View.GONE
+        messageSearch.visibility=if(selected=="messages")android.view.View.VISIBLE else android.view.View.GONE
         val showMealTabs = selected == "meals"
         mealOrderTab.visibility=if(showMealTabs)android.view.View.VISIBLE else android.view.View.GONE
         mealPrepTab.visibility=if(showMealTabs)android.view.View.VISIBLE else android.view.View.GONE
+        // Pages without a search field or meal tabs use the spacer so the avatar stays at the top right.
+        headerSpacer.visibility=if(selected in setOf("recipes","stock","meals","messages"))android.view.View.GONE else android.view.View.VISIBLE
         // Show kitchen label for both recipes and stock pages
         val showKitchen = selected=="recipes" || selected=="stock"
         kitchenLabel.visibility = if(showKitchen) android.view.View.VISIBLE else android.view.View.INVISIBLE
