@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-  <string name="app_name" formatted="false">Jiayao</string>
+  <string name="app_name" formatted="false">Family Recipes</string>
   <string name="ok" formatted="false">OK</string>
   <string name="cancel" formatted="false">Cancel</string>
   <string name="delete" formatted="false">Delete</string>
@@ -270,7 +270,7 @@
   <string name="ui_dfac8f84fe" formatted="false">QR code is unavailable</string>
   <string name="ui_70189fcd83" formatted="false">Unable to read account details</string>
   <string name="ui_6de920b4e4" formatted="false">Unable to save</string>
-  <string name="ui_2878420820" formatted="false">Jiayao user</string>
+  <string name="ui_2878420820" formatted="false">Family Recipes user</string>
   <string name="ui_059d992c84" formatted="false">Groups I created</string>
   <string name="ui_dc216b65a4" formatted="false">Message saved. Retry when connected.</string>
   <string name="ui_8e0afea435" formatted="false">Sticker not sent. Please retry.</string>
@@ -287,7 +287,7 @@
   <string name="ui_a889286a51" formatted="false">Unable to create</string>
   <string name="ui_39783e6ff7" formatted="false">Default: food expiring within 3 days. Uses this device’s time zone; battery saving may delay reminders.</string>
   <string name="ui_34053f01aa" formatted="false">Restore this image? Its original address can be used again.</string>
-  <string name="ui_a3b3be2af2" formatted="false">Try Jiayao to organize your recipes and kitchen!</string>
+  <string name="ui_a3b3be2af2" formatted="false">Try Family Recipes to organize your recipes and kitchen!</string>
   <string name="ui_c08c2f36d2" formatted="false">Unable to send code. Check your connection and retry.</string>
   <string name="ui_a568feaf47" formatted="false">Code sent. Valid for 10 minutes.</string>
   <string name="ui_d6dfc7028c" formatted="false">Unable to save. Your content is kept; please retry.</string>
@@ -442,7 +442,7 @@
   <string name="ui_17e8e26968" formatted="false">Write a message…</string>
   <string name="ui_1535fcfa4c" formatted="false">Send</string>
   <string name="ui_2ba22d9710" formatted="false">History icon</string>
-  <string name="ui_9049e90515" formatted="false">Jiayao</string>
+  <string name="ui_9049e90515" formatted="false">Family Recipes</string>
   <string name="ui_3c46bf18ab" formatted="false">Good food, together</string>
   <string name="ui_55c94dbeb8" formatted="false">Paste the shared text or URL to parse it</string>
   <string name="ui_9f8ff7515d" formatted="false">Paste a shared tutorial link</string>
