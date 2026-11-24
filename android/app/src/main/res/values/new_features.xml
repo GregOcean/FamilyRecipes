@@ -61,7 +61,7 @@
 <string name="meal_quick_send">一键发到群里</string>
 <string name="meal_quick_more">选菜谱 / 详细编辑</string>
 <string name="meal_share_family">分享给家人（免登录）</string>
-<string name="meal_share_family_message">%1$s\n家肴:直接打开勾选采购清单\n%2$s</string>
+<string name="meal_share_family_message">%1$s\n家肴:直接打开勾选采购清单 %2$s</string>
 <string name="meal_share_family_hint">把菜单和采购清单发给家人，对方不用注册就能查看和勾选。</string>
 <string name="recipe_quick_add">＋ 随手记一道菜</string>
 <string name="recipe_quick_name">菜名，例如：番茄牛腩</string>
