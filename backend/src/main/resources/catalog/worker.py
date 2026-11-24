@@ -132,6 +132,7 @@ class Worker:
             self.db.execute("INSERT INTO metadata VALUES('rules-v2',?)",(now(),));self.db.commit()
         self.budget=budget; self.delay=delay
         self.key=os.environ.get('CATALOG_SEARCH_KEY') or os.environ.get('ZHIPU_API_KEY') or os.environ.get('TRANSLATION_LLM_KEY','')
+        self.search_blocked=None
     def activity(self, recipe_id, stage):
         self.db.execute("INSERT OR REPLACE INTO metadata VALUES('activity',?)",(json.dumps({'recipe_id':recipe_id,'stage':stage,'updated_at':now()}),));self.db.commit();self.export()
     def request(self, url, payload=None, key=None):
@@ -172,6 +173,12 @@ class Worker:
         data=self.request(BASE+'web_search',{'search_engine':os.environ.get('CATALOG_SEARCH_ENGINE','search_std'),'search_intent':False,'search_query':query[:70],'search_domain_filter':domain,'search_recency_filter':'noLimit','count':5},self.key)
         if not isinstance(data.get('search_result'),list):raise ValueError('invalid_search_response')
         return [dict(url=r.get('link',''),title=r.get('title','')[:300],description=r.get('content','')[:500],rank=i+1,query=query,domain=domain) for i,r in enumerate(data['search_result']) if platform(r.get('link',''))]
+    def try_search(self, query, domain):
+        """搜索额度/权限失败时停止后续付费搜索，但不阻断图片补全。"""
+        if self.search_blocked:return [],self.search_blocked
+        try:return self.search(query,domain),None
+        except (ProviderError,BudgetExceeded) as e:
+            self.search_blocked=str(e);return [],self.search_blocked
     def images(self, name):
         params={'action':'query','format':'json','generator':'search','gsrsearch':name,'gsrnamespace':6,'gsrlimit':5,'prop':'imageinfo','iiprop':'url|extmetadata|size'}
         data=self.request('https://commons.wikimedia.org/w/api.php?'+urlencode(params))
@@ -187,21 +194,26 @@ class Worker:
     def process(self, recipe):
         terms=terms_for(recipe)
         existing={platform(u) for u in recipe.get('existing_links',[])}
-        selected=[];candidates=[];skipped=[]
+        selected=[];candidates=[];skipped=[];search_error=None
         if 'cn' not in existing and terms['zh']:
             # Bilibili first; only pay for a second Chinese search if no suitable result exists.
             for domain in ('www.bilibili.com','www.xiaohongshu.com'):
                 self.activity(recipe['id'],'搜索B站教程' if domain=='www.bilibili.com' else '搜索小红书教程')
-                candidates+=self.search(terms['zh']+' 做法 教程',domain)
+                found,search_error=self.try_search(terms['zh']+' 做法 教程',domain)
+                candidates+=found
+                if search_error:break
                 best=choose(candidates,terms,'cn')
                 if best:selected.append(best);break
         elif 'cn' in existing:skipped.append('cn_existing')
         else:skipped.append('cn_name_missing')
-        if 'overseas' not in existing and terms['en']:
+        if search_error:skipped.append('link_search_unavailable')
+        elif 'overseas' not in existing and terms['en']:
             self.activity(recipe['id'],'搜索YouTube教程')
-            candidates+=self.search(terms['en']+' recipe tutorial','www.youtube.com')
-            best=choose(candidates,terms,'overseas')
-            if best:selected.append(best)
+            found,search_error=self.try_search(terms['en']+' recipe tutorial','www.youtube.com')
+            candidates+=found
+            if not search_error:
+                best=choose(candidates,terms,'overseas')
+                if best:selected.append(best)
         elif 'overseas' in existing:skipped.append('overseas_existing')
         else:skipped.append('en_name_missing')
         images=[];image_error=None
@@ -213,6 +225,7 @@ class Worker:
             except Exception as e:image_error=type(e).__name__
         return {'recipe':recipe,'queries':terms,'searched_at':now(),'strategy':'rules-v2','llm_calls':0,
                 'links':selected,'link_candidates':candidates,'images':images,'image_error':image_error,'skipped':skipped,
+                'search_error':search_error,
                 'gaps':[r for r in ('cn','overseas') if r not in existing and not any(x['region']==r for x in selected)]+
                        (['image'] if not images and not recipe.get('has_image') else []),'imported':False}
     def export(self):

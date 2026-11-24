@@ -61,7 +61,7 @@
 <string name="meal_quick_send">Send to group</string>
 <string name="meal_quick_more">Pick recipes / Edit</string>
 <string name="meal_share_family">Share with family (no sign-in)</string>
-<string name="meal_share_family_message">%1$s\nNo account needed. Open this link to view the menu and check off shopping items: %2$s</string>
+<string name="meal_share_family_message">%1$s\nFamily Recipes: open the link to check off the shopping list\n%2$s</string>
 <string name="meal_share_family_hint">Send the menu and shopping list to family. They can view and check items without creating an account.</string>
 <string name="recipe_quick_add">+ Quick recipe note</string>
 <string name="recipe_quick_name">Dish name, e.g. tomato beef stew</string>

@@ -6,6 +6,6 @@
     <string name="inventory_expiry_filter">食材状态</string>
     <string name="inventory_status_all">全部在库</string>
     <string name="inventory_status_fresh">未临期</string>
-    <string name="inventory_light_mode">快过期 / 最近买的</string>
+    <string name="inventory_recent">最近买的</string>
     <string name="meal_continue_draft">继续编辑</string>
 </resources>

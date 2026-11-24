@@ -6,6 +6,6 @@
     <string name="inventory_expiry_filter">Ingredient status</string>
     <string name="inventory_status_all">All in stock</string>
     <string name="inventory_status_fresh">Not expiring</string>
-    <string name="inventory_light_mode">Expiring / recently bought</string>
+    <string name="inventory_recent">Recently bought</string>
     <string name="meal_continue_draft">Continue editing</string>
 </resources>
