@@ -51,6 +51,7 @@ interface ApiService {
     @GET("/api/meals/{id}") suspend fun meal(@Path("id") id:Long, @Header("X-Content-Original") original:Boolean = true):Response<ApiResponse<MealArrangement>>
     @POST("/api/meals") suspend fun saveMeal(@Body meal:MealArrangement):Response<ApiResponse<MealArrangement>>
     @POST("/api/meals/{id}/share") suspend fun shareMeal(@Path("id") id:Long,@Body body:ChatShareRequest):Response<ApiResponse<Message>>
+    @POST("/api/meals/{id}/public-share") suspend fun publicShareMeal(@Path("id") id:Long):Response<ApiResponse<PublicMealShare>>
 
 
     @POST("/api/auth/registration-code")
@@ -88,6 +89,9 @@ interface ApiService {
     // ========== 菜谱相关 ==========
     @POST("/api/recipes")
     suspend fun createRecipe(@Body request: CreateRecipeRequest): Response<ApiResponse<Recipe>>
+
+    @POST("/api/recipes/quick")
+    suspend fun quickRecipe(@Body request: QuickRecipeRequest): Response<ApiResponse<Recipe>>
 
     @PUT("/api/recipes/{id}")
     suspend fun updateRecipe(

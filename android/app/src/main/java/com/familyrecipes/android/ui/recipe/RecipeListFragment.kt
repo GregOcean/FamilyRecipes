@@ -163,6 +163,11 @@ class RecipeListFragment : Fragment(), SearchableFragment {
         search = Ui.field(ctx, UiStrings.s(com.familyrecipes.android.R.string.ui_5981cc43fb), keyword)
         search.filters=arrayOf(android.text.InputFilter.LengthFilter(100))
         if(activity !is com.familyrecipes.android.ui.MainActivity)root.addView(search)
+        if (!picking && com.familyrecipes.android.util.AuthUtil.isLoggedIn()) {
+            root.addView(
+                Ui.button(ctx, getString(com.familyrecipes.android.R.string.recipe_quick_add), false) { quickRecipeDialog() },
+                LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = ctx.dp(4) })
+        }
         val filters = Ui.row(ctx).apply { gravity=Gravity.TOP }
         fun filter(title:Int, value:String, choose:(com.familyrecipes.android.ui.design.FilterButton)->Unit):com.familyrecipes.android.ui.design.FilterButton {
             val button=com.familyrecipes.android.ui.design.FilterButton(ctx).apply {
@@ -302,6 +307,60 @@ class RecipeListFragment : Fragment(), SearchableFragment {
     override fun onResume() {
         super.onResume()
         if (::list.isInitialized && cacheReady && loadedContext!=contextKey) load()
+    }
+
+    /** 只记菜名和一句备注，不要求步骤、食材、图片。 */
+    private fun quickRecipeDialog() {
+        val ctx = requireContext()
+        val box = Ui.box(ctx, 10)
+        val name = Ui.field(ctx, getString(com.familyrecipes.android.R.string.recipe_quick_name))
+        val note = Ui.field(ctx, getString(com.familyrecipes.android.R.string.recipe_quick_note))
+        box.addView(name)
+        box.addView(note)
+        val dialog =
+            androidx.appcompat.app.AlertDialog.Builder(ctx)
+                .setTitle(com.familyrecipes.android.R.string.recipe_quick_add)
+                .setView(ScrollView(ctx).apply { addView(box) })
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(android.R.string.ok, null)
+                .create()
+        dialog.setOnShowListener {
+            dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val dish = name.text.toString().trim()
+                if (dish.isBlank()) {
+                    name.error = getString(com.familyrecipes.android.R.string.recipe_quick_name)
+                    return@setOnClickListener
+                }
+                val kitchen = PreferenceManager.currentKitchenId
+                if (kitchen == null) {
+                    Toast.makeText(ctx, UiStrings.s(com.familyrecipes.android.R.string.ui_eb006cd6f1), Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).isEnabled = false
+                viewLifecycleOwner.lifecycleScope.launch {
+                    try {
+                        val account = LocalStore.account
+                        val saved = Ui.data(ApiClient.getService().quickRecipe(
+                            QuickRecipeRequest(dish, note.text.toString().trim(), kitchen)))
+                        if (account != LocalStore.account) return@launch
+                        if (rows.none { it.id == saved.id }) {
+                            rows.add(0, saved)
+                            total += 1
+                        }
+                        dialog.dismiss()
+                        draw()
+                        Toast.makeText(ctx, getString(com.familyrecipes.android.R.string.recipe_quick_saved), Toast.LENGTH_SHORT).show()
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        Toast.makeText(ctx, Ui.errorMessage(ctx, e), Toast.LENGTH_SHORT).show()
+                    } finally {
+                        if (dialog.isShowing) dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).isEnabled = true
+                    }
+                }
+            }
+        }
+        dialog.show()
     }
 
     private fun load(append: Boolean = false) {

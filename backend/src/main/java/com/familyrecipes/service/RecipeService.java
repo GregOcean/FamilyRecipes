@@ -439,6 +439,23 @@ public class RecipeService {
         return recipeMapper.findRecentlyCooked(limit, viewerId);
     }
 
+    /** 随手记一道菜：只保存菜名和一句备注，复用完整菜谱表，不要求做法和食材。 */
+    @Transactional
+    public Recipe quickCreate(String name, String note, Long kitchenId, Long userId) {
+        if (name == null || name.isBlank() || name.length() > 100)
+            throw new com.familyrecipes.common.ApiException(400, "菜名不能为空且最多100字");
+        if (note != null && note.length() > 500)
+            throw new com.familyrecipes.common.ApiException(400, "备注最多500字");
+        if (kitchenId == null) throw new com.familyrecipes.common.ApiException(400, "请先选择厨房");
+        var recipe = new Recipe();
+        recipe.setName(name.trim());
+        recipe.setDescription(note == null ? "" : note.trim());
+        recipe.setCreatorId(userId);
+        recipe.setKitchenId(kitchenId);
+        recipe.setVisibility("group");
+        return createRecipe(recipe, null, null, null, null, null);
+    }
+
     /**
      * 获取所有标签值
      */

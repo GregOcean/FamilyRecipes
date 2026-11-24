@@ -132,6 +132,36 @@ class MealFragment : Fragment() {
         quickInput.setText("")
     }
 
+    /** 发给没装 App、没注册的家人：打开就是菜单和采购清单。 */
+    private fun shareWithFamily(mealId: Long, title: String) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val share = Ui.data(ApiClient.getService().publicShareMeal(mealId))
+                if (!isAdded) return@launch
+                val url = publicWebUrl() + share.path
+                val send = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_SUBJECT, title)
+                    putExtra(
+                        Intent.EXTRA_TEXT,
+                        getString(com.familyrecipes.android.R.string.meal_share_family_message, title, url))
+                }
+                startActivity(Intent.createChooser(send, getString(com.familyrecipes.android.R.string.meal_share_family)))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), Ui.errorMessage(requireContext(), e), Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    /** 生产环境 API 是 api.familyrecipes.live，分享页在 familyrecipes.live；本地调试保持原地址。 */
+    private fun publicWebUrl(): String {
+        var base = PreferenceManager.baseUrl.trimEnd('/')
+        if (base.endsWith("/api")) base = base.dropLast(4)
+        return base.replace("://api.", "://")
+    }
+
     /** 把自由输入拆成菜品：支持换行、顿号、逗号和分号分隔。 */
     private fun parseQuickDishes(text: String): List<MealDish> {
         val names = text.lines()
@@ -210,6 +240,13 @@ class MealFragment : Fragment() {
                                         UiStrings.f(com.familyrecipes.android.R.string.my_shopping_count, m.shopping.size)
                                     else UiStrings.s(com.familyrecipes.android.R.string.ui_11d0c6e5bc),
                                     14f))
+                            if (m.ownerId == PreferenceManager.userId) {
+                                card.addView(
+                                    Ui.button(requireContext(), getString(com.familyrecipes.android.R.string.meal_share_family), false) {
+                                        shareWithFamily(m.id!!, m.title)
+                                    },
+                                    LinearLayout.LayoutParams(-1, -2).apply { topMargin = requireContext().dp(8) })
+                            }
                             card.setOnClickListener {
                                 startActivity(
                                     Intent(requireContext(), MealEditorActivity::class.java)

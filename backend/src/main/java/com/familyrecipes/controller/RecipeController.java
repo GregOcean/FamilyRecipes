@@ -115,6 +115,13 @@ public class RecipeController {
         }
     }
 
+    /** 随手记：只要菜名和一句备注。 */
+    @PostMapping("/quick")
+    public Result<Recipe> quickCreate(@RequestBody QuickRecipeRequest body, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        return Result.success(recipeService.quickCreate(body.name, body.note, body.kitchenId, userId));
+    }
+
     /**
      * 获取菜谱详情
      */
@@ -328,6 +335,13 @@ public class RecipeController {
         private List<CookingStep> steps;
         private List<Long> cookUserIds;
         private List<ExternalRecipe> externalRecipes;
+    }
+
+    @Data
+    static class QuickRecipeRequest {
+        private String name;
+        private String note;
+        private Long kitchenId;
     }
     
     public static class ParseLinkRequest {

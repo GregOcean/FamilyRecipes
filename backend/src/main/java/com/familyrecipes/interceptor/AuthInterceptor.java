@@ -23,13 +23,15 @@ public class AuthInterceptor implements HandlerInterceptor {
             return reject(response);
         }
         String path = request.getRequestURI().substring(request.getContextPath().length());
+        boolean publicMealShare = path.matches("/api/public/meals/[0-9a-f]{32}")
+            || path.matches("/api/public/meals/[0-9a-f]{32}/check");
         boolean publicRead = "GET".equals(request.getMethod()) && (
             path.equals("/api/recipes/cuisines/tree") || path.equals("/api/recipes/browse") || path.equals("/api/recipes/search") || path.matches("/api/recipes/[0-9]+") ||
             path.equals("/api/recipes/recently-cooked") || path.startsWith("/api/recipes/tags/") ||
             path.matches("/api/recipes/[0-9]+/comments") ||
             path.equals("/api/catalog/sources") || path.equals("/api/search/global") || path.startsWith("/api/config/") ||
             path.startsWith("/api/upload/files/") || path.startsWith("/api/inventory/categories/"));
-        return publicRead || reject(response);
+        return publicRead || publicMealShare || reject(response);
     }
 
     private boolean reject(HttpServletResponse response) throws Exception {

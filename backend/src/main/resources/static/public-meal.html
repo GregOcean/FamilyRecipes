@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#AA4930">
+<title>家庭菜单 · Family Recipes</title>
+<link rel="icon" href="/app-logo.png" type="image/png">
+<style>
+:root{color-scheme:light;--ink:#302820;--muted:#69584C;--accent:#AA4930;--line:#E8D8C9;--paper:#FFF9F2}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.6 system-ui,-apple-system,"PingFang SC",sans-serif}
+.wrap{max-width:720px;margin:auto;padding:24px 20px 48px}
+header{display:flex;align-items:center;gap:12px;padding-bottom:18px;border-bottom:1px solid var(--line)}
+.logo{width:44px;height:44px;border-radius:14px;overflow:hidden;background:#FFF0E1}.logo img{width:100%;height:100%;display:block}
+.brand{font-weight:800;font-size:19px}.sub{color:var(--muted);font-size:13px}
+.hero{padding:28px 0 8px}.eyebrow{color:var(--accent);font-weight:700;font-size:14px;letter-spacing:.04em}
+h1{font-size:clamp(30px,8vw,46px);line-height:1.18;letter-spacing:-1px;margin:8px 0 10px}
+.when{color:var(--muted);font-size:15px}
+.card{background:#fff;border:1px solid var(--line);border-radius:22px;padding:20px;margin:18px 0;box-shadow:0 8px 24px #30282008}
+.card h2{font-size:18px;margin:0 0 12px}
+.dishes{display:grid;gap:10px}.dish{padding:12px 14px;border-radius:14px;background:#FFF9F2}.dish strong{display:block;font-size:17px}
+.dish span{color:var(--muted);font-size:13px}
+.list{display:grid;gap:2px}.check{display:flex;align-items:center;gap:12px;padding:13px 6px;border-bottom:1px solid #F2E7DC;cursor:pointer}
+.check:last-child{border-bottom:0}.check input{width:22px;height:22px;accent-color:var(--accent);flex:none}
+.check span{flex:1;font-size:17px}.check input:checked + span{color:#9C8B7D;text-decoration:line-through}
+.count{color:var(--muted);font-size:13px;margin-left:auto;margin-top:4px}
+.hint{background:#FFF0E1;border-radius:16px;padding:14px 16px;color:#7A4B32;font-size:14px;margin-top:16px}
+.empty{color:var(--muted);font-size:15px;padding:8px 2px}
+footer{color:var(--muted);font-size:13px;text-align:center;margin-top:28px}
+.error{background:#FFF0E1;border-radius:18px;padding:24px;margin-top:30px}
+.error h1{font-size:28px}.retry{display:inline-block;margin-top:12px;background:var(--accent);color:#fff;text-decoration:none;padding:12px 18px;border-radius:12px;font-weight:700}
+@media(max-width:420px){.wrap{padding:20px 16px 36px}.card{padding:17px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="logo"><img src="/app-logo.png" alt=""></span>
+    <div><div class="brand">Family Recipes</div><div class="sub">家里的菜单，不用注册也能看</div></div>
+  </header>
+  <main id="content"><div class="card"><div class="empty">正在打开菜单…</div></div></main>
+  <footer>来自 Family Recipes · 采购项勾选会同步给家里</footer>
+</div>
+<script>
+const token=(location.pathname.match(/\/m\/([0-9a-f]{32})/)||[])[1];
+const content=document.getElementById('content');
+let current=null,busy=false;
+
+function el(tag,cls,text){const n=document.createElement(tag);if(cls)n.className=cls;if(text!=null)n.textContent=text;return n}
+function render(data){
+  current=data;content.textContent='';
+  const hero=el('section','hero');
+  hero.appendChild(el('div','eyebrow',data.kind==='prep'?'备菜清单':'点菜清单'));
+  hero.appendChild(el('h1',null,data.title||'家里的菜单'));
+  const when=[data.mealDate,data.meal].filter(Boolean).join(' · ');
+  if(when)hero.appendChild(el('div','when',when));
+  content.appendChild(hero);
+
+  const dishes=el('section','card');
+  dishes.appendChild(el('h2',null,'这次想吃的'));
+  if((data.dishes||[]).length){
+    const grid=el('div','dishes');
+    data.dishes.forEach(d=>{
+      const item=el('div','dish');item.appendChild(el('strong',null,d.name||''));
+      if((d.ingredients||[]).length)item.appendChild(el('span',null,'需要：'+d.ingredients.join('、')));
+      grid.appendChild(item);
+    });
+    dishes.appendChild(grid);
+  }else dishes.appendChild(el('div','empty','还没有写菜名'));
+  content.appendChild(dishes);
+
+  const shopping=el('section','card');
+  shopping.appendChild(el('h2',null,'要买的东西'));
+  const items=data.shopping||[];
+  if(items.length){
+    const list=el('div','list');
+    items.forEach((s,i)=>{
+      const row=el('label','check');
+      const box=el('input');box.type='checkbox';box.checked=!!s.done;box.disabled=busy;
+      box.addEventListener('change',()=>toggle(i,box));
+      row.appendChild(box);row.appendChild(el('span',null,s.name||''));
+      list.appendChild(row);
+    });
+    shopping.appendChild(list);
+    const left=items.filter(x=>!x.done).length;
+    shopping.appendChild(el('div','count',left?('还差 '+left+' 项'):'都买齐了'));
+  }else shopping.appendChild(el('div','empty','暂时没有采购项'));
+  content.appendChild(shopping);
+
+  const hint=el('div','hint','你不需要注册账号：直接勾选已经买到的东西，家里会看到最新状态。');
+  content.appendChild(hint);
+}
+async function load(){
+  if(!token){showError('这个菜单链接不完整，请让家里人重新发一次。');return}
+  try{
+    const r=await fetch('/api/public/meals/'+token,{cache:'no-store'});
+    const body=await r.json();
+    if(!r.ok||body.code!==200)throw new Error(body.message||'菜单不存在');
+    render(body.data);
+  }catch(e){showError(e.message||'菜单暂时打不开')}
+}
+async function toggle(index,box){
+  if(busy)return;busy=true;box.disabled=true;
+  const value=box.checked;
+  try{
+    const r=await fetch('/api/public/meals/'+token+'/check',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({index:index,done:value})
+    });
+    const body=await r.json();
+    if(!r.ok||body.code!==200)throw new Error(body.message||'保存失败');
+    busy=false;
+    render(body.data);
+  }catch(e){
+    box.checked=!value;alert('没有保存成功，请检查网络后重试');
+  }finally{busy=false}
+}
+function showError(message){
+  content.textContent='';
+  const box=el('div','error');
+  box.appendChild(el('h1',null,'菜单打不开'));
+  box.appendChild(el('div',null,message));
+  const retry=el('a','retry','重新加载');retry.href='javascript:location.reload()';
+  box.appendChild(retry);content.appendChild(box);
+}
+load();
+setInterval(()=>{if(document.visibilityState==='visible'&&!busy)load()},20000);
+</script>
+</body></html>

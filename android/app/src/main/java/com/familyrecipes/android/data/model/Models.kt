@@ -322,6 +322,9 @@ data class MealArrangement(val id:Long?=null,@SerializedName("owner_id") val own
  @SerializedName("meal_date") val mealDate:String?=null,val meal:String?=null,
  val dishes:List<MealDish> = emptyList(),val shopping:List<ShoppingItem> = emptyList(),
  @SerializedName("source_id") val sourceId:Long?=null,val revision:Int?=null)
+
+data class PublicMealShare(val token:String,val path:String)
+data class QuickRecipeRequest(val name:String,val note:String?=null,@SerializedName("kitchen_id") val kitchenId:Long)
 data class CookingRecord(val id:Long?=null,@SerializedName("cooked_at") val cookedAt:String,val notes:String,val images:String="[]")
 
 

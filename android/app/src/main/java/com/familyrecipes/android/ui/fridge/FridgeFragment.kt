@@ -44,13 +44,14 @@ class FridgeFragment : Fragment(), SearchableFragment {
     private val allItems = mutableListOf<FridgeItem>() // 保存所有数据用于筛选
     private val categories = mutableListOf<InventoryCategory>()
     
-    private var currentTab = TAB_CURRENT  // 当前选中的Tab
+    private var currentTab = TAB_LIGHT  // 默认轻库存：只关心快过期和最近买的
     private var selectedCategoryId: Long? = null // 当前选中的分类ID
     private var externalQuery: String = "" // 来自顶部搜索栏的查询
     
     companion object {
         private const val TAB_CURRENT = 0    // 当前库存
         private const val TAB_CONSUMED = 1   // 消耗历史
+        private const val TAB_LIGHT = 5      // 快过期 + 最近购买
     }
     
     // 添加食材结果监听
@@ -154,7 +155,7 @@ class FridgeFragment : Fragment(), SearchableFragment {
     private fun filterItemsByCategory() {
         items.clear()
         val query = externalQuery
-        val searched = allItems.filter { when(currentTab){2->it.status==FridgeItem.STATUS_EXPIRING;3->it.status==FridgeItem.STATUS_EXPIRED;4->it.status!=FridgeItem.STATUS_EXPIRING && it.status!=FridgeItem.STATUS_EXPIRED;else->true} }.filter { query.isEmpty() || it.displayName?.contains(query, ignoreCase=true) == true || it.storageLocation?.contains(query, ignoreCase=true) == true || it.originalContent?.values?.any{value->value.contains(query,ignoreCase=true)}==true || it.ingredient?.name?.contains(query, ignoreCase=true) == true || it.ingredient?.aliases?.contains(query, ignoreCase=true) == true || it.categoryOverrideName?.contains(query, ignoreCase=true) == true }
+        val searched = allItems.filter { when(currentTab){5-> isLightInventory(it);2->it.status==FridgeItem.STATUS_EXPIRING;3->it.status==FridgeItem.STATUS_EXPIRED;4->it.status!=FridgeItem.STATUS_EXPIRING && it.status!=FridgeItem.STATUS_EXPIRED;else->true} }.filter { query.isEmpty() || it.displayName?.contains(query, ignoreCase=true) == true || it.storageLocation?.contains(query, ignoreCase=true) == true || it.originalContent?.values?.any{value->value.contains(query,ignoreCase=true)}==true || it.ingredient?.name?.contains(query, ignoreCase=true) == true || it.ingredient?.aliases?.contains(query, ignoreCase=true) == true || it.categoryOverrideName?.contains(query, ignoreCase=true) == true }
         val ids = selectedCategoryId?.let { com.familyrecipes.android.util.InventoryCategories.descendants(it, categories) }
         items.addAll(searched.filter { ids == null || (it.categoryOverrideId ?: it.ingredient?.categoryId) in ids })
         binding.tvInventoryEmpty.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
@@ -301,6 +302,7 @@ class FridgeFragment : Fragment(), SearchableFragment {
     
     private fun setupStatusFilter() {
         val choices=listOf(
+            TAB_LIGHT to R.string.inventory_light_mode,
             TAB_CURRENT to R.string.filter_any,
             4 to R.string.inventory_status_fresh,
             2 to R.string.ui_ac148b4c87,
@@ -411,9 +413,18 @@ class FridgeFragment : Fragment(), SearchableFragment {
 
     private fun loadData() {
         when (currentTab) {
-            TAB_CURRENT, 2, 3, 4 -> loadFridgeItems()
+            TAB_CURRENT, TAB_LIGHT, 2, 3, 4 -> loadFridgeItems()
             TAB_CONSUMED -> loadConsumedItems()
         }
+    }
+
+    /** 轻库存只保留临期/过期和最近 7 天买的食材，不要求维护完整台账。 */
+    private fun isLightInventory(item: FridgeItem): Boolean {
+        if (item.status == FridgeItem.STATUS_EXPIRING || item.status == FridgeItem.STATUS_EXPIRED) return true
+        return runCatching {
+            val date = item.purchaseDate?.take(10)?.let(java.time.LocalDate::parse)
+            date != null && !date.isBefore(java.time.LocalDate.now().minusDays(7))
+        }.getOrDefault(false)
     }
 
     private fun loadFridgeItems() {

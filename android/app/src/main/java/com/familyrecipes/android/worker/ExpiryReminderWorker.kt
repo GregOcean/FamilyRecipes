@@ -46,9 +46,19 @@ class ExpiryReminderWorker(
                 val items = response.body()?.data
                 
                 if (!items.isNullOrEmpty()) {
-                    // 发送通知
-                    sendNotification(items.size)
-                    dao.put(com.familyrecipes.android.data.local.LocalRecord(accountKey,"notification","expiry",day))
+                    // 只提醒 48 小时内到期或已过期的食材；隔三天再提醒一次。
+                    val limit = java.time.LocalDate.now().plusDays(2)
+                    val urgent = items.filter {
+                        it.status == com.familyrecipes.android.data.model.FridgeItem.STATUS_EXPIRED ||
+                        runCatching {
+                            val date = it.expiryDate?.take(10)?.let(java.time.LocalDate::parse)
+                            date != null && !date.isAfter(limit)
+                        }.getOrDefault(false)
+                    }
+                    if (urgent.isNotEmpty()) {
+                        sendNotification(urgent.size)
+                        dao.put(com.familyrecipes.android.data.local.LocalRecord(accountKey,"notification","expiry",day))
+                    }
                 }
             }
             
@@ -79,8 +89,8 @@ class ExpiryReminderWorker(
             FamilyRecipesApp.NOTIFICATION_CHANNEL_ID
         )
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("食材即将过期")
-            .setContentText("您有 $count 个食材即将过期，请及时处理")
+            .setContentTitle("今明两天有食材要用")
+            .setContentText("有 $count 个食材快到期了，今晚顺手安排一道")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
