@@ -149,6 +149,15 @@ class EditRecipeActivity : AppCompatActivity() {
         binding = ActivityEditRecipeBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        val titleHint = android.text.SpannableString(getString(R.string.ui_76eb8e6731) + " *")
+        titleHint.setSpan(
+            android.text.style.ForegroundColorSpan(0xFFD32F2F.toInt()),
+            titleHint.length - 1,
+            titleHint.length,
+            android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+        )
+        binding.tilRecipeTitle.hint = titleHint
+
         // 检查是否是编辑模式
         recipeId = intent.getLongExtra("recipe_id", -1L).takeIf { it > 0 }
 

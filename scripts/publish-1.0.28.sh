@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# 1.0.27 一键发布：本地无发布包时先构建，再上传并在服务器执行部署。
-# 用法：bash scripts/publish-1.0.27.sh
+# 1.0.28 一键发布：本地无发布包时先构建，再上传并在服务器执行部署。
+# 用法：bash scripts/publish-1.0.28.sh
 set -euo pipefail
 
 fr_root="$(cd "$(dirname "$0")/.." && pwd)"
-fr_version="1.0.27"
+fr_version="1.0.28"
 fr_bundle="$fr_root/familyrecipes-release/$fr_version"
 
 if [[ ! -f "$fr_bundle/SHA256SUMS" || ! -f "$fr_bundle/VERSION" ]]; then

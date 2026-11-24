@@ -90,9 +90,6 @@ interface ApiService {
     @POST("/api/recipes")
     suspend fun createRecipe(@Body request: CreateRecipeRequest): Response<ApiResponse<Recipe>>
 
-    @POST("/api/recipes/quick")
-    suspend fun quickRecipe(@Body request: QuickRecipeRequest): Response<ApiResponse<Recipe>>
-
     @PUT("/api/recipes/{id}")
     suspend fun updateRecipe(
         @Path("id") id: Long,
