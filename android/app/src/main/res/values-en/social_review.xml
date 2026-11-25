@@ -30,6 +30,10 @@
     <string name="social_manage_friends">Find / manage friends</string>
     <string name="social_member_limit">Choose up to %1$d people</string>
     <string name="social_create_group">New group</string>
+    <string name="social_create_kitchen">Also create a kitchen</string>
+    <string name="social_kitchen_name">Kitchen name</string>
+    <string name="social_default_kitchen">Home kitchen</string>
+    <string name="social_chat_only_hint">Leave unchecked for a chat-only group. For an existing kitchen, use that kitchen’s group chat.</string>
     <string name="social_choose_friends">Choose friends (optional)</string>
     <string name="social_creating">Creating…</string>
     <string name="social_name_invalid">Enter a group name of 1–100 characters</string>

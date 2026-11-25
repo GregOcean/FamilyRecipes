@@ -70,6 +70,13 @@ public class GroupChatService {
     @Transactional
     public GroupChat createGroup(Long creatorId, String groupName, String description, 
                                   Integer maxMembers, List<Long> memberIds) {
+        return createGroup(creatorId, groupName, description, maxMembers, memberIds, true, null);
+    }
+
+    @Transactional
+    public GroupChat createGroup(Long creatorId, String groupName, String description,
+                                  Integer maxMembers, List<Long> memberIds,
+                                  boolean createKitchen, String kitchenName) {
         validateInfo(groupName,description);
         groupName=groupName.trim();
         maxMembers = 10; // Single-instance personal edition: capacity is a server rule.
@@ -109,7 +116,12 @@ public class GroupChatService {
             groupChatMapper.insertGroupMember(member);
         }
         
-        kitchens.create(group.getId(), KitchenService.defaultName("家里的厨房","Home kitchen"), creatorId);
+        if (createKitchen) {
+            String name = kitchenName == null || kitchenName.isBlank()
+                ? KitchenService.defaultName("家里的厨房", "Home kitchen")
+                : kitchenName.trim();
+            kitchens.create(group.getId(), name, creatorId);
+        }
 
         // 发送系统消息
         Message systemMessage = new Message();

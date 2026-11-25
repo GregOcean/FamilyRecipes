@@ -30,6 +30,10 @@
     <string name="social_manage_friends">添加 / 管理好友</string>
     <string name="social_member_limit">最多选择 %1$d 人</string>
     <string name="social_create_group">新建群聊</string>
+    <string name="social_create_kitchen">同时创建一个厨房</string>
+    <string name="social_kitchen_name">厨房名称</string>
+    <string name="social_default_kitchen">家里的厨房</string>
+    <string name="social_chat_only_hint">不勾选就只创建聊天群。已有厨房请直接使用该厨房的群聊。</string>
     <string name="social_choose_friends">选择好友（可选）</string>
     <string name="social_creating">创建中…</string>
     <string name="social_name_invalid">请填写1至100字的群名称</string>

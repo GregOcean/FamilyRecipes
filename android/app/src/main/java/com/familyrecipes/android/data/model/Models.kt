@@ -267,7 +267,9 @@ data class CreateGroupRequest(
     val name: String,
     val description: String?,
     @SerializedName("max_members") val maxMembers: Int?,
-    @SerializedName("member_ids") val memberIds: List<Long>?
+    @SerializedName("member_ids") val memberIds: List<Long>?,
+    @SerializedName("create_kitchen") val createKitchen: Boolean? = null,
+    @SerializedName("kitchen_name") val kitchenName: String? = null
 )
 
 /**

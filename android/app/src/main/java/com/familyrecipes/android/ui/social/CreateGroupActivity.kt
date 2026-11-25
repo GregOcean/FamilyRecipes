@@ -16,6 +16,8 @@ import kotlinx.coroutines.launch
 class CreateGroupActivity:AppCompatActivity(){
     private lateinit var name:EditText
     private lateinit var about:EditText
+    private lateinit var createKitchen:CheckBox
+    private lateinit var kitchenName:EditText
     private lateinit var friends:LinearLayout
     private val selected=linkedSetOf<Long>()
     private val account=LocalStore.account
@@ -27,16 +29,37 @@ class CreateGroupActivity:AppCompatActivity(){
         name=Ui.field(this,getString(R.string.social_group_name),state?.getString("name").orEmpty()).apply{filters=arrayOf(android.text.InputFilter.LengthFilter(100))}
         about=Ui.field(this,getString(R.string.social_group_about),state?.getString("about").orEmpty()).apply{filters=arrayOf(android.text.InputFilter.LengthFilter(500))}
         root.addView(name);root.addView(about)
+        createKitchen=CheckBox(this).apply{
+            text=getString(R.string.social_create_kitchen);textSize=16f;setTextColor(Ui.ink);minHeight=dp(48)
+            isChecked=state?.getBoolean("createKitchen") ?: false
+        }
+        kitchenName=Ui.field(this,getString(R.string.social_kitchen_name),state?.getString("kitchenName") ?: getString(R.string.social_default_kitchen)).apply{
+            filters=arrayOf(android.text.InputFilter.LengthFilter(100))
+        }
+        val kitchenHint=Ui.text(this,getString(R.string.social_chat_only_hint),13f).apply{setTextColor(Ui.muted)}
+        root.addView(createKitchen);root.addView(kitchenName);root.addView(kitchenHint)
+        fun syncKitchenFields(){
+            val visible=createKitchen.isChecked
+            kitchenName.visibility=if(visible)android.view.View.VISIBLE else android.view.View.GONE
+            kitchenHint.visibility=if(visible)android.view.View.GONE else android.view.View.VISIBLE
+        }
+        createKitchen.setOnCheckedChangeListener{_,_->syncKitchenFields()}
+        syncKitchenFields()
         root.addView(Ui.text(this,getString(R.string.social_choose_friends),18f,true))
         friends=Ui.box(this,0);root.addView(friends)
         val create=Ui.button(this,getString(R.string.social_create_group),true){}
         create.setOnClickListener{
             val title=name.text.toString().trim()
             if(title.isBlank()){name.error=getString(R.string.social_name_invalid);return@setOnClickListener}
+            val withKitchen=createKitchen.isChecked
+            val kitchen=kitchenName.text.toString().trim()
+            if(withKitchen && kitchen.isBlank()){kitchenName.error=getString(R.string.ui_464069bf95);return@setOnClickListener}
             create.isEnabled=false;create.text=getString(R.string.social_creating)
             lifecycleScope.launch{try{
                 check(account==LocalStore.account)
-                val group=Ui.data(ApiClient.getAccountService(account).createGroup(CreateGroupRequest(title,about.text.toString().trim(),10,selected.toList())))
+                val group=Ui.data(ApiClient.getAccountService(account).createGroup(
+                    CreateGroupRequest(title,about.text.toString().trim(),10,selected.toList(),
+                        withKitchen,if(withKitchen)kitchen else null)))
                 if(account!=LocalStore.account){finish();return@launch}
                 // The group already exists: a later refresh failure must never offer creation again.
                 try {
@@ -64,6 +87,6 @@ class CreateGroupActivity:AppCompatActivity(){
         }}
         friends.addView(Ui.button(this@CreateGroupActivity,getString(R.string.social_manage_friends)){startActivity(Intent(this@CreateGroupActivity,FriendsListActivity::class.java))})
     }catch(e:CancellationException){throw e}catch(e:Exception){friends.removeAllViews();friends.addView(Ui.button(this@CreateGroupActivity,getString(R.string.social_retry)){loadFriends()})}}}
-    override fun onSaveInstanceState(out:Bundle){out.putString("name",name.text.toString());out.putString("about",about.text.toString());out.putLongArray("selected",selected.toLongArray());super.onSaveInstanceState(out)}
+    override fun onSaveInstanceState(out:Bundle){out.putString("name",name.text.toString());out.putString("about",about.text.toString());out.putLongArray("selected",selected.toLongArray());out.putBoolean("createKitchen",if(::createKitchen.isInitialized)createKitchen.isChecked else false);out.putString("kitchenName",if(::kitchenName.isInitialized)kitchenName.text.toString() else null);super.onSaveInstanceState(out)}
     private fun dp(n:Int)=(resources.displayMetrics.density*n).toInt()
 }

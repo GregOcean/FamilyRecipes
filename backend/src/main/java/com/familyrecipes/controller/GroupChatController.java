@@ -46,8 +46,11 @@ public class GroupChatController {
             // 设置默认值
             String description = request.getDescription() != null ? request.getDescription() : "";
             Integer maxMembers = request.getMaxMembers() != null ? request.getMaxMembers() : 10;
+            // Older clients omit the field; keep their historical auto-create behavior.
+            boolean createKitchen = request.getCreateKitchen() == null || request.getCreateKitchen();
+            String kitchenName = request.getKitchenName();
             
-            GroupChat group = groupChatService.createGroup(userId, request.getName(), description, maxMembers, memberIds);
+            GroupChat group = groupChatService.createGroup(userId, request.getName(), description, maxMembers, memberIds, createKitchen, kitchenName);
             return Result.success(group);
         } catch (com.familyrecipes.common.ApiException e) {
             throw e;
@@ -203,6 +206,8 @@ public class GroupChatController {
         private String description;
         private Integer maxMembers;
         private List<Long> memberIds;
+        private Boolean createKitchen;
+        private String kitchenName;
     }
     
     @Data
