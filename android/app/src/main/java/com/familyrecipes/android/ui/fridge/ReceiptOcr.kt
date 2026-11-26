@@ -68,7 +68,9 @@ class ReceiptOcr(private val context: Context) {
             merged.add(line.top to combine(line.text, latinText))
         }
         // Latin-only lines (English item names the Chinese model missed) are kept as-is.
-        latin.forEachIndexed { index, line -> if (index !in used) merged.add(line.top to line.text) }
+        latin.forEachIndexed { index, line ->
+            if (index !in used && line.text.any { it.isLetter() }) merged.add(line.top to line.text)
+        }
         return join(merged.sortedWith(compareBy({ it.first }, { it.second.length })).map { it.second })
     }
 
@@ -86,8 +88,15 @@ class ReceiptOcr(private val context: Context) {
         if (latinText.isBlank()) return chineseText
         val prefix = chineseText.takeWhile { it.isWhitespace() || CJK.matches(it.toString()) }.trim()
         if (prefix.isEmpty()) return chineseText
-        if (latinText.startsWith(prefix)) return latinText
-        return "$prefix $latinText"
+        val nameEnd = chineseText.indexOfFirst { it.isDigit() }.let { if (it < 0) chineseText.length else it }
+        val name = chineseText.substring(0, nameEnd).trim()
+        val rest = chineseText.substring(nameEnd).trim()
+        val tail = name.removePrefix(prefix).trim()
+        // Only touch the part after the Chinese name when it contains Latin garbage.
+        if (tail.isEmpty() || !tail.any { it in 'A'..'Z' || it in 'a'..'z' }) return chineseText
+        val latinName = Regex("[A-Za-z][A-Za-z'’.-]+").find(latinText)?.value?.trim().orEmpty()
+        val cleanTail = latinName
+        return listOf(prefix, cleanTail, rest).filter { it.isNotBlank() }.joinToString(" ")
     }
 
     private fun clean(raw: String): String = Normalizer.normalize(raw, Normalizer.Form.NFKC)

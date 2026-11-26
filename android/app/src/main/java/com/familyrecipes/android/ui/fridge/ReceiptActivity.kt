@@ -148,7 +148,9 @@ class ReceiptActivity : AppCompatActivity() {
                     contentResolver.openInputStream(uri).use{android.graphics.BitmapFactory.decodeStream(it,null,options)}
                     require(options.outWidth>0 && options.outHeight>0){getString(R.string.receipt_image_error)}
                     options.inSampleSize=1
-                    while(maxOf(options.outWidth,options.outHeight)/options.inSampleSize>2400)options.inSampleSize*=2
+                    // Keep dense Chinese receipt lines legible; 2400px was too aggressive.
+                    while(maxOf(options.outWidth,options.outHeight)/options.inSampleSize>4096 ||
+                        (options.outWidth/options.inSampleSize).toLong()*(options.outHeight/options.inSampleSize)>16_000_000L)options.inSampleSize*=2
                     options.inJustDecodeBounds=false
                     var bitmap=contentResolver.openInputStream(uri).use{android.graphics.BitmapFactory.decodeStream(it,null,options)} ?: error(getString(R.string.receipt_image_error))
                     // Camera JPEGs often use EXIF orientation rather than rotated pixels.
