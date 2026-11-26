@@ -2,7 +2,6 @@ package com.familyrecipes.android.ui.fridge
 
 import android.content.Context
 import android.net.Uri
-import com.google.mlkit.common.sdkinternal.OptionalModuleUtils
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
@@ -10,7 +9,6 @@ import com.google.mlkit.vision.text.TextRecognizer
 import com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -34,22 +32,10 @@ class ReceiptOcr(private val context: Context) {
     private val latin = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
     suspend fun read(file: File): String {
-        ensureModels()
         val image = withContext(Dispatchers.IO) { InputImage.fromFilePath(context, Uri.fromFile(file)) }
         val chineseLines = runCatching { process(chinese, image) }.getOrDefault(emptyList())
         val latinLines = runCatching { process(latin, image) }.getOrDefault(emptyList())
         return merge(chineseLines, latinLines)
-    }
-
-    /** Models live in Google Play services; trigger the download on first use and wait briefly. */
-    private suspend fun ensureModels() = withContext(Dispatchers.IO) {
-        val features = arrayOf(OptionalModuleUtils.FEATURE_OCR, OptionalModuleUtils.FEATURE_OCR_CHINESE)
-        if (OptionalModuleUtils.areAllRequiredModulesAvailable(context, features)) return@withContext
-        OptionalModuleUtils.requestDownload(context, features)
-        val deadline = System.currentTimeMillis() + 90_000
-        while (System.currentTimeMillis() < deadline && !OptionalModuleUtils.areAllRequiredModulesAvailable(context, features)) {
-            delay(500)
-        }
     }
 
     private suspend fun process(recognizer: TextRecognizer, image: InputImage): List<OcrLine> =

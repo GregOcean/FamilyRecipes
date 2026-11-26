@@ -19,8 +19,8 @@ android {
         applicationId "com.familyrecipes.android"
         minSdk 24
         targetSdk 34
-        versionCode 32
-        versionName "1.0.31"
+        versionCode 33
+        versionName "1.0.32"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         
@@ -127,9 +127,9 @@ dependencies {
     implementation "androidx.camera:camera-lifecycle:${camerax_version}"
     implementation "androidx.camera:camera-view:${camerax_version}"
     
-    // 端侧 OCR：模型通过 Google Play 服务在首次识别时下载，不随 APK 打包
-    implementation 'com.google.android.gms:play-services-mlkit-text-recognition-chinese:16.0.2'
-    implementation 'com.google.android.gms:play-services-mlkit-text-recognition:19.0.2'
+    // 端侧 OCR：中英文模型随 APK 打包，不依赖 Google Play 服务下载
+    implementation 'com.google.mlkit:text-recognition-chinese:16.0.1'
+    implementation 'com.google.mlkit:text-recognition:16.0.1'
 
     // WorkManager (后台提醒)
     implementation 'androidx.work:work-runtime-ktx:2.9.0'
