@@ -69,7 +69,9 @@ class ReceiptOcr(private val context: Context) {
         }
         // Latin-only lines (English item names the Chinese model missed) are kept as-is.
         latin.forEachIndexed { index, line ->
-            if (index !in used && line.text.any { it.isLetter() }) merged.add(line.top to line.text)
+            if (index !in used && line.text.length >= 3 && line.text.count { it.isLetter() } >= 2) {
+                merged.add(line.top to line.text)
+            }
         }
         return join(merged.sortedWith(compareBy({ it.first }, { it.second.length })).map { it.second })
     }
@@ -101,12 +103,13 @@ class ReceiptOcr(private val context: Context) {
 
     private fun clean(raw: String): String = Normalizer.normalize(raw, Normalizer.Form.NFKC)
         .replace(Regex("(?<=[\\u3400-\\u9fff])\\s+(?=[\\u3400-\\u9fff])"), "")
+        .replace(Regex("(?<=[\\u3400-\\u9fff])[zZ0-9](?=\\s+\\d)"), "")
         .replace(Regex("[\\t\\u00a0]+"), " ")
         .trim()
         .replace(Regex(" {2,}"), " ")
 
     private fun join(lines: List<String>): String = lines
-        .filter { it.isNotBlank() }
+        .filter { it.isNotBlank() && !Regex("^[A-Za-z]{1,2}\\s+\\d").containsMatchIn(it) }
         .joinToString("\n")
         .take(20_000)
 
