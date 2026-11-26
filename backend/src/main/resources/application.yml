@@ -106,7 +106,7 @@ app:
       # Receipt text parsing after on-device OCR. Text-only, no image quota.
       receipt_text:
         url: ${RECEIPT_TEXT_LLM_URL:https://open.bigmodel.cn/api/paas/v4/chat/completions}
-        key: ${RECEIPT_TEXT_LLM_KEY:${TRANSLATION_LLM_KEY:${ZHIPU_API_KEY:}}}
+        key: ${RECEIPT_TEXT_LLM_KEY:${TRANSLATION_LLM_KEY:${VISION_LLM_KEY:${ZHIPU_API_KEY:}}}}
         model: ${RECEIPT_TEXT_LLM_MODEL:glm-5.3-flash}
         reasoning-effort: ${RECEIPT_TEXT_REASONING_EFFORT:low}
         timeout-seconds: ${RECEIPT_TEXT_TIMEOUT_SECONDS:45}
