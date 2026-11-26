@@ -32,6 +32,8 @@ interface ApiService {
     @Multipart
     @POST("/api/receipts/recognize")
     suspend fun recognizeReceipt(@Query("kitchenId") kitchenId: Long, @Part image: okhttp3.MultipartBody.Part, @Query("mode") mode:String="receipt"): Response<ApiResponse<List<ReceiptItem>>>
+    @POST("/api/receipts/recognize-text")
+    suspend fun recognizeReceiptText(@Body request: ReceiptTextRequest): Response<ApiResponse<List<ReceiptItem>>>
     @POST("/api/receipts/import")
     suspend fun importReceipt(@Body request: ReceiptImportRequest): Response<ApiResponse<Int>>
 

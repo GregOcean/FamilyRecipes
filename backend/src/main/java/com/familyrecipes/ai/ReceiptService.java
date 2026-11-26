@@ -57,16 +57,36 @@ public class ReceiptService {
             String url="data:image/"+format+";base64,"+Base64.getEncoder().encodeToString(bytes);
             var recognized=parse(client.complete(AiRoutes.VISION,List.of(Map.of("role","user","content",List.of(
                 Map.of("type","text","text",prompt),Map.of("type","image_url","image_url",Map.of("url",url)))))));
-            if(resolution==null)return recognized;
-            var normalized=new ArrayList<Item>();
-            for(var item:recognized) {
-                var found=resolution.match(item.name(),user);
-                Integer estimate=found==null?item.estimated_days():com.familyrecipes.service.IngredientShelfLife.estimate(found.getName(),item.storage());
-                normalized.add(new Item(item.name(),item.quantity(),item.storage(),estimate!=null?estimate:item.estimated_days(),found==null?null:found.getId(),item.expiry_date()));
-            }
-            return normalized;
+            return normalize(recognized,user);
         } catch(ApiException e){throw e;} catch(Exception e){throw new ApiException(502,"识别失败，请重试 / Recognition failed; please retry",e);}
         finally {slots.release();}
+    }
+
+    /** Text-only path: the phone does OCR locally, so no image or vision quota is used. */
+    public List<Item> recognizeText(Long user,Long kitchen,String text,String mode) {
+        if(!"receipt".equals(mode))throw new ApiException(400,"文字识别仅支持小票 / Text recognition is only available for receipts");
+        kitchens.requireMember(kitchen,user);
+        if(!routes.route(AiRoutes.RECEIPT_TEXT).configured()) throw new ApiException(503,"小票文字识别尚未配置 / Receipt text recognition is not configured");
+        String body=text==null?"":text.trim();
+        if(body.isEmpty() || body.length()>20_000) throw new ApiException(400,"小票文字为空或过长 / Receipt text is empty or too long");
+        if(!slots.tryAcquire()) throw new ApiException(429,"识别繁忙，请稍后重试 / Please retry shortly");
+        try {
+            String prompt=new ClassPathResource("prompts/receipt-text.txt").getContentAsString(StandardCharsets.UTF_8);
+            var recognized=parse(client.complete(AiRoutes.RECEIPT_TEXT,List.of(Map.of("role","user","content",prompt+body))));
+            return normalize(recognized,user);
+        } catch(ApiException e){throw e;} catch(Exception e){throw new ApiException(502,"识别失败，请重试 / Recognition failed; please retry",e);}
+        finally {slots.release();}
+    }
+
+    private List<Item> normalize(List<Item> recognized,Long user) {
+        if(resolution==null)return recognized;
+        var normalized=new ArrayList<Item>();
+        for(var item:recognized) {
+            var found=resolution.match(item.name(),user);
+            Integer estimate=found==null?item.estimated_days():com.familyrecipes.service.IngredientShelfLife.estimate(found.getName(),item.storage());
+            normalized.add(new Item(item.name(),item.quantity(),item.storage(),estimate!=null?estimate:item.estimated_days(),found==null?null:found.getId(),item.expiry_date()));
+        }
+        return normalized;
     }
     List<Item> parse(String content) throws Exception {
         String raw=content.trim().replaceFirst("^```(?:json)?\\s*","").replaceFirst("\\s*```$","");

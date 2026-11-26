@@ -13,6 +13,7 @@ import androidx.lifecycle.lifecycleScope
 import com.familyrecipes.android.R
 import com.familyrecipes.android.data.local.PreferenceManager
 import com.familyrecipes.android.data.model.ReceiptItem
+import com.familyrecipes.android.data.model.ReceiptTextRequest
 import com.familyrecipes.android.data.model.ReceiptImportRequest
 import com.familyrecipes.android.data.remote.ApiClient
 import com.familyrecipes.android.ui.design.Ui
@@ -39,6 +40,7 @@ class ReceiptActivity : AppCompatActivity() {
     private var draft=Draft()
     private var busy=false
     private var expandedRow:Int?=null
+    private var ocr:ReceiptOcr?=null
     private lateinit var body:LinearLayout
     private val cameraPermission=registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if(granted)takePhoto() else Toast.makeText(this,R.string.receipt_camera_permission,Toast.LENGTH_LONG).show()
@@ -72,6 +74,7 @@ class ReceiptActivity : AppCompatActivity() {
         }
     }
     override fun onSaveInstanceState(state:Bundle){kitchen?.let{state.putLong("receipt_kitchen",it)};super.onSaveInstanceState(state)}
+    override fun onDestroy(){ocr?.close();super.onDestroy()}
     private fun persist(){prefs.edit().putString(key,json.toJson(draft)).apply()}
     private fun currentAccount()=account==PreferenceManager.userId&&server==PreferenceManager.baseUrl.trimEnd('/')&&PreferenceManager.isLoggedIn()
     private fun render() {
@@ -173,8 +176,7 @@ class ReceiptActivity : AppCompatActivity() {
         busy=true;render()
         lifecycleScope.launch {
             try {
-                val part=MultipartBody.Part.createFormData("image","receipt.jpg",file.asRequestBody("image/jpeg".toMediaType()))
-                val items=Ui.data(ApiClient.getAccountVisionService(scopeAccount).recognizeReceipt(kitchen!!,part,mode))
+                val items=if(mode=="receipt")recognizeText(file) else recognizeImage(file)
                 if(!currentAccount())return@launch
                 draft.rows=items.map{Row(it.name.orEmpty(),it.quantity.orEmpty(),it.storage.orEmpty(),it.estimatedDays?.toString().orEmpty(),it.ingredientId,it.expiryDate.orEmpty())}.toMutableList()
                 persist()
@@ -182,6 +184,21 @@ class ReceiptActivity : AppCompatActivity() {
             } catch(e:CancellationException){throw e} catch(e:Exception){Ui.toast(this@ReceiptActivity,e)}
             finally{busy=false;render()}
         }
+    }
+    /** Receipts go through on-device OCR first; the image is only uploaded by the vision fallback. */
+    private suspend fun recognizeText(file:File):List<ReceiptItem> {
+        val text=try{(ocr ?: ReceiptOcr(this).also{ocr=it}).read(file)}catch(e:CancellationException){throw e}catch(e:Exception){""}
+        if(text.isBlank())return recognizeImage(file)
+        return try {
+            Ui.data(ApiClient.getAccountVisionService(scopeAccount).recognizeReceiptText(ReceiptTextRequest(kitchen!!,text,mode)))
+        } catch(e:CancellationException){throw e} catch(e:Exception) {
+            Toast.makeText(this,R.string.receipt_ocr_fallback,Toast.LENGTH_SHORT).show()
+            recognizeImage(file)
+        }
+    }
+    private suspend fun recognizeImage(file:File):List<ReceiptItem> {
+        val part=MultipartBody.Part.createFormData("image","receipt.jpg",file.asRequestBody("image/jpeg".toMediaType()))
+        return Ui.data(ApiClient.getAccountVisionService(scopeAccount).recognizeReceipt(kitchen!!,part,mode))
     }
     private fun match(row:Row){
         lifecycleScope.launch {try {

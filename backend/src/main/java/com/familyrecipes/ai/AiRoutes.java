@@ -8,12 +8,12 @@ import java.util.*;
 @Component
 @ConfigurationProperties(prefix="app.ai")
 public class AiRoutes {
-    public static final String TRANSLATION="translation", VISION="vision";
+    public static final String TRANSLATION="translation", VISION="vision", RECEIPT_TEXT="receipt_text";
     private Map<String,Route> routes=new HashMap<>();
     public Map<String,Route> getRoutes(){return routes;}
     public void setRoutes(Map<String,Route> value){routes=value;}
     public Route route(String name) {
-        if(!Set.of(TRANSLATION,VISION).contains(name))throw new IllegalArgumentException("Unknown AI route");
+        if(!Set.of(TRANSLATION,VISION,RECEIPT_TEXT).contains(name))throw new IllegalArgumentException("Unknown AI route");
         return routes.computeIfAbsent(name,k->new Route());
     }
     public static class Route {

@@ -341,6 +341,7 @@ data class FriendInvitation(val id:Long,@SerializedName("sender_id") val senderI
 
 // Receipt drafts stay editable until one atomic, idempotent inventory import.
 data class ReceiptItem(val name: String?, val quantity: String?, val storage: String?, @SerializedName("estimated_days") val estimatedDays: Int?, @SerializedName("ingredient_id") val ingredientId: Long? = null, @SerializedName("expiry_date") val expiryDate: String? = null)
+data class ReceiptTextRequest(@SerializedName("kitchen_id") val kitchenId: Long, val text: String, val mode: String = "receipt")
 data class ReceiptImportRequest(@SerializedName("request_id") val requestId: String, @SerializedName("kitchen_id") val kitchenId: Long, val items: List<ReceiptItem>)
 
 /**
